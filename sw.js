@@ -1,5 +1,5 @@
 /* Parlami: rende l'app installabile e utilizzabile anche con connessione debole */
-const CACHE = "parlami-0.4";
+const CACHE = "parlami-0.5";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
@@ -16,7 +16,7 @@ self.addEventListener("fetch", e => {
   if(url.origin !== location.origin && !font) return; // le chiamate all'IA non passano mai dalla cache
   if(req.mode === "navigate"){
     // Pagina: prima la rete (così arrivano gli aggiornamenti), poi la copia salvata
-    e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put("./index.html", copy)); return res; })
+    e.respondWith(fetch(req, {cache:"no-cache"}).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put("./index.html", copy)); return res; })
       .catch(() => caches.match("./index.html")));
     return;
   }

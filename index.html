@@ -203,6 +203,8 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 .prov .field input{background:var(--surface)}
 .status-ok{color:var(--ok);font-weight:700}
 .status-bad{color:var(--bad);font-weight:700}
+.updbar{position:fixed;left:50%;transform:translateX(-50%);top:calc(14px + env(safe-area-inset-top,0px));z-index:60;background:var(--sun);color:var(--sun-ink);border-radius:999px;padding:8px 8px 8px 18px;display:flex;gap:12px;align-items:center;font-weight:700;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+.updbar[hidden]{display:none}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:700;z-index:50;opacity:0;transition:opacity .25s}
 .toast.show{opacity:1}
 @media (max-width:820px){.toast{bottom:calc(90px + env(safe-area-inset-bottom,0px))}}
@@ -219,9 +221,10 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
   <main class="main" id="main" tabindex="-1"></main>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.4";
+const APP_VERSION = "0.5";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -360,9 +363,45 @@ function tokens(s, lang=S().lang){
   return n.split(" ").filter(Boolean);
 }
 /* Allinea parole attese e parole sentite (LCS) */
+/* Numeri scritti in lettere: così "twenty-one" e "21" contano come la stessa parola */
+const NUMWORDS = (() => {
+  const src = {
+    en:"zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty|thirty:30 forty:40 fifty:50 sixty:60 seventy:70 eighty:80 ninety:90 hundred:100",
+    it:"zero uno due tre quattro cinque sei sette otto nove dieci undici dodici tredici quattordici quindici sedici diciassette diciotto diciannove venti|una:1 trenta:30 quaranta:40 cinquanta:50 sessanta:60 settanta:70 ottanta:80 novanta:90 cento:100",
+    es:"cero uno dos tres cuatro cinco seis siete ocho nueve diez once doce trece catorce quince dieciseis diecisiete dieciocho diecinueve veinte|una:1 treinta:30 cuarenta:40 cincuenta:50 sesenta:60 setenta:70 ochenta:80 noventa:90 cien:100 ciento:100",
+    fr:"zero un deux trois quatre cinq six sept huit neuf dix onze douze treize quatorze quinze seize|une:1 vingt:20 trente:30 quarante:40 cinquante:50 soixante:60 cent:100",
+    de:"null eins zwei drei vier funf sechs sieben acht neun zehn elf zwolf dreizehn vierzehn funfzehn sechzehn siebzehn achtzehn neunzehn zwanzig|ein:1 eine:1 dreißig:30 dreissig:30 vierzig:40 funfzig:50 sechzig:60 siebzig:70 achtzig:80 neunzig:90 hundert:100",
+    pt:"zero um dois tres quatro cinco seis sete oito nove dez onze doze treze catorze quinze dezesseis dezessete dezoito dezenove vinte|uma:1 duas:2 quatorze:14 dezasseis:16 dezassete:17 dezanove:19 trinta:30 quarenta:40 cinquenta:50 sessenta:60 setenta:70 oitenta:80 noventa:90 cem:100 cento:100",
+    nl:"nul een twee drie vier vijf zes zeven acht negen tien elf twaalf dertien veertien vijftien zestien zeventien achttien negentien twintig|dertig:30 veertig:40 vijftig:50 zestig:60 zeventig:70 tachtig:80 negentig:90 honderd:100"
+  };
+  const out = {};
+  for(const [lang, str] of Object.entries(src)){
+    const [seq, extra] = str.split("|"); const m = {};
+    seq.split(" ").forEach((w,i)=>{ m[w] = i; });
+    (extra||"").split(" ").filter(Boolean).forEach(x=>{ const [w,n] = x.split(":"); m[w] = +n; });
+    out[lang] = m;
+  }
+  return out;
+})();
+/* Parole con la loro "chiave" di confronto (senza accenti, numeri in cifre) */
+function keyed(text, lang){
+  const nw = NUMWORDS[lang] || {}, out = [];
+  for(const w of tokens(text, lang)){
+    const b = bare(w), isWord = nw[b] !== undefined;
+    const k = isWord ? String(nw[b]) : b;
+    const prev = out[out.length-1];
+    if(isWord && prev && prev.numWord){
+      const pv = +prev.k, cv = +k;
+      if(pv >= 10 && pv % 10 === 0 && cv > 0 && cv < 10){ prev.k = String(pv+cv); prev.w += " " + w; continue; }
+    }
+    out.push({w, k, numWord:isWord});
+  }
+  return out;
+}
 function align(target, heard, lang=S().lang){
-  const a = tokens(target, lang), b = tokens(heard, lang);
-  const A = a.map(x=>bare(x)), B = b.map(x=>bare(x));
+  const ta = keyed(target, lang), tb = keyed(heard, lang);
+  const a = ta.map(x=>x.w), A = ta.map(x=>x.k), B = tb.map(x=>x.k);
+  const b = B;
   const dp = Array.from({length:a.length+1}, ()=>new Array(b.length+1).fill(0));
   for(let i=a.length-1;i>=0;i--) for(let j=b.length-1;j>=0;j--)
     dp[i][j] = A[i]===B[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
@@ -1570,7 +1609,18 @@ function runExercisesStandalone(main, lesson){
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredInstall = e; if(location.hash==="#impostazioni") route(); });
 window.addEventListener("appinstalled", () => { deferredInstall = null; toast("App installata"); });
 if("serviceWorker" in navigator && (location.protocol==="https:" || ["localhost","127.0.0.1"].includes(location.hostname))){
-  navigator.serviceWorker.register("sw.js").catch(()=>{});
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if(!hadController || reloading) return;
+    $("#updbar").hidden = false;
+    $("#updbtn").onclick = () => { reloading = true; location.reload(); };
+  });
+  navigator.serviceWorker.register("sw.js").then(reg => {
+    // Controlla se ci sono aggiornamenti ogni volta che torni sull'app, e ogni ora
+    document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") reg.update().catch(()=>{}); });
+    setInterval(() => reg.update().catch(()=>{}), 3600000);
+  }).catch(()=>{});
 }
 Voice.init();
 window.addEventListener("hashchange", route);
