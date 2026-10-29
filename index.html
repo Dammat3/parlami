@@ -44,6 +44,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .main:focus{outline:none}
+a{color:var(--primary)}
 .notice a{color:inherit}
 .muted{color:var(--muted)}
 .small{font-size:.88rem}
@@ -127,6 +128,17 @@ button{cursor:pointer}
 .unit.next .num{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
 .unit .meta{flex:1}
 .unit h3{margin:0}
+
+/* Level picker */
+.levels{display:flex;gap:14px 22px;flex-wrap:wrap;margin-top:16px}
+.area{display:flex;flex-direction:column;gap:6px}
+.area-name{font-size:.85rem;font-weight:700;color:var(--muted)}
+.lvl{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:68px;padding:8px 12px;border-radius:var(--r);border:2px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;position:relative;line-height:1.2}
+.lvl b{font-family:var(--display);font-size:1.25rem}
+.lvl span{font-size:.78rem;color:var(--muted)}
+.lvl i{position:absolute;top:2px;right:6px;font-style:normal;color:var(--sun);font-size:.85rem}
+.lvl.on{border-color:var(--primary);background:var(--primary-soft)}
+.lvl:hover{border-color:var(--primary)}
 
 /* Exercise */
 .progress{height:12px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
@@ -224,7 +236,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.5";
+const APP_VERSION = "0.6";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -236,7 +248,7 @@ const LANGS = {
   ko:{name:"Coreano", code:"ko-KR"}, ar:{name:"Arabo", code:"ar-SA"}
 };
 const NOSPACE = ["ja","zh"];
-const LEVELS = ["A1","A2","B1","B2","C1"];
+const LEVELS = ["A1","A2","B1","B2","C1","C2"];
 const PERSONAS = {
   sofia:{name:"Sofia", color:"#3446E8", face:"#FFD9B8", hair:"#3B2416", style:"paziente, gentile e incoraggiante; spieghi con calma e lodi i progressi", tag:"Paziente"},
   leo:{name:"Leo", color:"#E8742E", face:"#F2C59B", hair:"#1D1D1D", style:"energico, spiritoso e pieno di entusiasmo; usi battute leggere e domande vivaci", tag:"Energico"},
@@ -253,23 +265,27 @@ const SCENARIOS = {
   colloquio:{name:"Colloquio di lavoro", prompt:"tu sei il selezionatore e fai un colloquio di lavoro allo studente"},
   amici:{name:"Nuova conoscenza", prompt:"vi siete appena conosciuti a una festa e fate amicizia"}
 };
-const UNITS = [
-  {id:"u1", title:"Saluti e presentazioni", focus:"salutare, presentarsi, dire da dove si viene"},
-  {id:"u2", title:"Numeri, età e date", focus:"numeri, età, giorni, mesi, l'ora"},
-  {id:"u3", title:"Famiglia e amici", focus:"parlare della famiglia, aggettivi possessivi, descrivere persone"},
-  {id:"u4", title:"Casa e routine", focus:"la giornata tipo, verbi di routine, avverbi di frequenza"},
-  {id:"u5", title:"Cibo e ristorante", focus:"ordinare, gusti, quantità, chiedere il conto"},
-  {id:"u6", title:"In città", focus:"chiedere e dare indicazioni, mezzi di trasporto, preposizioni di luogo"},
-  {id:"u7", title:"Fare acquisti", focus:"prezzi, taglie, colori, comparativi"},
-  {id:"u8", title:"Tempo libero", focus:"hobby, sport, invitare e rifiutare"},
-  {id:"u9", title:"Viaggi", focus:"prenotare, aeroporto, albergo, imprevisti"},
-  {id:"u10", title:"Il passato", focus:"raccontare eventi passati, tempi verbali del passato"},
-  {id:"u11", title:"Piani e futuro", focus:"progetti, intenzioni, tempi verbali del futuro"},
-  {id:"u12", title:"Lavoro e studio", focus:"professioni, ufficio, email e conversazioni formali"},
-  {id:"u13", title:"Salute e corpo", focus:"parti del corpo, sintomi, consigli"},
-  {id:"u14", title:"Opinioni e sentimenti", focus:"esprimere opinioni, essere d'accordo o no, emozioni"},
-  {id:"u15", title:"Ipotesi e condizioni", focus:"periodi ipotetici, desideri, consigli"}
-];
+/* Livelli del Quadro Comune Europeo (QCER), raggruppati nelle 3 aree */
+const LEVEL_INFO = {
+  A1:{name:"Principiante", area:"Base", can:"Capisci e usi espressioni quotidiane molto semplici. Sai presentarti, fare e rispondere a domande su dove vivi, chi conosci e cosa possiedi, se l'altro parla piano e chiaramente."},
+  A2:{name:"Elementare", area:"Base", can:"Capisci frasi frequenti su argomenti familiari (famiglia, acquisti, lavoro, dintorni). Comunichi in situazioni semplici e abituali e descrivi in modo semplice la tua vita."},
+  B1:{name:"Intermedio", area:"Autonomo", can:"Capisci i punti principali su temi conosciuti di lavoro, scuola e tempo libero. Te la cavi in viaggio, racconti esperienze e progetti e motivi brevemente le tue opinioni."},
+  B2:{name:"Intermedio superiore", area:"Autonomo", can:"Capisci testi complessi anche tecnici nel tuo campo. Parli con scioltezza e spontaneità con madrelingua e spieghi un punto di vista con vantaggi e svantaggi."},
+  C1:{name:"Avanzato", area:"Padronanza", can:"Capisci testi lunghi e impegnativi e ne cogli anche i significati impliciti. Ti esprimi con scioltezza e flessibilità per scopi sociali, di studio e di lavoro."},
+  C2:{name:"Padronanza", area:"Padronanza", can:"Capisci con facilità praticamente tutto ciò che senti e leggi. Riassumi informazioni da fonti diverse e ti esprimi in modo preciso, cogliendo le sfumature più sottili."}
+};
+const AREAS = [{name:"Base", levels:["A1","A2"]}, {name:"Autonomo", levels:["B1","B2"]}, {name:"Padronanza", levels:["C1","C2"]}];
+const CURRICULUM = {
+  A1:[["Saluti e presentazioni","salutare, presentarsi, dire nome, provenienza e nazionalità"],["Numeri, età e date","numeri da 0 a 100, età, giorni, mesi, date"],["La famiglia","membri della famiglia, aggettivi possessivi, avere"],["Casa e oggetti","stanze, oggetti, c'è/ci sono, preposizioni di luogo semplici"],["Cibo e bevande","cibi comuni, mi piace/non mi piace, articoli e plurali"],["La mia giornata","verbi di routine al presente, orari"],["Che ore sono?","l'ora, i giorni della settimana, appuntamenti semplici"],["In città","luoghi della città, chiedere dov'è qualcosa"],["Fare la spesa","prezzi, quantità, chiedere e pagare"],["Tempo libero","hobby, sport, saper fare qualcosa"]],
+  A2:[["Il mio weekend","raccontare cosa si è fatto: il passato semplice o prossimo"],["Viaggi e trasporti","biglietti, orari, mezzi di trasporto, indicazioni"],["Al ristorante","ordinare, chiedere consigli, lamentarsi in modo semplice"],["Fare shopping","taglie, colori, comparativi e superlativi"],["Dal medico","parti del corpo, sintomi, consigli semplici"],["Lavoro e professioni","descrivere un lavoro, orari, colleghi"],["Il tempo e le stagioni","meteo, stagioni, vestiti adatti"],["Piani e inviti","progetti per il futuro, invitare, accettare e rifiutare"],["Persone e luoghi","descrivere aspetto, carattere e luoghi"],["Telefono e messaggi","telefonate, lasciare un messaggio, scrivere messaggi brevi"]],
+  B1:[["Esperienze e ricordi","raccontare esperienze di vita e ricordi, i tempi del passato"],["Progetti e ambizioni","obiettivi, intenzioni, il futuro e le probabilità"],["Problemi e soluzioni","reclami, imprevisti, chiedere aiuto"],["Esprimere opinioni","dare e motivare un'opinione, essere d'accordo o no"],["Raccontare una notizia","fatti di cronaca, sequenza degli eventi"],["Consigli e suggerimenti","il condizionale per consigliare e chiedere con cortesia"],["Colloquio ed email di lavoro","presentarsi a un colloquio, email formali"],["Viaggiare da soli","prenotazioni, imprevisti in viaggio, alloggi"],["Salute e stile di vita","abitudini, sport, alimentazione, consigli"],["Film, libri e musica","raccontare una trama, recensioni, gusti"]],
+  B2:[["Pro e contro","argomentare vantaggi e svantaggi, connettivi"],["Ipotesi e condizioni","periodi ipotetici, rimpianti, desideri"],["Tecnologia e società","effetti della tecnologia, lessico specifico"],["Ambiente","problemi ambientali, cause, conseguenze, soluzioni"],["Raccontare con precisione","tempi narrativi, sequenze, sfondo e azione"],["Il discorso indiretto","riferire ciò che altri hanno detto o chiesto"],["Formale e informale","cambiare registro secondo la situazione"],["Riunioni e trattative","proporre, interrompere, negoziare, concludere"],["Media e informazione","notizie, fonti, opinioni e fatti"],["Modi di dire comuni","espressioni idiomatiche frequenti e collocazioni"]],
+  C1:[["Argomentare in modo strutturato","costruire un discorso, introdurre, contrapporre, concludere"],["Sfumature di significato","sinonimi, connotazioni, scegliere la parola esatta"],["Scrittura formale","relazioni, lettere formali, proposte"],["Linguaggio accademico","descrivere dati, citare, esprimere cautela"],["Tono e ironia","capire e usare ironia, attenuazione ed enfasi"],["Parlare in pubblico","presentazioni, gestire domande"],["Connettivi avanzati","coesione del testo, inversioni, strutture enfatiche"],["Collocazioni e lessico idiomatico","combinazioni naturali di parole, espressioni figurate"],["Dibattiti etici","temi controversi, posizioni sfumate"],["Economia e lavoro","mercati, aziende, carriere, lessico professionale"]],
+  C2:[["Stile e registro","adattare lo stile a pubblico e scopo con precisione"],["Linguaggio figurato","metafore, allusioni, linguaggio letterario"],["Umorismo e giochi di parole","capire battute, doppi sensi e giochi di parole"],["Varietà e accenti","differenze regionali di lessico e pronuncia"],["Linguaggi specialistici","testi giuridici, tecnici e scientifici"],["Retorica e persuasione","tecniche retoriche, discorsi persuasivi"],["Sintetizzare fonti","riassumere e confrontare testi diversi"],["Lessico raro e preciso","parole rare, sfumature molto fini"],["Conversazioni tra madrelingua","parlato rapido, ellissi, colloquialismi"],["Tradurre le sfumature","rendere tono e implicito tra italiano e lingua straniera"]]
+};
+const UNITS_BY_LEVEL = Object.fromEntries(Object.entries(CURRICULUM).map(([lv, list]) =>
+  [lv, list.map(([title, focus], i) => ({id:`${lv.toLowerCase()}u${i+1}`, level:lv, title, focus}))]));
+const levelLabel = lv => `${lv} ${LEVEL_INFO[lv]?.name || ""}`.trim();
 const BOX_DAYS = [0,0,1,3,7,14,30];
 const SKIP_MODELS = /whisper|embed|guard|tts|audio|image|vision|moderation|rerank|transcri|speech|ocr|orpheus|playai|voice|sound|music|video/i;
 /* Famiglie di modelli conosciute e adatte alla conversazione */
@@ -574,7 +590,7 @@ async function ask(system, user, opts={}, validate){
   }
   throw lastErr;
 }
-function who(){ return `Lo studente è italiano e studia ${L().name} (livello QCER ${S().level}).`; }
+function who(level=S().level){ return `Lo studente è italiano e studia ${L().name} (livello QCER ${level}, ${LEVEL_INFO[level]?.name||""}).`; }
 const JSON_ONLY = "Rispondi SOLO con un oggetto JSON valido, senza testo prima o dopo e senza blocchi di codice.";
 
 /* ============ Voce: sintesi e riconoscimento ============ */
@@ -711,8 +727,11 @@ function loadingHTML(msg){ return `<div class="loading"><span class="spinner"></
 function errorHTML(e, retryId){ return `<div class="err">${esc(e.message || e)}</div>${retryId?`<p style="margin-top:12px"><button class="btn ghost" id="${retryId}">Riprova</button></p>`:""}`; }
 /* ============ OGGI (home) ============ */
 function dueWords(){ const t = today(); return state.words.filter(w=>w.lang===S().lang && (!w.due || w.due<=t)); }
-function nextUnit(){ return UNITS.find(u=>!state.progress[unitKey(u)]?.done) || UNITS[0]; }
-function unitKey(u){ return `${S().lang}:${S().level}:${u.id}`; }
+function unitsOf(level){ return UNITS_BY_LEVEL[level] || UNITS_BY_LEVEL.A1; }
+function nextUnit(level=S().level){ const list = unitsOf(level); return list.find(u=>!state.progress[unitKey(u)]?.done) || list[0]; }
+function unitKey(u){ return `${S().lang}:${u.level || S().level}:${u.id}`; }
+function unitHash(u){ return `lezioni-${u.level}-${u.id}`; }
+function doneCount(level){ return unitsOf(level).filter(u=>state.progress[unitKey(u)]?.done).length; }
 
 RENDER.home = main => {
   const p = PERSONAS[S().persona], goal = state.dailyGoal, done = Math.min(todayXp(), goal);
@@ -735,13 +754,13 @@ RENDER.home = main => {
       <div class="stat"><b>${state.words.filter(w=>w.lang===S().lang).length}</b><span class="muted small">parole imparate</span></div>
     </div>
     <div class="grid2">
-      <button class="action" data-go="lezioni-${nu.id}"><span class="ic">${icon("book")}</span><span><h3>Continua: ${esc(nu.title)}</h3><span class="muted small">Lezione con teoria ed esercizi</span></span></button>
+      <button class="action" data-go="${unitHash(nu)}"><span class="ic">${icon("book")}</span><span><h3>Continua: ${esc(nu.title)}</h3><span class="muted small">Lezione con teoria ed esercizi</span></span></button>
       <button class="action" data-go="tutor"><span class="ic">${icon("chat")}</span><span><h3>Parla con ${esc(p.name)}</h3><span class="muted small">Conversazione a voce con correzioni</span></span></button>
       <button class="action" data-go="pronuncia"><span class="ic">${icon("wave")}</span><span><h3>Allena la pronuncia</h3><span class="muted small">Ascolta, ripeti e ricevi un punteggio</span></span></button>
       <button class="action" data-go="ripasso"><span class="ic">${icon("cards")}</span><span><h3>Ripassa ${due} parol${due===1?"a":"e"}</h3><span class="muted small">Schede con ripetizione dilazionata</span></span></button>
       <button class="action" data-go="giochi"><span class="ic">${icon("game")}</span><span><h3>Gioca</h3><span class="muted small">Coppie, sprint e ascolto lampo</span></span></button>
     </div>
-    <p class="muted small">Stai studiando ${L().name} · livello ${S().level}. Puoi cambiarli nelle Impostazioni.</p>
+    <p class="muted small">Stai studiando ${L().name} · livello ${levelLabel(S().level)}. Puoi cambiarli nelle Impostazioni o in Lezioni.</p>
   </div>`;
   $$("[data-go]", main).forEach(b=>b.onclick=()=>location.hash=b.dataset.go);
 };
@@ -757,10 +776,10 @@ RENDER.impostazioni = main => {
       <h2>Cosa studi</h2>
       <div class="grid2">
         <label class="field">Lingua da imparare<select id="s-lang">${Object.entries(LANGS).map(([k,v])=>`<option value="${k}" ${k===s.lang?"selected":""}>${v.name}</option>`).join("")}</select></label>
-        <label class="field">Il tuo livello<select id="s-level">${LEVELS.map(l=>`<option ${l===s.level?"selected":""}>${l}</option>`).join("")}</select></label>
+        <label class="field">Il tuo livello<select id="s-level">${AREAS.map(ar=>`<optgroup label="${ar.name}">${ar.levels.map(l=>`<option value="${l}" ${l===s.level?"selected":""}>${levelLabel(l)}</option>`).join("")}</optgroup>`).join("")}</select></label>
         <label class="field">Obiettivo giornaliero (XP)<select id="s-goal">${[20,50,100,150].map(g=>`<option ${g===state.dailyGoal?"selected":""}>${g}</option>`).join("")}</select></label>
       </div>
-      <p class="muted small">A1 principiante · A2 elementare · B1 intermedio · B2 intermedio avanzato · C1 avanzato</p>
+      <p class="muted small">Livelli del Quadro Comune Europeo (QCER): Base (A1, A2), Autonomo (B1, B2), Padronanza (C1, C2). Non sai qual è il tuo? Fai il <a href="#lezioni-test">test di livello</a>.</p>
     </section>
     <section class="panel stack">
       <h2>Il tuo tutor</h2>
@@ -894,18 +913,81 @@ async function testProvider(p){
 /* ============ LEZIONI ============ */
 RENDER.lezioni = main => {
   const parts = location.hash.slice(1).split("-");
-  if(parts[1]){ const u = UNITS.find(x=>x.id===parts[1]); if(u) return runLesson(main, u); }
-  const nu = nextUnit();
+  if(parts[1]==="test") return runPlacement(main);
+  const viewLv = LEVELS.includes(parts[1]) ? parts[1] : S().level;
+  if(parts[2]){ const u = unitsOf(viewLv).find(x=>x.id===parts[2]); if(u) return runLesson(main, u); }
+  const units = unitsOf(viewLv), nu = nextUnit(viewLv), info = LEVEL_INFO[viewLv];
   main.innerHTML = `
   <h1>Lezioni</h1>
-  <p class="muted">${L().name} · livello ${S().level}. Ogni lezione ha una parte di teoria e dieci esercizi scritti e vocali.</p>
+  <p class="muted">${L().name}. I livelli seguono il Quadro Comune Europeo di Riferimento (QCER): 6 livelli in 3 aree. Ogni lezione ha teoria e dieci esercizi scritti e vocali.</p>
   ${needsSetup()}
-  <div class="path" style="margin-top:18px">
-    ${UNITS.map((u,i)=>{ const pr = state.progress[unitKey(u)]; const cls = pr?.done ? "done" : u===nu ? "next" : "";
+  <div class="levels" role="tablist" aria-label="Livelli">
+    ${AREAS.map(ar=>`<div class="area"><span class="area-name">${ar.name}</span><div class="row" style="gap:8px">${ar.levels.map(lv=>`<a role="tab" aria-selected="${lv===viewLv}" class="lvl ${lv===viewLv?"on":""}" href="#lezioni-${lv}"><b>${lv}</b><span>${doneCount(lv)}/${unitsOf(lv).length}</span>${lv===S().level?`<i title="Il tuo livello">★</i>`:""}</a>`).join("")}</div></div>`).join("")}
+  </div>
+  <section class="panel stack" style="margin-top:16px">
+    <div class="row" style="justify-content:space-between;align-items:flex-start">
+      <div><h2 style="margin:0">${viewLv} · ${esc(info.name)}</h2><span class="muted small">Area ${info.area}</span></div>
+      ${viewLv===S().level ? `<span class="chip on">★ Il tuo livello</span>` : `<button class="btn ghost sm" id="setlv">Imposta come mio livello</button>`}
+    </div>
+    <p style="margin:0">${esc(info.can)}</p>
+    <p class="small muted" style="margin:0">Non sai qual è il tuo livello? <a href="#lezioni-test">Fai il test di livello</a> (18 domande, circa 5 minuti).</p>
+  </section>
+  <div class="path" style="margin-top:16px">
+    ${units.map((u,i)=>{ const pr = state.progress[unitKey(u)]; const cls = pr?.done ? "done" : u===nu ? "next" : "";
       return `<button class="unit ${cls}" data-u="${u.id}"><span class="num">${pr?.done?"✓":i+1}</span><span class="meta"><h3>${esc(u.title)}</h3><span class="muted small">${esc(u.focus)}</span></span>${pr?.done?`<span class="chip">${pr.score}%</span>`:""}</button>`; }).join("")}
   </div>`;
-  $$("[data-u]", main).forEach(b=>b.onclick=()=>location.hash="lezioni-"+b.dataset.u);
+  $$("[data-u]", main).forEach(b=>b.onclick=()=>location.hash=unitHash(units.find(u=>u.id===b.dataset.u)));
+  const sl = $("#setlv"); if(sl) sl.onclick = () => { state.settings.level = viewLv; save(); toast(`Livello impostato: ${levelLabel(viewLv)}`); route(); };
 };
+
+/* ============ TEST DI LIVELLO ============ */
+async function runPlacement(main){
+  main.innerHTML = `<button class="btn ghost sm" id="back">${icon("back")} Lezioni</button>
+    <h1 style="margin-top:18px">Test di livello</h1>
+    <p class="muted">18 domande di ${L().name.toLowerCase()}, 3 per ogni livello dall'A1 al C2, sempre più difficili. Rispondi senza aiuti: se non sai, scegli “Non lo so”. Alla fine ti dico il livello da cui conviene partire.</p>
+    ${needsSetup()}<div id="pt">${loadingHTML("Preparo le domande…")}</div>`;
+  $("#back").onclick = () => location.hash = "lezioni";
+  let qs;
+  try{
+    const r = await ask(`Sei un esaminatore esperto di certificazioni di ${L().name} secondo il QCER. ${JSON_ONLY}`,
+      `Crea un test di piazzamento per uno studente italiano: 18 domande a scelta multipla, esattamente 3 per ciascun livello A1, A2, B1, B2, C1, C2, in ordine di difficoltà crescente.
+Mescola grammatica, lessico e comprensione di frasi brevi. La consegna è in italiano, le frasi e le opzioni sono in ${L().name}. Ogni domanda ha 4 opzioni e una sola risposta giusta.
+JSON: {"questions":[{"level":"A1","question":"consegna in italiano con la frase in ${L().name}","options":["...","...","...","..."],"answer":indice_da_0}]}`,
+      {temperature:0.5, maxTokens:3500}, r=>Array.isArray(r.questions) && r.questions.length>=12);
+    qs = r.questions.filter(q => LEVELS.includes(q.level) && Array.isArray(q.options) && q.options.length>=2 && Number.isInteger(+q.answer));
+    if(qs.length < 12) throw new Error("Il test generato non è valido. Riprova.");
+    qs.sort((a,b)=>LEVELS.indexOf(a.level)-LEVELS.indexOf(b.level));
+  }catch(e){
+    if(!$("#pt")) return;
+    $("#pt").innerHTML = errorHTML(e, "retry"); $("#retry").onclick = () => runPlacement(main); return;
+  }
+  const answers = []; let i = 0;
+  const show = () => {
+    const box = $("#pt"); if(!box) return;
+    if(i >= qs.length) return result();
+    const q = qs[i];
+    box.innerHTML = `<div class="row" style="flex-wrap:nowrap;margin-bottom:14px"><div class="progress" style="flex:1"><i style="width:${i/qs.length*100}%"></i></div><span class="small muted">${i+1}/${qs.length}</span></div>
+      <section class="panel"><div class="ex-q">${esc(q.question)}</div><div class="options">${q.options.map((o,k)=>`<button class="opt" data-k="${k}">${esc(o)}</button>`).join("")}<button class="opt" data-k="-1" style="font-weight:400">Non lo so</button></div></section>`;
+    $$(".opt", box).forEach(b=>b.onclick=()=>{ answers.push(+b.dataset.k === +q.answer); i++; show(); });
+  };
+  const result = () => {
+    const per = {}; qs.forEach((q,k)=>{ (per[q.level] ||= {ok:0, n:0}); per[q.level].n++; if(answers[k]) per[q.level].ok++; });
+    let level = "A1";
+    for(const lv of LEVELS){ const p = per[lv]; if(p && p.ok/p.n >= 0.6) level = lv; else break; }
+    const info = LEVEL_INFO[level];
+    $("#pt").innerHTML = `<section class="panel stack">
+      <h2 style="margin:0">Il tuo livello stimato: ${level} · ${esc(info.name)}</h2>
+      <p style="margin:0">${esc(info.can)}</p>
+      <div class="row">${LEVELS.map(lv=>{ const p = per[lv]||{ok:0,n:0}; return `<span class="chip ${lv===level?"on":""}">${lv}: ${p.ok}/${p.n}</span>`; }).join("")}</div>
+      <p class="small muted" style="margin:0">È una stima veloce: se le lezioni ti sembrano troppo facili o troppo difficili, puoi cambiare livello quando vuoi.</p>
+      <div class="row"><button class="btn" id="use">Imposta ${level} come mio livello</button><button class="btn ghost" id="redo">Rifai il test</button></div>
+    </section>`;
+    addXP(10);
+    $("#use").onclick = () => { state.settings.level = level; save(); toast(`Livello impostato: ${levelLabel(level)}`); location.hash = "lezioni-"+level; };
+    $("#redo").onclick = () => runPlacement(main);
+  };
+  show();
+}
 
 function validLesson(l){
   return l && Array.isArray(l.vocab) && Array.isArray(l.exercises) && l.exercises.length >= 4;
@@ -925,8 +1007,9 @@ function cleanExercises(list){
 async function getLesson(u, force=false){
   const key = unitKey(u);
   if(!force && state.lessons[key]) return state.lessons[key];
-  const sys = `Sei un autore esperto di corsi di lingue. ${who()} ${JSON_ONLY}`;
-  const user = `Crea una lezione di ${L().name} sul tema "${u.title}" (${u.focus}), adatta al livello ${S().level}.
+  const lv = u.level || S().level;
+  const sys = `Sei un autore esperto di corsi di lingue secondo il QCER. ${who(lv)} ${JSON_ONLY}`;
+  const user = `Crea una lezione di ${L().name} sul tema "${u.title}" (${u.focus}), adatta al livello ${lv} (${LEVEL_INFO[lv]?.name}): ${LEVEL_INFO[lv]?.can}
 Struttura JSON:
 {"title":"titolo in italiano","intro":"2 frasi in italiano su cosa si impara",
 "vocab":[{"word":"parola o espressione in ${L().name}","translation":"in italiano","example":"breve frase d'esempio in ${L().name}"}],
@@ -950,16 +1033,16 @@ Usa: 2 choice, 2 fill, 2 translate, 1 order, 1 listen, 2 speak.`;
 
 function runLesson(main, u){
   main.innerHTML = `<button class="btn ghost sm" id="back">${icon("back")} Lezioni</button>${loadingHTML("Sto preparando la lezione…")}`;
-  $("#back").onclick = () => location.hash = "lezioni";
+  $("#back").onclick = () => location.hash = u.level ? "lezioni-"+u.level : "lezioni";
   const go = async (force) => {
     try{
       const l = await getLesson(u, force);
-      if(location.hash !== "#lezioni-"+u.id) return;
+      if(location.hash !== "#"+unitHash(u)) return;
       showTheory(main, u, l);
     }catch(e){
-      if(location.hash !== "#lezioni-"+u.id) return;
+      if(location.hash !== "#"+unitHash(u)) return;
       main.innerHTML = `<button class="btn ghost sm" id="back">${icon("back")} Lezioni</button><div style="margin-top:16px">${errorHTML(e,"retry")}</div>`;
-      $("#back").onclick = () => location.hash = "lezioni";
+      $("#back").onclick = () => location.hash = u.level ? "lezioni-"+u.level : "lezioni";
       $("#retry").onclick = () => { main.innerHTML = loadingHTML("Sto preparando la lezione…"); go(true); };
     }
   };
@@ -982,7 +1065,7 @@ function showTheory(main, u, l){
     </section>`:""}
     <div><button class="btn sun" id="start">Inizia gli esercizi (${l.exercises.length})</button></div>
   </div>`;
-  $("#back").onclick = () => location.hash = "lezioni";
+  $("#back").onclick = () => location.hash = u.level ? "lezioni-"+u.level : "lezioni";
   $("#regen").onclick = () => { delete state.lessons[unitKey(u)]; save(); runLesson(main, u); };
   $$("[data-say]", main).forEach(b=>b.onclick=()=>Voice.speak(l.vocab[b.dataset.say].word));
   $$("[data-ex]", main).forEach(b=>b.onclick=()=>Voice.speak(g.examples[b.dataset.ex].target));
@@ -1016,7 +1099,7 @@ function runExercises(main, u, l){
         <button class="btn ghost" id="list">Torna alle lezioni</button></div></div>`;
     $("#again").onclick = () => runExercises(main, u, l);
     $("#talk").onclick = () => { sessionStorage.setItem("parlami.topic", u.title); location.hash = "tutor"; };
-    $("#list").onclick = () => location.hash = "lezioni";
+    $("#list").onclick = () => location.hash = u.level ? "lezioni-"+u.level : "lezioni";
   };
   const show = () => {
     if(idx >= list.length) return finish();
