@@ -45,6 +45,7 @@ button{cursor:pointer}
 :focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .main:focus{outline:none}
 a{color:var(--primary)}
+a.btn,a.chip,a.action,a.lvl{text-decoration:none}
 .notice a{color:inherit}
 .muted{color:var(--muted)}
 .small{font-size:.88rem}
@@ -191,6 +192,52 @@ a{color:var(--primary)}
 .balloon{font-size:4.5rem;transform:scale(var(--s));transition:transform .3s;line-height:1}
 .action.kid .ic{background:var(--sun);color:var(--sun-ink)}
 
+/* Games 2 */
+.hud{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:10px 14px;position:relative}
+.hud-t{flex:1;min-width:140px}
+.hud-s b{font-family:var(--display);font-size:1.3rem}
+.hud-c{font-weight:800;color:var(--primary);min-width:70px}
+.hud-c.bump{animation:bump .35s}
+@keyframes bump{50%{transform:scale(1.35)}}
+.hud-time{flex-basis:100%;height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.hud-time i{display:block;height:100%;width:100%;background:var(--ok);transition:width .1s linear}
+.hud-time i.low{background:var(--bad)}
+.stage-area{position:relative;margin-top:12px}
+.stage-panel{position:relative;overflow:hidden}
+.floatpts{position:absolute;left:50%;top:40%;transform:translateX(-50%);font-family:var(--display);font-weight:800;font-size:1.8rem;color:var(--ok);pointer-events:none;animation:floatup .9s ease-out forwards;z-index:5}
+.floatpts.bad{color:var(--bad)}
+@keyframes floatup{0%{opacity:0;transform:translate(-50%,10px) scale(.7)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-70px) scale(1.2)}}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6}
+.confetti i{position:absolute;top:-12px;width:9px;height:14px;border-radius:2px;animation:fall 2.2s var(--d) ease-in forwards;transform:rotate(var(--r))}
+@keyframes fall{to{transform:translateY(520px) rotate(calc(var(--r) + 540deg));opacity:.2}}
+.pair.match{border-color:var(--ok);background:var(--ok-bg)}
+.pair.defn{font-weight:400;font-size:.95rem;text-align:left}
+.options.cols6{grid-template-columns:1fr 1fr}
+.kopts.cols6,.kopts.cols3{grid-template-columns:repeat(3,1fr)}
+@media (max-width:520px){.kopts.cols6{grid-template-columns:1fr 1fr}.kopts.cols3{grid-template-columns:1fr 1fr 1fr}}
+.lifebar{height:10px;max-width:260px;margin:0 auto;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.lifebar i{display:block;height:100%;background:var(--ok)}
+.gprog{display:flex;gap:8px;align-items:center;margin-top:8px}
+.stagemap{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px;margin-top:16px}
+.stage{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 6px;border-radius:20px;border:2px solid var(--line);border-bottom-width:5px;background:var(--surface);color:var(--ink)}
+.stage b{font-family:var(--display);font-size:1.6rem}
+.stage .sst i{font-style:normal;color:var(--line);font-size:1.05rem}
+.stage .sst i.on{color:var(--sun)}
+.stage.next{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
+.stage.perfect{background:var(--ok-bg);border-color:var(--ok)}
+.stage.locked{opacity:.5;cursor:not-allowed}
+.stage:not(.locked):hover{transform:translateY(-2px)}
+.bigstars{display:flex;gap:10px;font-size:3.4rem;line-height:1}
+.bigstars span{color:var(--line);transform:scale(.4);animation:starin .45s calc(var(--i)*.25s) forwards}
+.bigstars span.on{color:var(--sun)}
+@keyframes starin{to{transform:scale(1)}}
+.sticker-new{background:var(--sun);color:var(--sun-ink);border-radius:var(--r);padding:10px 16px;font-weight:800;display:flex;align-items:center;gap:10px}
+.sticker-new span{font-size:2.4rem;animation:bump .6s 2}
+.album{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:10px;margin-top:16px}
+.album .slot{aspect-ratio:1;border-radius:18px;border:2px dashed var(--line);display:grid;place-items:center;font-size:2.4rem;color:var(--muted);font-family:var(--display);font-weight:800}
+.album .slot.got{border-style:solid;border-color:var(--sun);background:var(--surface)}
+.memory.cols3{grid-template-columns:repeat(3,1fr)}
+
 /* Exercise */
 .progress{height:12px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
 .progress > i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
@@ -287,7 +334,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.7";
+const APP_VERSION = "0.8";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -1516,128 +1563,6 @@ RENDER.pronuncia = main => {
   $("#useown").onclick = () => { const v = $("#own").value.trim(); if(!v) return; Pron.list = [{text:v, it:"", tip:""}, ...Pron.list]; Pron.i = 0; drawCard(); };
   drawCard();
 };
-/* ============ GIOCHI ============ */
-async function wordPool(n){
-  let pool = state.words.filter(w=>w.lang===S().lang);
-  if(pool.length >= n) return shuffle(pool).slice(0, n);
-  const r = await ask(`Sei un insegnante di ${L().name}. ${who()} ${JSON_ONLY}`,
-    `Genera 14 parole o espressioni utili e diverse tra loro, adatte al livello ${S().level}, su temi quotidiani vari.\nJSON: {"words":[{"word":"in ${L().name}","translation":"in italiano (breve)","example":"frase breve d'esempio in ${L().name}"}]}`,
-    {temperature:0.9, maxTokens:1200}, r=>Array.isArray(r.words) && r.words.length>=6);
-  for(const v of r.words){
-    if(v.word && v.translation && !state.words.some(w=>w.lang===S().lang && bare(w.word)===bare(v.word)))
-      state.words.push({id:uid(), lang:S().lang, word:v.word, translation:v.translation, example:v.example||"", box:1, due:today()});
-  }
-  save();
-  pool = state.words.filter(w=>w.lang===S().lang);
-  return shuffle(pool).slice(0, n);
-}
-
-function gameOver(box, title, line, xp, id){
-  addXP(xp);
-  box.innerHTML = `<div class="panel stack" style="text-align:center;align-items:center">${avatarSVG(S().persona,110)}<h2>${esc(title)}</h2><p class="muted">${esc(line)}</p>
-    <div class="row"><button class="btn" id="again">Gioca ancora</button><button class="btn ghost" id="out">Altri giochi</button></div></div>`;
-  $("#again").onclick = () => { location.hash = "giochi"; setTimeout(()=>location.hash = "giochi-"+id, 0); };
-  $("#out").onclick = () => location.hash = "giochi";
-}
-const GAMES = {
-  coppie:{need:6, run(box, pool){
-    const pairs = pool.slice(0,6); const t0 = Date.now(); let sel = null, left = pairs.length, errors = 0;
-    const L1 = shuffle(pairs.map(p=>({id:p.id, t:p.word, side:"a"}))), L2 = shuffle(pairs.map(p=>({id:p.id, t:p.translation, side:"b"})));
-    box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Coppie</h2><span class="timer" id="tm">0 s</span></div>
-      <div class="pairs" style="margin-top:14px"><div class="stack" style="gap:10px">${L1.map(x=>`<button class="pair" data-id="${x.id}" data-s="a">${esc(x.t)}</button>`).join("")}</div>
-      <div class="stack" style="gap:10px">${L2.map(x=>`<button class="pair" data-id="${x.id}" data-s="b">${esc(x.t)}</button>`).join("")}</div></div>`;
-    const tick = setInterval(()=>{ const el = $("#tm"); if(!el) return clearInterval(tick); el.textContent = Math.round((Date.now()-t0)/1000)+" s"; }, 500);
-    cleanup = () => clearInterval(tick);
-    $$(".pair", box).forEach(b=>b.onclick=()=>{
-      if(b.classList.contains("gone")) return;
-      if(b.dataset.s==="a") Voice.speak(b.textContent);
-      if(!sel || sel.dataset.s===b.dataset.s){ if(sel) sel.classList.remove("sel"); sel = b; b.classList.add("sel"); return; }
-      if(sel.dataset.id===b.dataset.id){
-        sel.classList.add("gone"); b.classList.add("gone"); sel = null;
-        if(--left===0){ clearInterval(tick); const s = Math.round((Date.now()-t0)/1000); gameOver(box, "Tutte abbinate!", `${s} secondi, ${errors} errori.`, Math.max(5, 15-errors*2), "coppie"); }
-      } else {
-        errors++; [sel,b].forEach(x=>{ x.classList.add("shake"); setTimeout(()=>x.classList.remove("shake","sel"),400); }); sel = null;
-      }
-    });
-  }},
-  sprint:{need:12, run(box, pool){
-    let score = 0, wrongs = 0, end = Date.now()+60000, cur;
-    box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Sprint</h2><span class="timer" id="tm">60</span></div>
-      <div class="panel sprint-card" style="margin-top:14px"><div class="w" id="w"></div><p class="muted" style="font-size:1.3rem" id="t"></p>
-      <div class="row" style="justify-content:center;margin-top:20px"><button class="btn ghost" id="no" style="min-width:130px">✗ Falso</button><button class="btn" id="yes" style="min-width:130px">✓ Vero</button></div>
-      <p class="small muted" style="margin-top:14px">Puoi usare le frecce ← e → della tastiera</p><p class="timer" id="sc">0 punti</p></div>`;
-    const next = () => {
-      const w = pool[Math.floor(Math.random()*pool.length)], truth = Math.random() < .5;
-      const other = pool.filter(x=>x.id!==w.id); const shown = truth || !other.length ? w.translation : other[Math.floor(Math.random()*other.length)].translation;
-      cur = {truth: shown===w.translation}; $("#w").textContent = w.word; $("#t").textContent = shown;
-    };
-    const answer = v => {
-      if(!cur) return;
-      if(v===cur.truth){ score++; } else { wrongs++; box.querySelector(".sprint-card").classList.add("shake"); setTimeout(()=>box.querySelector(".sprint-card")?.classList.remove("shake"),350); }
-      $("#sc").textContent = score+" punti"; next();
-    };
-    const key = e => { if(e.key==="ArrowRight") answer(true); if(e.key==="ArrowLeft") answer(false); };
-    document.addEventListener("keydown", key);
-    $("#yes").onclick = () => answer(true); $("#no").onclick = () => answer(false);
-    const tick = setInterval(()=>{
-      const left = Math.max(0, Math.ceil((end-Date.now())/1000)); const el = $("#tm"); if(!el){ clearInterval(tick); return; }
-      el.textContent = left;
-      if(left===0){ clearInterval(tick); document.removeEventListener("keydown", key); gameOver(box, `${score} punti`, `Risposte giuste: ${score}, sbagliate: ${wrongs}.`, Math.min(25, 3+score), "sprint"); }
-    }, 250);
-    cleanup = () => { clearInterval(tick); document.removeEventListener("keydown", key); };
-    next();
-  }},
-  ascolto:{need:8, run(box, pool){
-    const rounds = pool.slice(0, Math.min(8, pool.length)); let i = 0, ok = 0;
-    const show = () => {
-      if(i >= rounds.length) return gameOver(box, `${ok} su ${rounds.length}`, "Allenare l'orecchio aiuta anche a parlare meglio.", 4+ok*2, "ascolto");
-      const w = rounds[i]; const opts = shuffle([w, ...shuffle(pool.filter(x=>x.id!==w.id)).slice(0,3)]);
-      box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Ascolto lampo</h2><span class="timer">${i+1}/${rounds.length}</span></div>
-        <div class="panel" style="margin-top:14px;text-align:center"><button class="mic" id="pl" aria-label="Riascolta" style="margin:10px auto 20px">${icon("play")}</button>
-        <div class="options">${opts.map(o=>`<button class="opt" data-id="${o.id}">${esc(o.word)}</button>`).join("")}</div><div id="fb"></div></div>`;
-      $("#pl").onclick = () => Voice.speak(w.word);
-      setTimeout(()=>Voice.speak(w.word), 250);
-      let done = false;
-      $$(".opt", box).forEach(b=>b.onclick=()=>{
-        if(done) return; done = true;
-        const good = b.dataset.id===w.id; if(good) ok++;
-        $$(".opt", box).forEach(x=>{ if(x.dataset.id===w.id) x.classList.add("right"); }); if(!good) b.classList.add("wrong");
-        $("#fb").innerHTML = `<p style="margin-top:14px"><b>${esc(w.word)}</b> = ${esc(w.translation)}</p><button class="btn" id="nx">Continua</button>`;
-        $("#nx").onclick = () => { i++; show(); }; $("#nx").focus();
-      });
-    };
-    show();
-  }},
-  dettato:{need:6, run(box, pool){
-    const rounds = pool.slice(0, 6); let i = 0, ok = 0, session = null;
-    cleanup = () => { if(session) session.stop(); };
-    const show = () => {
-      if(i >= rounds.length) return gameOver(box, `${ok} su ${rounds.length}`, "Dire le parole ad alta voce le fissa meglio nella memoria.", 4+ok*2, "dettato");
-      const w = rounds[i];
-      box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Di' la parola</h2><span class="timer">${i+1}/${rounds.length}</span></div>
-        <div class="panel sprint-card" style="margin-top:14px"><p class="muted">Come si dice in ${L().name.toLowerCase()}…</p><div class="w">${esc(w.translation)}</div>
-        <button class="mic" id="mic" style="margin:22px auto 10px" aria-label="Parla">${icon("mic")}</button><p id="heard" class="muted">Premi e pronuncia la parola</p><div id="fb"></div></div>`;
-      $("#mic").onclick = async () => {
-        if(session){ session.stop(); return; }
-        const mic = $("#mic"); mic.classList.add("on"); mic.innerHTML = icon("stop");
-        session = Voice.listen({onInterim: t => $("#heard").textContent = t || "Ti ascolto…"});
-        let r = null;
-        try{ r = await session; }catch(e){ $("#heard").textContent = e.message; }
-        session = null; if(!$("#mic")) return; mic.classList.remove("on"); mic.innerHTML = icon("mic");
-        if(!r) return;
-        const best = Math.max(...r.alts.map(a=>align(w.word, a.text).score));
-        const good = best >= 75; if(good) ok++;
-        $("#heard").textContent = `Ho capito: “${r.text}”`;
-        $("#fb").innerHTML = `<div class="feedback ${good?"good":"bad"}"><h3>${good?"Giusto!":"Era: "+esc(w.word)}</h3><button class="btn ghost sm" id="hear">${icon("play")} Ascolta</button> <button class="btn" id="nx">Continua</button></div>`;
-        $("#hear").onclick = () => Voice.speak(w.word);
-        $("#nx").onclick = () => { i++; show(); };
-        if(!good) Voice.speak(w.word);
-      };
-    };
-    show();
-  }}
-};
-
 /* ============ VOCE: più voci e ascolto lungo (per esami) ============ */
 Voice.speakAs = function(text, idx=0, rate){
   return new Promise(resolve=>{
@@ -1715,124 +1640,299 @@ async function kidsWords(){
   }
   return KIDS_WORDS.map(([emoji,it,,theme],i)=>({id:emoji, emoji, it, word:tr[i], translation:it, theme}));
 }
-function sameTheme(all, w, n){ const pool = shuffle(all.filter(x=>x.id!==w.id && x.theme===w.theme)); const rest = shuffle(all.filter(x=>x.id!==w.id && x.theme!==w.theme)); return [...pool, ...rest].slice(0, n); }
+/* ============ GIOCHI: livelli, punteggi, suoni ============ */
+const wait = ms => new Promise(r=>setTimeout(r, ms));
+const SFX = {
+  ctx:null,
+  on(){ return state.settings.sfx !== false; },
+  tone(freqs, dur=0.12, type="sine", gap=0.09, vol=0.14){
+    if(!this.on()) return;
+    try{
+      this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
+      const c = this.ctx; if(c.state === "suspended") c.resume();
+      freqs.forEach((f,i)=>{ const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f;
+        const t = c.currentTime + i*gap; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+        o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+0.02); });
+    }catch(e){}
+  },
+  ok(combo=1){ this.tone([600+combo*35, 820+combo*45]); },
+  bad(){ this.tone([230,170], 0.16, "square", 0.1, 0.06); },
+  win(){ this.tone([523,659,784,1047], 0.2, "triangle", 0.12); },
+  flip(){ this.tone([440], 0.05, "sine", 0, 0.06); }
+};
+function floatPts(box, txt, good=true){
+  const f = document.createElement("div"); f.className = "floatpts" + (good ? "" : " bad"); f.textContent = txt; f.setAttribute("aria-hidden","true");
+  box.appendChild(f); setTimeout(()=>f.remove(), 900);
+}
+function confetti(box){
+  const c = document.createElement("div"); c.className = "confetti"; c.setAttribute("aria-hidden","true");
+  const cols = ["#3446E8","#FFC53D","#12936A","#E8742E","#7A4FD6","#D93B48"];
+  c.innerHTML = Array.from({length:40}, (_,i)=>`<i style="left:${Math.random()*100}%;background:${cols[i%cols.length]};--d:${(Math.random()*0.6).toFixed(2)}s;--r:${Math.round(Math.random()*360)}deg"></i>`).join("");
+  box.appendChild(c); setTimeout(()=>c.remove(), 2400);
+}
 function cheer(box){
   const c = document.createElement("div"); c.className = "cheer"; c.setAttribute("aria-hidden","true");
   c.innerHTML = Array.from({length:7}, (_,i)=>`<span style="--d:${i}">⭐</span>`).join("");
   box.appendChild(c); setTimeout(()=>c.remove(), 1100);
 }
-function kidsOver(box, ok, total, id){
-  const stars = ok >= total ? 3 : ok >= total*0.6 ? 2 : ok > 0 ? 1 : 0;
-  addXP(3 + ok);
-  box.innerHTML = `<div class="panel stack kids-end" style="text-align:center;align-items:center">
-    <div class="kstars">${"⭐".repeat(stars)}${"☆".repeat(3-stars)}</div>
-    <h2>${stars===3?"Bravissimo!":stars===2?"Molto bene!":stars===1?"Bel lavoro!":"Riproviamo insieme!"}</h2>
-    <p class="muted">${ok} su ${total}</p>
-    <div class="row"><button class="btn sun" id="again">Gioca ancora</button><button class="btn ghost" id="out">Altri giochi</button></div></div>`;
-  $("#again").onclick = () => { location.hash = "giochi"; setTimeout(()=>location.hash = "giochi-"+id, 0); };
-  $("#out").onclick = () => location.hash = "giochi";
-}
-/* Gioco a turni con domanda e 4 risposte (motore comune a più giochi per bambini) */
-function kidsQuiz(box, rounds, {title, id, ask: drawQ, options, isRight, label, speakOn}){
-  let i = 0, ok = 0;
-  const show = () => {
-    if(i >= rounds.length) return kidsOver(box, ok, rounds.length, id);
-    const w = rounds[i], opts = options(w);
-    box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">${title}</h2><span class="timer">${i+1}/${rounds.length}</span></div>
-      <div class="panel kids" style="margin-top:14px"><div class="kq">${drawQ(w)}</div>
-      <div class="kopts">${opts.map(o=>`<button class="kopt" data-id="${esc(o.id)}">${label(o)}</button>`).join("")}</div></div>`;
-    if(speakOn) setTimeout(()=>Voice.speak(w.word), 250);
-    const rep = $("#krep", box); if(rep) rep.onclick = () => Voice.speak(w.word, {rate:0.8});
-    let done = false;
-    $$(".kopt", box).forEach(b=>b.onclick=()=>{
-      if(done) return;
-      const good = isRight(w, b.dataset.id);
-      if(good){
-        done = true; if(!w.missed) ok++; b.classList.add("right"); cheer($(".kids", box)); Voice.speak(w.word);
-        setTimeout(()=>{ i++; show(); }, 1300);
-      } else { b.classList.add("wrong","shake"); setTimeout(()=>b.classList.remove("shake"), 400); w.missed = true; }
-    });
+/* Barra in alto: punti, combo, vite, tempo, suoni */
+function makeHud(box, {title, n, lives=null, time=null, kids=false}){
+  box.innerHTML = `<div class="hud ${kids?"kids-hud":""}">
+    <span class="hud-t">${esc(title)} · <b>Livello ${n}</b></span>
+    <span class="hud-s" title="Punti">⭐ <b id="h-score">0</b></span>
+    <span class="hud-c" id="h-combo"></span>
+    ${lives!=null ? `<span id="h-lives" aria-label="Vite">${"❤️".repeat(lives)}</span>` : ""}
+    <button class="iconbtn" id="h-sfx" aria-label="Suoni sì o no" style="width:36px;height:36px">${state.settings.sfx===false?"🔇":"🔊"}</button>
+    ${time!=null ? `<div class="hud-time"><i id="h-time"></i></div>` : ""}
+  </div><div id="stage-area" class="stage-area"></div>`;
+  const maxLives = lives;
+  const h = {score:0, combo:0, best:0, lives, hits:0, misses:0, left:null, total:time, timer:null, extra:null, area:$("#stage-area", box),
+    add(base=10){
+      this.combo++; this.best = Math.max(this.best, this.combo); this.hits++;
+      const mult = Math.min(4, 1 + Math.floor(this.combo/3)), pts = base*mult; this.score += pts;
+      $("#h-score", box).textContent = this.score;
+      const c = $("#h-combo", box); c.textContent = mult > 1 ? `Combo x${mult}` : ""; c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump");
+      SFX.ok(this.combo); floatPts(this.area, `+${pts}`); return pts;
+    },
+    miss(){
+      this.combo = 0; this.misses++; $("#h-combo", box).textContent = ""; SFX.bad(); floatPts(this.area, "✗", false);
+      if(this.lives != null){ this.lives--; const el = $("#h-lives", box); if(el) el.textContent = "❤️".repeat(Math.max(0,this.lives)) + "🤍".repeat(Math.max(0, maxLives-this.lives)); }
+      return this.lives != null && this.lives <= 0;
+    },
+    startTimer(sec, onEnd){
+      const t0 = Date.now(); this.total = sec; clearInterval(this.timer);
+      this.timer = setInterval(()=>{ const el = $("#h-time", box); if(!el){ clearInterval(this.timer); return; }
+        this.left = sec - (Date.now()-t0)/1000; el.style.width = Math.max(0, this.left/sec*100) + "%"; el.classList.toggle("low", this.left < sec*0.25);
+        if(this.left <= 0){ clearInterval(this.timer); onEnd && onEnd(); } }, 100);
+    },
+    stop(){ clearInterval(this.timer); this.extra && this.extra(); }
   };
-  show();
+  $("#h-sfx", box).onclick = e => { state.settings.sfx = state.settings.sfx === false; save(); e.currentTarget.textContent = state.settings.sfx === false ? "🔇" : "🔊"; };
+  cleanup = () => h.stop();
+  return h;
+}
+/* Percentuale: quanto hai completato, quanto sei stato preciso, e un bonus per il tempo avanzato */
+function pctOf(h, total){
+  const completion = Math.min(1, h.hits/total), acc = h.hits + h.misses ? h.hits/(h.hits+h.misses) : 0;
+  const timeBonus = h.total && h.left > 0 && h.hits >= total ? Math.min(10, h.left/h.total*20) : 0;
+  return Math.min(100, Math.round(completion*75 + acc*25 + timeBonus));
 }
 
-/* ============ Motori di gioco condivisi ============ */
-function lettersGame(box, items, {kids, id, title}){
-  let i = 0, ok = 0;
-  const show = () => {
-    if(i >= items.length) return kids ? kidsOver(box, ok, items.length, id) : gameOver(box, `${ok} su ${items.length}`, "Ricomporre le parole aiuta a ricordarne l'ortografia.", 4+ok*2, id);
-    const w = items[i], target = [...w.word];
-    const letters = shuffle(target.map((ch,k)=>({ch,k}))); let picked = [];
-    const draw = () => {
-      box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">${title}</h2><span class="timer">${i+1}/${items.length}</span></div>
-        <div class="panel ${kids?"kids":""}" style="margin-top:14px;text-align:center">
-          ${kids ? `<div class="kemoji">${w.emoji}</div>` : `<p class="muted">Ricomponi la parola che vuol dire</p><div class="sprint-card" style="padding:0 0 10px"><div class="w" style="font-size:1.6rem">${esc(w.translation)}</div></div>`}
-          <div class="tokens" style="justify-content:center;min-height:58px">${picked.map((t,k)=>`<button class="tok ${kids?"big":""}" data-k="${k}">${esc(t.ch===" "?"␣":t.ch)}</button>`).join("")}</div>
-          <div class="tokens bank" style="justify-content:center">${letters.map((t,k)=>`<button class="tok ${kids?"big":""} ${picked.includes(t)?"used":""}" data-b="${k}">${esc(t.ch===" "?"␣":t.ch)}</button>`).join("")}</div>
-          <div class="row" style="justify-content:center;margin-top:10px"><button class="btn ghost sm" id="hear">${icon("play")} Ascolta</button><button class="btn ghost sm" id="skip">Salta</button></div>
-        </div>`;
-      $$("[data-k]", box).forEach(b=>b.onclick=()=>{ picked.splice(+b.dataset.k,1); draw(); });
-      $$("[data-b]", box).forEach(b=>b.onclick=()=>{ const t = letters[+b.dataset.b]; if(picked.includes(t)) return; picked.push(t);
-        if(picked.length === target.length){
-          const mine = picked.map(x=>x.ch).join("");
-          if(bare(mine) === bare(w.word)){ ok++; draw(); cheer($(".panel", box)); Voice.speak(w.word); setTimeout(()=>{ i++; show(); }, 1300); return; }
-          draw(); const z = $(".tokens", box); z.classList.add("shake"); setTimeout(()=>{ picked = []; draw(); }, 600); return;
+/* ---- Pacchetti di parole sempre nuovi ---- */
+const WB_THEMES = ["vita quotidiana","cibo e cucina","viaggi e vacanze","lavoro e ufficio","casa e arredamento","salute e corpo","natura e meteo","sport e tempo libero","emozioni e carattere","città e servizi","tecnologia e internet","negozi e denaro","scuola e studio","famiglia e relazioni","cultura, musica e cinema","ambiente e società","trasporti","vestiti e moda"];
+const STAGE_LEVEL = ["A1","A1","A2","A2","A2","B1","B1","B1","B2","B2","C1","C2"];
+async function wordPack(level, theme){
+  const key = `${S().lang}:${level}:${theme}`;
+  state.wordBank = state.wordBank || {};
+  if(state.wordBank[key]?.length >= 12) return state.wordBank[key];
+  const r = await ask(`Sei un lessicografo e insegnante di ${L().name}. ${JSON_ONLY}`,
+    `Elenca 24 parole o espressioni utili di ${L().name} sul tema "${theme}", tipiche del livello ${level} del QCER (né più facili né più difficili), tutte diverse tra loro.
+Per ognuna scrivi: la traduzione italiana più comune; una definizione semplice in ${L().name} che NON contenga la parola; una frase d'esempio naturale in ${L().name} che contenga la parola scritta esattamente uguale; la traduzione italiana della frase.
+JSON: {"words":[{"word":"...","translation":"...","def":"...","example":"...","example_it":"..."}]}`,
+    {temperature:0.85, maxTokens:4000}, r=>Array.isArray(r.words) && r.words.length>=12);
+  const seen = new Set();
+  const list = r.words.filter(w=>w && w.word && w.translation && !seen.has(bare(w.word)) && seen.add(bare(w.word)))
+    .map(w=>({id:uid(), word:String(w.word).trim(), translation:String(w.translation).trim(), def:String(w.def||"").trim(), example:String(w.example||"").trim(), example_it:String(w.example_it||"").trim(), level, theme}));
+  state.wordBank[key] = list; save();
+  return list;
+}
+function pickFresh(list, n){
+  const seen = state.seenW || (state.seenW = {}), k = w => S().lang + ":" + w.word;
+  const out = shuffle(list).sort((a,b)=>(seen[k(a)]||0)-(seen[k(b)]||0)).slice(0, n);
+  out.forEach(w=>{ seen[k(w)] = (seen[k(w)]||0) + 1; });
+  const keys = Object.keys(seen); if(keys.length > 3000) keys.slice(0, 1000).forEach(x=>delete seen[x]);
+  return out;
+}
+async function stageWords(id, n, count){
+  const p = gprog(id), plays = p.plays || 0, lvl = STAGE_LEVEL[n-1] || "B1";
+  const t1 = WB_THEMES[(n*7 + plays*5) % WB_THEMES.length];
+  let all = await wordPack(lvl, t1);
+  if(all.length < count + 6 || n >= 5){
+    const t2 = WB_THEMES[(n*7 + plays*5 + 8) % WB_THEMES.length];
+    const more = await wordPack(lvl, t2); const have = new Set(all.map(w=>bare(w.word)));
+    all = [...all, ...more.filter(w=>!have.has(bare(w.word)))];
+  }
+  return {lvl, theme:t1, words:pickFresh(all, Math.min(count, all.length)), all};
+}
+
+/* ---- Progressi: stelle per livello ---- */
+function gprog(id){
+  state.gameProg = state.gameProg || {}; const L1 = state.gameProg[S().lang] = state.gameProg[S().lang] || {};
+  return L1[id] = L1[id] || {stars:{}, best:{}, plays:0};
+}
+const starsFor = pct => pct >= 90 ? 3 : pct >= 75 ? 2 : pct >= 50 ? 1 : 0;
+const unlocked = (id, n) => n === 1 || (gprog(id).stars[n-1] || 0) >= 1;
+const totalStars = id => Object.values(gprog(id).stars).reduce((a,b)=>a+b, 0);
+const STICKERS = ["🦄","🐉","🚀","🌈","🎠","🦖","🧁","🎪","🏰","🎨","🐳","🦜","🌟","🍭","🎡","🦊","🐙","🪐","🎈","🦩","🐞","🍩","🛸","🧜","🦕","🎸","🏆","🌻","🐢","🍀","🦋","🐬","🎁","🧩","🍉","🐼","🚁","🌋","🎃","⛄"];
+function awardSticker(){
+  state.stickers = state.stickers || [];
+  const next = STICKERS.find(s=>!state.stickers.includes(s)); if(!next) return null;
+  state.stickers.push(next); return next;
+}
+
+/* ---- Motori comuni ---- */
+function kidsTheme(n){ return ["animali","cibo","colori","numeri","casa","corpo","vestiti","trasporti","natura","tutti"][n-1] || "tutti"; }
+async function kidsStage(n, {count=8, exclude=[], maxLen=99}={}){
+  const all = await kidsWords(); const th = kidsTheme(n);
+  let pool = all.filter(w => (th==="tutti" || w.theme===th) && !exclude.includes(w.theme) && [...w.word].length <= maxLen);
+  if(pool.length < Math.min(count, 4)) pool = all.filter(w=>!exclude.includes(w.theme) && [...w.word].length <= maxLen);
+  return {all, pool, words:pickFresh(pool, Math.min(count, pool.length))};
+}
+function sameTheme(all, w, n){ const a = shuffle(all.filter(x=>x.id!==w.id && x.theme===w.theme && bare(x.word)!==bare(w.word))); const b = shuffle(all.filter(x=>x.id!==w.id && x.theme!==w.theme)); return [...a, ...b].slice(0, n); }
+
+/* Quiz a scelta (motore per Che cos'è?, Ascolta e tocca, Conta!, Ascolto) */
+function choiceRounds(box, h, rounds, {question, options, isRight, label, speak, rate, kids, replays=99, onRound}){
+  return new Promise(resolve=>{
+    let i = 0;
+    const show = () => {
+      if(i >= rounds.length || (h.lives != null && h.lives <= 0)) return resolve();
+      const w = rounds[i], opts = options(w); let left = replays, tried = false, done = false;
+      h.area.innerHTML = `<div class="panel ${kids?"kids":""} stage-panel"><div class="small muted" style="text-align:right">${i+1}/${rounds.length}</div><div class="kq">${question(w)}</div>
+        <div class="${kids?"kopts":"options"} cols${Math.min(opts.length,6)}">${opts.map(o=>`<button class="${kids?"kopt":"opt"}" data-id="${esc(o.id)}">${label(o)}</button>`).join("")}</div></div>`;
+      onRound && onRound(w);
+      const say = () => speak && Voice.speak(speak(w), {rate});
+      if(speak) setTimeout(say, 250);
+      const rep = $("#krep", h.area); if(rep) rep.onclick = () => { if(left <= 0) return; left--; say(); if(left <= 0) rep.disabled = true; const c = $("#krepn", h.area); if(c) c.textContent = left; };
+      $$(kids?".kopt":".opt", h.area).forEach(b=>b.onclick=()=>{
+        if(done) return;
+        if(isRight(w, b.dataset.id)){
+          done = true; b.classList.add("right"); if(!tried) h.add(); else { SFX.ok(1); }
+          if(kids) cheer($(".stage-panel", h.area));
+          setTimeout(()=>{ i++; show(); }, kids ? 1100 : 700);
+        } else {
+          b.classList.add("wrong","shake"); setTimeout(()=>b.classList.remove("shake"), 400);
+          if(!tried){ tried = true; if(h.miss()) { done = true; setTimeout(resolve, 700); return; } }
+          if(!kids){ done = true; $$(".opt", h.area).forEach(x=>{ if(isRight(w, x.dataset.id)) x.classList.add("right"); }); setTimeout(()=>{ i++; show(); }, 1200); }
         }
-        draw(); });
-      $("#hear", box).onclick = () => Voice.speak(w.word, {rate:0.8});
-      $("#skip", box).onclick = () => { Voice.speak(w.word); i++; show(); };
+      });
     };
-    draw();
-  };
-  show();
+    show();
+  });
 }
-function hangmanGame(box, items, {kids, id, title}){
-  let i = 0, ok = 0;
-  const MAX = 6;
-  const show = () => {
-    if(i >= items.length) return kids ? kidsOver(box, ok, items.length, id) : gameOver(box, `${ok} su ${items.length}`, "Indovinare lettera per lettera allena l'ortografia.", 4+ok*3, id);
-    const w = items[i], word = w.word, letters = [...new Set([...word.toLowerCase()].filter(ch=>ch.trim() && !/[-'’.]/.test(ch)))];
-    const others = shuffle([...new Set(items.flatMap(x=>[...x.word.toLowerCase()]).filter(ch=>ch.trim() && !letters.includes(ch) && !/[-'’.]/.test(ch)))]).slice(0, Math.max(6, 14-letters.length));
-    const keys = shuffle([...letters, ...others]);
-    const guessed = new Set(); let wrong = 0, over = false;
-    const draw = () => {
-      const shown = [...word].map(ch => (!ch.trim() || /[-'’.]/.test(ch)) ? ch : guessed.has(ch.toLowerCase()) ? ch : "_");
-      const win = !shown.includes("_"), lose = wrong >= MAX;
-      const lives = kids ? `<div class="balloon" style="--s:${1 - wrong/MAX*0.7}">🎈</div><p class="small muted">Il palloncino si sgonfia a ogni errore: ne puoi fare ${MAX - wrong}.</p>`
-                         : `<p class="small muted">Errori: ${wrong} di ${MAX}</p><div class="progress" style="max-width:260px;margin:0 auto"><i style="width:${(MAX-wrong)/MAX*100}%;background:${wrong>=4?"var(--bad)":"var(--ok)"}"></i></div>`;
-      box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">${title}</h2><span class="timer">${i+1}/${items.length}</span></div>
-        <div class="panel ${kids?"kids":""}" style="margin-top:14px;text-align:center">
-          ${kids ? `<div class="kemoji">${w.emoji}</div>` : `<p class="muted">Indizio: <b>${esc(w.translation)}</b></p>`}
+/* Lettere o parole da mettere in ordine */
+function orderRounds(box, h, items, {kids, sentence, perItemTime, hint}){
+  return new Promise(resolve=>{
+    let i = 0;
+    const show = () => {
+      if(i >= items.length) return resolve();
+      const w = items[i];
+      const target = sentence ? (NOSPACE.includes(S().lang) ? tokens(w.example) : w.example.replace(/[.,!?;:…]+$/,"").split(/\s+/).filter(Boolean)) : [...w.word];
+      const tiles = shuffle(target.map((ch,k)=>({ch,k}))); let picked = [], over = false;
+      const sep = sentence && !NOSPACE.includes(S().lang) ? " " : "";
+      if(perItemTime) h.startTimer(perItemTime, () => { if(over) return; over = true; h.miss(); reveal(false); });
+      const reveal = (good) => {
+        h.area.querySelector(".tokens.ans").innerHTML = `<span class="kword" style="padding:6px">${esc(sentence ? w.example : w.word)}</span>`;
+        $(".tokens.bank", h.area).innerHTML = ""; Voice.speak(sentence ? w.example : w.word);
+        setTimeout(()=>{ i++; show(); }, good ? 900 : 1700);
+      };
+      const draw = () => {
+        h.area.innerHTML = `<div class="panel ${kids?"kids":""} stage-panel" style="text-align:center"><div class="small muted" style="text-align:right">${i+1}/${items.length}</div>
+          ${hint(w)}
+          <div class="tokens ans" style="justify-content:center;min-height:58px">${picked.map((t,k)=>`<button class="tok ${kids?"big":""}" data-k="${k}">${esc(t.ch)}</button>`).join(sep ? "" : "")}</div>
+          <div class="tokens bank" style="justify-content:center">${tiles.map((t,k)=>`<button class="tok ${kids?"big":""} ${picked.includes(t)?"used":""}" data-b="${k}">${esc(t.ch)}</button>`).join("")}</div>
+          <div class="row" style="justify-content:center;margin-top:10px">${kids?`<button class="btn ghost sm" id="hear">${icon("play")} Ascolta</button>`:""}<button class="btn ghost sm" id="skip">Salta</button></div></div>`;
+        $$("[data-k]", h.area).forEach(b=>b.onclick=()=>{ if(over) return; picked.splice(+b.dataset.k,1); draw(); });
+        $$("[data-b]", h.area).forEach(b=>b.onclick=()=>{ if(over) return; const t = tiles[+b.dataset.b]; if(picked.includes(t)) return; picked.push(t);
+          if(picked.length === target.length){
+            const mine = picked.map(x=>x.ch).join(sep), right = target.join(sep);
+            if(bare(mine) === bare(right)){ over = true; h.stop(); h.add(sentence ? 20 : 10); if(kids) cheer($(".stage-panel", h.area)); reveal(true); return; }
+            const done = h.miss(); draw(); $(".tokens.ans", h.area).classList.add("shake");
+            if(done){ over = true; h.stop(); reveal(false); return; }
+            setTimeout(()=>{ picked = []; draw(); }, 600); return;
+          }
+          draw(); });
+        const hr = $("#hear", h.area); if(hr) hr.onclick = () => Voice.speak(w.word, {rate:0.8});
+        $("#skip", h.area).onclick = () => { if(over) return; over = true; h.stop(); h.miss(); reveal(false); };
+      };
+      draw();
+    };
+    show();
+  });
+}
+/* Indovina le lettere (Impiccato e Palloncino) */
+function hangRounds(box, h, items, {kids, lives, hint}){
+  return new Promise(resolve=>{
+    let i = 0;
+    const isSym = ch => !ch.trim() || /[-'’.,!?]/.test(ch);
+    const show = () => {
+      if(i >= items.length) return resolve();
+      const w = items[i], word = w.word, letters = [...new Set([...word.toLowerCase()].filter(ch=>!isSym(ch)))];
+      const alphabet = [...new Set(items.concat(h.pool||[]).flatMap(x=>[...x.word.toLowerCase()]).filter(ch=>!isSym(ch) && !letters.includes(ch)))];
+      const keys = shuffle([...letters, ...shuffle(alphabet).slice(0, Math.max(8, 18 - letters.length))]);
+      const guessed = new Set(); let wrong = 0, over = false;
+      const draw = () => {
+        const shown = [...word].map(ch => isSym(ch) ? ch : guessed.has(ch.toLowerCase()) ? ch : "_");
+        const win = !shown.includes("_"), lose = wrong >= lives;
+        h.area.innerHTML = `<div class="panel ${kids?"kids":""} stage-panel" style="text-align:center"><div class="small muted" style="text-align:right">${i+1}/${items.length}</div>
+          ${hint(w)}
           <div class="hang">${shown.map(ch=>`<span>${esc(ch===" "?" ":ch)}</span>`).join("")}</div>
-          ${lives}
+          ${kids ? `<div class="balloon" style="--s:${1 - wrong/lives*0.75}">🎈</div><p class="small muted">Puoi sbagliare ancora ${lives - wrong} volte</p>` : `<div class="lifebar"><i style="width:${(lives-wrong)/lives*100}%"></i></div><p class="small muted">Errori possibili: ${lives - wrong}</p>`}
           <div class="keys">${keys.map(k=>`<button class="key ${guessed.has(k)?(letters.includes(k)?"hit":"miss"):""}" data-k="${esc(k)}" ${guessed.has(k)||win||lose?"disabled":""}>${esc(k)}</button>`).join("")}</div>
-          <div id="hfb" style="margin-top:12px"></div>
-        </div>`;
-      $$(".key", box).forEach(b=>b.onclick=()=>{ const k = b.dataset.k; guessed.add(k); if(!letters.includes(k)) wrong++; draw(); });
-      if((win || lose) && !over){
-        over = true; if(win){ ok++; cheer($(".panel", box)); }
-        $("#hfb", box).innerHTML = `<p><b>${win?"Indovinato!":"La parola era:"}</b> ${esc(word)} ${kids?"":`= ${esc(w.translation)}`}</p><button class="btn" id="nx">Continua</button>`;
-        Voice.speak(word); $("#nx", box).onclick = () => { i++; show(); };
-      }
+          <div id="hfb" style="margin-top:12px"></div></div>`;
+        $$(".key", h.area).forEach(b=>b.onclick=()=>{ const k = b.dataset.k; guessed.add(k); if(letters.includes(k)) SFX.flip(); else { wrong++; SFX.bad(); } draw(); });
+        if((win || lose) && !over){
+          over = true; if(win){ h.add(10 + (lives - wrong)*3); if(kids) cheer($(".stage-panel", h.area)); } else h.miss();
+          $("#hfb", h.area).innerHTML = `<p><b>${win?"Indovinato!":"La parola era:"}</b> ${esc(word)}${kids?"":` = ${esc(w.translation)}`}</p><button class="btn ${kids?"sun":""}" id="nx">Continua</button>`;
+          Voice.speak(word); $("#nx", h.area).onclick = () => { i++; show(); }; $("#nx", h.area).focus();
+        }
+      };
+      draw();
     };
-    draw();
-  };
-  show();
+    show();
+  });
 }
-async function storyGame(box, {kids, id}){
+/* Pronuncia una parola o una frase al microfono */
+function sayRounds(box, h, items, {kids, show: prompt, target, threshold, help=true}){
+  return new Promise(resolve=>{
+    let i = 0, session = null;
+    h.extra = () => { if(session) session.stop(); };
+    const next = () => {
+      if(i >= items.length) return resolve();
+      const w = items[i]; let tries = 0, done = false;
+      h.area.innerHTML = `<div class="panel ${kids?"kids":""} stage-panel" style="text-align:center"><div class="small muted" style="text-align:right">${i+1}/${items.length}</div>
+        ${prompt(w)}
+        <button class="mic" id="mic" style="margin:10px auto" aria-label="Parla">${icon("mic")}</button><p id="heard" class="muted" style="min-height:1.5em"></p>
+        <div class="row" style="justify-content:center">${help?`<button class="btn ghost sm" id="help">${icon("play")} Aiutami</button>`:""}<button class="btn ghost sm" id="skip">Salta</button></div></div>`;
+      let helped = false;
+      const hb = $("#help", h.area); if(hb) hb.onclick = () => { helped = true; Voice.speak(target(w), {rate:0.75}); };
+      $("#skip", h.area).onclick = () => { if(done) return; done = true; h.miss(); Voice.speak(target(w)); setTimeout(()=>{ i++; next(); }, 1500); };
+      $("#mic", h.area).onclick = async () => {
+        if(done) return;
+        if(session){ session.stop(); return; }
+        const mic = $("#mic", h.area); mic.classList.add("on"); mic.innerHTML = icon("stop");
+        session = Voice.listen({onInterim: t => { const el = $("#heard", h.area); if(el) el.textContent = t; }});
+        let r = null; try{ r = await session; }catch(e){ const el = $("#heard", h.area); if(el) el.textContent = e.message; }
+        session = null; if(!$("#mic", h.area)) return; mic.classList.remove("on"); mic.innerHTML = icon("mic");
+        if(!r) return;
+        const best = r.alts.map(a=>({a, x:align(target(w), a.text)})).sort((p,q)=>q.x.score-p.x.score)[0]; tries++;
+        if(best.x.score >= threshold){
+          done = true; h.add(helped ? 5 : 10 + Math.round(best.x.score/10)); if(kids) cheer($(".stage-panel", h.area));
+          $("#heard", h.area).innerHTML = `${wordsHTML(best.x.words)} <b class="status-ok">${best.x.score}%</b>`;
+          setTimeout(()=>{ i++; next(); }, 1400);
+        } else {
+          $("#heard", h.area).innerHTML = `${wordsHTML(best.x.words)} <span class="small">(${best.x.score}%) riprova</span>`;
+          if(tries >= 3){ done = true; h.miss(); Voice.speak(target(w)); setTimeout(()=>{ i++; next(); }, 1800); }
+        }
+      };
+    };
+    next();
+  });
+}
+async function storyGame(box, {kids, level}){
   const steps = kids ? 5 : 6; let step = 0, history = [];
-  const lv = kids ? "A1" : S().level;
+  const lv = kids ? "A1" : level;
   const sys = kids
     ? `Racconti storie interattive per bambini di 5-9 anni che imparano il ${L().name.toLowerCase()}. Storie allegre, gentili e adatte ai bambini, con frasi brevissime e parole facili, livello A1, con molte emoji. ${JSON_ONLY}`
-    : `Racconti storie interattive in ${L().name} per un adulto italiano che studia la lingua (livello ${lv}). Trame avvincenti e adatte a tutti. ${JSON_ONLY}`;
+    : `Racconti storie interattive in ${L().name} per un adulto italiano che studia la lingua (livello ${lv} del QCER). Trame avvincenti, con colpi di scena, adatte a tutti. ${JSON_ONLY}`;
+  const genre = shuffle(["mistero","avventura","fantascienza","commedia","viaggio","fantasy","giallo leggero","vita in città"])[0];
   const turn = async (choice) => {
     box.innerHTML = loadingHTML(step ? "La storia continua…" : "Sto inventando una storia…");
-    const user = `${step===0 ? "Inizia una storia nuova con un protagonista e un luogo." : `Storia finora: ${JSON.stringify(history.slice(-6))}\nLa scelta del lettore: "${choice}". Continua.`}
-${step >= steps-1 ? "Questa è l'ultima parte: chiudi la storia con un finale felice e soddisfacente, senza scelte." : "Termina con 3 scelte su cosa fare dopo."}
+    const user = `${step===0 ? `Inizia una storia nuova${kids?"":` di genere ${genre}`} con un protagonista e un luogo.` : `Storia finora: ${JSON.stringify(history.slice(-6))}\nLa scelta del lettore: "${choice}". Continua.`}
+${step >= steps-1 ? "Questa è l'ultima parte: chiudi la storia con un finale soddisfacente, senza scelte." : "Termina con 3 scelte diverse su cosa fare dopo."}
 Scrivi ${kids?"2-3 frasi brevissime":"4-6 frasi"} in ${L().name}.
-JSON: {"text":"parte della storia in ${L().name}","it":"traduzione italiana","choices":[${kids?'{"emoji":"🔑","text":"scelta brevissima in '+L().name+'","it":"traduzione"}':'{"text":"scelta in '+L().name+'","it":"traduzione"}'}]}`;
+JSON: {"text":"parte della storia in ${L().name}","it":"traduzione italiana","choices":[${kids?'{"emoji":"🔑","text":"scelta brevissima","it":"traduzione"}':'{"text":"scelta","it":"traduzione"}'}]}`;
     let r;
-    try{ r = await ask(sys, user, {temperature:0.9, maxTokens:900}, r=>typeof r.text==="string"); }
+    try{ r = await ask(sys, user, {temperature:0.95, maxTokens:900}, r=>typeof r.text==="string"); }
     catch(e){ box.innerHTML = errorHTML(e, "retry"); $("#retry", box).onclick = () => turn(choice); return; }
     history.push(r.text); step++;
     const end = step >= steps || !Array.isArray(r.choices) || !r.choices.length;
@@ -1846,189 +1946,324 @@ JSON: {"text":"parte della storia in ${L().name}","it":"traduzione italiana","ch
       </div>`;
     $("#read", box).onclick = () => Voice.speak(r.text, {rate: kids ? 0.8 : undefined});
     Voice.speak(r.text, {rate: kids ? 0.8 : undefined});
-    if(end){ addXP(kids ? 8 : 10); $("#again", box).onclick = () => { step = 0; history = []; turn(); }; $("#out", box).onclick = () => location.hash = "giochi"; }
+    if(end){ addXP(kids ? 8 : 10); SFX.win(); confetti(box); $("#again", box).onclick = () => { step = 0; history = []; turn(); }; $("#out", box).onclick = () => location.hash = "giochi"; }
     else $$("[data-c]", box).forEach(b=>b.onclick=()=>turn(r.choices[+b.dataset.c].text));
   };
   turn();
 }
+const blankOut = (sentence, word) => { const i = sentence.toLowerCase().indexOf(word.toLowerCase()); return i < 0 ? null : sentence.slice(0,i) + "_____" + sentence.slice(i+word.length); };
 
-/* ============ NUOVI GIOCHI ============ */
-Object.assign(GAMES, {
-  // --- per adulti ---
-  impiccato:{need:8, run(box, pool){ hangmanGame(box, pool.filter(w=>[...w.word].length<=16).slice(0,6), {id:"impiccato", title:"Impiccato"}); }},
-  anagramma:{need:8, run(box, pool){ lettersGame(box, pool.filter(w=>[...w.word].length<=12).slice(0,6), {id:"anagramma", title:"Anagramma"}); }},
-  chisono:{need:0, async run(box){
-    let r;
-    try{ r = await ask(`Sei un autore di indovinelli in ${L().name} per studenti. ${who()} ${JSON_ONLY}`,
-      `Crea 5 indovinelli "Chi sono? / Cosa sono?" adatti al livello ${S().level}. Ognuno ha 3 indizi in ${L().name}, dal più difficile al più facile, e la soluzione è una sola parola o espressione comune.\nJSON: {"riddles":[{"clues":["indizio difficile","indizio medio","indizio facile"],"answer":"soluzione in ${L().name}","alt":["altre forme accettabili"],"it":"soluzione in italiano"}]}`,
-      {temperature:0.9, maxTokens:1200}, r=>Array.isArray(r.riddles) && r.riddles.length>=3); }
-    catch(e){ box.innerHTML = errorHTML(e); return; }
-    const list = r.riddles.filter(x=>x.answer && Array.isArray(x.clues)); let i = 0, pts = 0;
-    const show = () => {
-      if(i >= list.length) return gameOver(box, `${pts} punti`, "3 punti se indovini al primo indizio, 2 al secondo, 1 al terzo.", 4+pts, "chisono");
-      const q = list[i]; let shown = 1, done = false;
-      const draw = (msg="") => {
-        box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Chi sono?</h2><span class="timer">${i+1}/${list.length} · ${pts} punti</span></div>
-          <div class="panel stack" style="margin-top:14px">
-            ${q.clues.slice(0, shown).map((c,k)=>`<div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="chip">${k+1}</span><span style="font-size:1.15rem">${esc(c)}</span></div>`).join("")}
-            ${done ? `<div class="feedback ${msg==="ok"?"good":"bad"}"><h3>${msg==="ok"?"Giusto!":"La soluzione era:"} ${esc(q.answer)}</h3><p>${esc(q.it||"")}</p><button class="btn" id="nx">Continua</button></div>`
-              : `<div class="row"><input class="input" id="ans" style="flex:1;min-width:180px" placeholder="La tua risposta in ${L().name.toLowerCase()}" autocomplete="off"><button class="btn" id="go">Rispondi</button></div>
-                 <div class="row">${shown<q.clues.length?`<button class="btn ghost sm" id="more">Un altro indizio</button>`:""}<button class="btn ghost sm" id="give">Mi arrendo</button></div>${msg==="no"?`<p class="status-bad" style="margin:0">Non è questa, riprova.</p>`:""}`}
-          </div>`;
-        if(done){ $("#nx", box).onclick = () => { i++; show(); }; Voice.speak(q.answer); return; }
-        const go = () => {
-          const v = $("#ans", box).value.trim(); if(!v) return;
-          const good = [q.answer, ...(q.alt||[])].some(a => bare(a) === bare(v) || bare(a).replace(/^(the|a|an|el|la|le|il|lo|der|die|das|un|une|uno|una) /,"") === bare(v));
-          if(good){ pts += 4 - shown; done = true; draw("ok"); } else draw("no");
-        };
-        $("#go", box).onclick = go; $("#ans", box).onkeydown = e => { if(e.key==="Enter") go(); }; $("#ans", box).focus();
-        const m = $("#more", box); if(m) m.onclick = () => { shown++; draw(); };
-        $("#give", box).onclick = () => { done = true; draw("give"); };
+/* ============ I GIOCHI ============ */
+const GAMES = {
+  // ---------------- per adulti ----------------
+  coppie:{name:"Coppie", icon:"cards", desc:"Abbina parole e traduzioni, poi definizioni, sempre più in fretta", stages:12,
+    cfg(n){ const pairs = [4,5,5,6,6,6,7,7,8,8,8,8][n-1]; return {pairs, boards:2, mode: n<=4 ? "tr" : n<=8 ? (n%2 ? "def" : "tr") : "def", time: n<3 ? null : Math.round(pairs*2*(9.5 - n*0.42))}; },
+    async load(n){ const c = this.cfg(n); return {...await stageWords("coppie", n, c.pairs*c.boards), c}; },
+    play(box, n, d){ return new Promise(resolve=>{
+      const c = d.c, h = makeHud(box, {title:"Coppie", n, time:c.time}), total = c.pairs*c.boards; let board = 0, ended = false;
+      const finish = () => { if(ended) return; ended = true; h.stop(); resolve({pct:pctOf(h,total), score:h.score, line:`${h.hits} coppie su ${total}, ${h.misses} errori${h.best>=3?`, combo massima ${h.best}`:""}.`}); };
+      if(c.time) h.startTimer(c.time, finish);
+      const draw = () => {
+        const ws = d.words.slice(board*c.pairs, board*c.pairs + c.pairs).filter(w => c.mode==="tr" || w.def);
+        if(!ws.length) return finish();
+        let left = ws.length, sel = null;
+        const A = shuffle(ws), B = shuffle(ws);
+        h.area.innerHTML = `<p class="small muted" style="margin:6px 0">${c.mode==="def" ? `Abbina ogni parola alla sua <b>definizione in ${L().name.toLowerCase()}</b>` : "Abbina ogni parola alla sua traduzione"} · tabellone ${board+1} di ${c.boards}</p>
+          <div class="pairs"><div class="stack" style="gap:10px">${A.map(w=>`<button class="pair" data-id="${w.id}" data-s="a">${esc(w.word)}</button>`).join("")}</div>
+          <div class="stack" style="gap:10px">${B.map(w=>`<button class="pair ${c.mode==="def"?"defn":""}" data-id="${w.id}" data-s="b">${esc(c.mode==="def" ? w.def : w.translation)}</button>`).join("")}</div></div>`;
+        $$(".pair", h.area).forEach(b=>b.onclick=()=>{
+          if(ended || b.classList.contains("gone")) return;
+          if(b.dataset.s==="a") Voice.speak(b.textContent);
+          if(!sel || sel.dataset.s===b.dataset.s){ if(sel) sel.classList.remove("sel"); sel = b; b.classList.add("sel"); return; }
+          if(sel.dataset.id===b.dataset.id){ [sel,b].forEach(x=>{ x.classList.remove("sel"); x.classList.add("match"); setTimeout(()=>x.classList.add("gone"), 250); }); sel = null; h.add();
+            if(--left===0){ board++; if(board >= c.boards) finish(); else setTimeout(draw, 400); } }
+          else { const w = ws.find(x=>x.id===sel.dataset.id); h.miss(); if(w) recordMistake(w.word, w.translation, "Coppie"); [sel,b].forEach(x=>{ x.classList.add("shake"); setTimeout(()=>x.classList.remove("shake","sel"),400); }); sel = null; }
+        });
       };
       draw();
-    };
-    show();
-  }},
-  completa:{need:0, async run(box){
-    let r;
-    try{ r = await ask(`Sei un insegnante di ${L().name}. ${who()} ${JSON_ONLY}`,
-      `Crea 15 frasi brevi in ${L().name} di livello ${S().level}, ognuna con UNA parola mancante sostituita da ___ e una sola risposta possibile.\nJSON: {"items":[{"sentence":"frase con ___","answer":"parola","it":"traduzione italiana della frase completa"}]}`,
-      {temperature:0.8, maxTokens:1500}, r=>Array.isArray(r.items) && r.items.length>=8); }
-    catch(e){ box.innerHTML = errorHTML(e); return; }
-    const items = r.items.filter(x=>x.sentence?.includes("___") && x.answer); let i = 0, score = 0, end = Date.now() + 90000;
-    box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Completa al volo</h2><span class="timer" id="tm">90</span></div>
-      <div class="panel sprint-card" style="margin-top:14px"><p class="muted" id="hint"></p><div class="w" id="sent" style="font-size:1.5rem;line-height:1.3"></div>
-      <div class="row" style="justify-content:center;margin-top:18px"><input class="input" id="ans" style="max-width:260px" autocomplete="off" placeholder="Parola mancante"><button class="btn" id="go">Invio</button></div>
-      <p class="small muted" id="last" style="margin-top:12px"></p><p class="timer" id="sc">0 punti</p></div>`;
-    const draw = () => { const q = items[i % items.length]; $("#sent").textContent = q.sentence; $("#hint").textContent = q.it || ""; $("#ans").value = ""; $("#ans").focus(); };
-    const go = () => {
-      const q = items[i % items.length], v = $("#ans").value.trim(); if(!v) return;
-      if(bare(v) === bare(q.answer)){ score++; $("#last").innerHTML = `<span class="status-ok">✓ ${esc(q.answer)}</span>`; }
-      else { $("#last").innerHTML = `<span class="status-bad">✗ era “${esc(q.answer)}”</span>`; recordMistake(q.sentence.replace("___", v), q.sentence.replace("___", q.answer), ""); }
-      $("#sc").textContent = score + " punti"; i++; draw();
-    };
-    $("#go").onclick = go; $("#ans").onkeydown = e => { if(e.key==="Enter") go(); };
-    const tick = setInterval(()=>{ const el = $("#tm"); if(!el){ clearInterval(tick); return; } const left = Math.max(0, Math.ceil((end-Date.now())/1000)); el.textContent = left;
-      if(left===0){ clearInterval(tick); gameOver(box, `${score} punti`, `Hai completato ${score} frasi in 90 secondi.`, Math.min(25, 3+score*2), "completa"); } }, 250);
-    cleanup = () => clearInterval(tick);
-    draw();
-  }},
-  storia:{need:0, run(box){ storyGame(box, {kids:false, id:"storia"}); }},
-
-  // --- per bambini ---
-  kfoto:{kids:true, need:8, run(box, pool, all){ kidsQuiz(box, pool, {title:"Che cos'è?", id:"kfoto",
-    ask: w => `<div class="kemoji">${w.emoji}</div>`, options: w => shuffle([w, ...sameTheme(all, w, 3)]),
-    isRight: (w, id) => id === w.id, label: o => `<span class="kword">${esc(o.word)}</span>`}); }},
-  kascolta:{kids:true, need:8, run(box, pool, all){ kidsQuiz(box, pool, {title:"Ascolta e tocca", id:"kascolta", speakOn:true,
-    ask: () => `<button class="mic" id="krep" style="margin:6px auto" aria-label="Ascolta di nuovo">${icon("play")}</button><p class="muted">Tocca l'immagine giusta</p>`,
-    options: w => shuffle([w, ...sameTheme(all, w, 3)]), isRight: (w, id) => id === w.id, label: o => `<span class="kemoji sm">${o.emoji}</span>`}); }},
-  kconta:{kids:true, need:0, run(box, pool, all){
-    const nums = all.filter(w=>w.theme==="numeri"), things = all.filter(w=>["animali","cibo"].includes(w.theme));
-    const rounds = shuffle(nums).slice(0,6).map(n => ({...n, thing: things[Math.floor(Math.random()*things.length)], n: nums.indexOf(n)+1}));
-    kidsQuiz(box, rounds, {title:"Conta!", id:"kconta",
-      ask: w => `<div class="kcount">${Array.from({length:w.n}, ()=>w.thing.emoji).join(" ")}</div><p class="muted">Quanti sono?</p>`,
-      options: w => shuffle([w, ...shuffle(nums.filter(x=>x.id!==w.id)).slice(0,3)]), isRight: (w, id) => id === w.id,
-      label: o => `<span class="kword">${esc(o.word)}</span>`});
-  }},
-  kmemory:{kids:true, need:6, run(box, pool){
-    const cards = shuffle(pool.flatMap(w => [{w, face:"emoji"}, {w, face:"word"}])); let open = [], found = 0, moves = 0, lock = false;
-    box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Memory</h2><span class="timer" id="mv">0 mosse</span></div>
-      <div class="memory" style="margin-top:14px">${cards.map((c,k)=>`<button class="mcard" data-k="${k}" aria-label="Carta coperta"><span class="back">?</span><span class="front">${c.face==="emoji"?`<span class="kemoji sm">${c.w.emoji}</span>`:`<span class="kword">${esc(c.w.word)}</span>`}</span></button>`).join("")}</div>`;
-    $$(".mcard", box).forEach(b=>b.onclick=()=>{
-      if(lock || b.classList.contains("up")) return;
-      const c = cards[+b.dataset.k]; b.classList.add("up"); if(c.face==="word") Voice.speak(c.w.word);
-      open.push(b);
-      if(open.length === 2){
-        moves++; $("#mv").textContent = moves + " mosse";
-        const [a, z] = open.map(x=>cards[+x.dataset.k]);
-        if(a.w.id === z.w.id){ open.forEach(x=>x.classList.add("done")); open = []; found++; Voice.speak(a.w.word); cheer($(".memory", box));
-          if(found === pool.length) setTimeout(()=>kidsOver(box, moves <= pool.length+3 ? pool.length : moves <= pool.length*2 ? Math.ceil(pool.length*0.7) : 1, pool.length, "kmemory"), 900); }
-        else { lock = true; setTimeout(()=>{ open.forEach(x=>x.classList.remove("up")); open = []; lock = false; }, 900); }
-      }
-    });
-  }},
-  klettere:{kids:true, need:0, run(box, pool, all){ lettersGame(box, shuffle(all.filter(w=>!["colori","numeri"].includes(w.theme) && [...w.word].length<=7 && !w.word.includes(" "))).slice(0,5), {kids:true, id:"klettere", title:"Lettere in ordine"}); }},
-  kpalloncino:{kids:true, need:0, run(box, pool, all){ hangmanGame(box, shuffle(all.filter(w=>[...w.word].length<=8 && w.theme!=="numeri")).slice(0,5), {kids:true, id:"kpalloncino", title:"Il palloncino"}); }},
-  kdillo:{kids:true, need:6, run(box, pool){
-    let i = 0, ok = 0, session = null;
-    cleanup = () => { if(session) session.stop(); };
-    const show = () => {
-      if(i >= pool.length) return kidsOver(box, ok, pool.length, "kdillo");
-      const w = pool[i]; let tries = 0;
-      box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Dillo tu!</h2><span class="timer">${i+1}/${pool.length}</span></div>
-        <div class="panel kids" style="margin-top:14px;text-align:center"><div class="kemoji">${w.emoji}</div><p class="muted">Come si dice? Tocca il microfono e dillo!</p>
-        <button class="mic" id="mic" style="margin:6px auto" aria-label="Parla">${icon("mic")}</button><p id="heard" class="muted"></p>
-        <div class="row" style="justify-content:center"><button class="btn ghost sm" id="help">${icon("play")} Aiutami</button><button class="btn ghost sm" id="skip">Avanti</button></div></div>`;
-      $("#help").onclick = () => Voice.speak(w.word, {rate:0.75});
-      $("#skip").onclick = () => { i++; show(); };
-      $("#mic").onclick = async () => {
-        if(session){ session.stop(); return; }
-        const mic = $("#mic"); mic.classList.add("on"); mic.innerHTML = icon("stop");
-        session = Voice.listen({onInterim: t => $("#heard").textContent = t});
-        let r = null; try{ r = await session; }catch(e){ $("#heard").textContent = e.message; }
-        session = null; if(!$("#mic")) return; mic.classList.remove("on"); mic.innerHTML = icon("mic");
-        if(!r) return;
-        const best = Math.max(...r.alts.map(a=>align(w.word, a.text).score)); tries++;
-        if(best >= 70){ ok++; $("#heard").innerHTML = `<b class="status-ok">Bravissimo! “${esc(w.word)}”</b>`; cheer($(".kids", box)); setTimeout(()=>{ i++; show(); }, 1400); }
-        else { $("#heard").innerHTML = `Ho sentito “${esc(r.text)}”. Ascolta e riprova!`; Voice.speak(w.word, {rate:0.75}); if(tries >= 3) setTimeout(()=>{ i++; show(); }, 2000); }
+    }); }},
+  sprint:{name:"Sprint", icon:"fire", desc:"Vero o falso a raffica, con combo e trabocchetti sempre più furbi", stages:12,
+    cfg(n){ return {time:45, target:[8,9,10,11,12,13,14,15,16,17,18,20][n-1], mode: n<=4 ? "tr" : n<=8 ? "mix" : "def", tricky: n>=3}; },
+    async load(n){ return {...await stageWords("sprint", n, 40), c:this.cfg(n)}; },
+    play(box, n, d){ return new Promise(resolve=>{
+      const c = d.c, h = makeHud(box, {title:"Sprint", n, time:c.time}); let cur, ended = false;
+      const pool = d.words.length >= 6 ? d.words : d.all;
+      h.area.innerHTML = `<div class="panel sprint-card stage-panel"><p class="small muted" id="kind"></p><div class="w" id="w"></div><p style="font-size:1.25rem;font-weight:700" id="t"></p>
+        <div class="row" style="justify-content:center;margin-top:18px"><button class="btn ghost" id="no" style="min-width:130px">✗ Falso</button><button class="btn" id="yes" style="min-width:130px">✓ Vero</button></div>
+        <p class="small muted" style="margin-top:12px">Obiettivo: ${c.target} risposte giuste · frecce ← → della tastiera</p></div>`;
+      const next = () => {
+        const w = pool[Math.floor(Math.random()*pool.length)], useDef = (c.mode==="def" || (c.mode==="mix" && Math.random()<0.5)) && w.def;
+        const truth = Math.random() < 0.5;
+        const others = pool.filter(x=>x.id!==w.id && (!useDef || x.def)); const sameT = others.filter(x=>x.theme===w.theme);
+        const o = (c.tricky && sameT.length ? sameT : others)[Math.floor(Math.random()*(c.tricky && sameT.length ? sameT : others).length)];
+        const shown = truth || !o ? (useDef ? w.def : w.translation) : (useDef ? o.def : o.translation);
+        cur = {truth: shown === (useDef ? w.def : w.translation), w};
+        $("#kind").textContent = useDef ? `La definizione in ${L().name.toLowerCase()} è giusta?` : "La traduzione è giusta?";
+        $("#w").textContent = w.word; $("#t").textContent = shown;
       };
-    };
-    show();
-  }},
-  kstoria:{kids:true, need:0, run(box){ storyGame(box, {kids:true, id:"kstoria"}); }}
-});
-const GAME_LIST = {
-  adulti:[
-    ["coppie","cards","Coppie","Abbina ogni parola alla sua traduzione, più veloce che puoi",false],
-    ["sprint","fire","Sprint da 60 secondi","Vero o falso: la traduzione è giusta?",false],
-    ["ascolto","play","Ascolto lampo","Senti una parola e scegli quella giusta",false],
-    ["dettato","mic","Di' la parola","Vedi la traduzione e pronunciala",false],
-    ["impiccato","star","Impiccato","Indovina la parola lettera per lettera",false],
-    ["anagramma","cards","Anagramma","Rimetti in ordine le lettere della parola",false],
-    ["completa","book","Completa al volo","90 secondi per completare più frasi possibile",true],
-    ["chisono","chat","Chi sono?","Indovinelli con tre indizi sempre più facili",true],
-    ["storia","book","Storia a bivi","Una storia in cui scegli tu cosa succede",true]
-  ],
-  bambini:[
-    ["kfoto","🖼️","Che cos'è?","Guarda l'immagine e scegli la parola giusta",false],
-    ["kascolta","👂","Ascolta e tocca","Senti la parola e tocca l'immagine giusta",false],
-    ["kmemory","🃏","Memory","Gira le carte e trova le coppie immagine e parola",false],
-    ["kconta","🔢","Conta!","Conta gli oggetti e scegli il numero",false],
-    ["klettere","🔤","Lettere in ordine","Metti in fila le lettere per scrivere la parola",false],
-    ["kpalloncino","🎈","Il palloncino","Indovina le lettere prima che il palloncino si sgonfi",false],
-    ["kdillo","🎤","Dillo tu!","Guarda l'immagine e di' la parola al microfono",false],
-    ["kstoria","🪄","Storia magica","Una fiaba in cui scegli tu cosa fare",true]
-  ]
+      const answer = v => { if(!cur || ended) return; if(v === cur.truth) h.add(); else { h.miss(); recordMistake(cur.w.word, cur.w.translation, "Sprint"); } next(); };
+      const key = e => { if(e.key==="ArrowRight") answer(true); if(e.key==="ArrowLeft") answer(false); };
+      document.addEventListener("keydown", key); h.extra = () => document.removeEventListener("keydown", key);
+      $("#yes").onclick = () => answer(true); $("#no").onclick = () => answer(false);
+      h.startTimer(c.time, () => { ended = true; h.stop(); const acc = h.hits+h.misses ? h.hits/(h.hits+h.misses) : 0;
+        resolve({pct: Math.min(100, Math.round(Math.min(1, h.hits/c.target)*85 + acc*15)), score:h.score, line:`${h.hits} giuste e ${h.misses} sbagliate in ${c.time} secondi (obiettivo ${c.target}).`}); });
+      next();
+    }); }},
+  ascolto:{name:"Ascolto lampo", icon:"play", desc:"Dalle parole lente alle frasi veloci: capisci al volo?", stages:12,
+    cfg(n){ return {rounds:8, opts:[3,3,4,4,4,4,6,6,6,6,6,6][n-1], kind: n<=4 ? "word" : n<=8 ? "sentence" : "meaning", rate:[0.8,0.85,0.9,0.95,0.85,0.9,0.95,1,0.95,1,1.05,1.15][n-1], replays: n<6 ? 2 : 1, lives:3}; },
+    async load(n){ return {...await stageWords("ascolto", n, 30), c:this.cfg(n)}; },
+    async play(box, n, d){
+      const c = d.c, h = makeHud(box, {title:"Ascolto lampo", n, lives:c.lives});
+      const pool = (c.kind==="word" ? d.words : d.words.filter(w=>w.example && w.example_it));
+      const rounds = pool.slice(0, c.rounds), lab = c.kind==="word" ? (o=>esc(o.word)) : c.kind==="sentence" ? (o=>esc(o.example)) : (o=>esc(o.example_it));
+      await choiceRounds(box, h, rounds, {
+        question: () => `<button class="mic" id="krep" style="margin:6px auto" aria-label="Riascolta">${icon("play")}</button><p class="small muted">Ascolti rimasti: <b id="krepn">${c.replays}</b> · ${c.kind==="meaning" ? "che cosa vuol dire?" : c.kind==="sentence" ? "quale frase hai sentito?" : "quale parola hai sentito?"}</p>`,
+        options: w => shuffle([w, ...shuffle(pool.filter(x=>x.id!==w.id)).slice(0, c.opts-1)]), isRight: (w,id) => id===w.id, label: lab,
+        speak: w => c.kind==="word" ? w.word : w.example, rate:c.rate, replays:c.replays });
+      h.stop();
+      return {pct: Math.round(h.hits/rounds.length*100), score:h.score, line:`${h.hits} su ${rounds.length}${h.lives<=0?" (vite finite)":""}.`};
+    }},
+  dettato:{name:"Di' la parola", icon:"mic", desc:"Vedi l'italiano e dillo tu: prima parole, poi frasi intere", stages:12,
+    cfg(n){ return {rounds:6, kind: n<=4 ? "word" : "sentence", threshold: n<=4 ? 75 : n<=8 ? 60 : 70, help: n<=8}; },
+    async load(n){ return {...await stageWords("dettato", n, 20), c:this.cfg(n)}; },
+    async play(box, n, d){
+      const c = d.c, h = makeHud(box, {title:"Di' la parola", n});
+      const items = (c.kind==="word" ? d.words : d.words.filter(w=>w.example && w.example_it)).slice(0, c.rounds);
+      await sayRounds(box, h, items, { threshold:c.threshold, help:c.help, target: w => c.kind==="word" ? w.word : w.example,
+        show: w => `<p class="muted">Come si dice in ${L().name.toLowerCase()}?</p><div class="bigsent" style="margin:6px 0">${esc(c.kind==="word" ? w.translation : w.example_it)}</div>` });
+      h.stop(); return {pct: Math.round(h.hits/items.length*100), score:h.score, line:`${h.hits} su ${items.length} pronunciate bene.`};
+    }},
+  impiccato:{name:"Impiccato", icon:"star", desc:"Indovina la parola: indizi sempre più difficili, meno errori concessi", stages:12,
+    cfg(n){ return {rounds:4, lives:[8,8,7,7,7,6,6,6,5,5,5,4][n-1], hint: n<=6 ? "tr" : n<=10 ? "def" : "ex"}; },
+    async load(n){ return {...await stageWords("impiccato", n, 12), c:this.cfg(n)}; },
+    async play(box, n, d){
+      const c = d.c, h = makeHud(box, {title:"Impiccato", n}); h.pool = d.all;
+      const items = d.words.filter(w=>[...w.word].length <= 18 && (c.hint!=="def" || w.def) && (c.hint!=="ex" || blankOut(w.example, w.word))).slice(0, c.rounds);
+      await hangRounds(box, h, items, {lives:c.lives, hint: w => `<p class="muted">${c.hint==="tr" ? `Traduzione: <b>${esc(w.translation)}</b>` : c.hint==="def" ? `Definizione: <b>${esc(w.def)}</b>` : `Completa: <b>${esc(blankOut(w.example, w.word))}</b>`}</p>`});
+      h.stop(); return {pct: Math.round(h.hits/items.length*100), score:h.score, line:`${h.hits} parole su ${items.length}.`};
+    }},
+  anagramma:{name:"Anagramma", icon:"cards", desc:"Rimetti in ordine lettere e poi parole di frasi intere, contro il tempo", stages:12,
+    cfg(n){ return {rounds:6, kind: n<=9 ? "word" : "sentence", maxLen: n<=3 ? 6 : 99, time: n<7 ? null : n<=9 ? 30 : 45}; },
+    async load(n){ return {...await stageWords("anagramma", n, 20), c:this.cfg(n)}; },
+    async play(box, n, d){
+      const c = d.c, h = makeHud(box, {title:"Anagramma", n, time:c.time});
+      const items = (c.kind==="word" ? d.words.filter(w=>[...w.word].length <= Math.min(c.maxLen, 14) && [...w.word].length >= 3) : d.words.filter(w=>w.example && tokens(w.example).length>=4 && tokens(w.example).length<=12)).slice(0, c.rounds);
+      await orderRounds(box, h, items, {sentence: c.kind==="sentence", perItemTime:c.time,
+        hint: w => `<p class="muted">${c.kind==="sentence" ? `Ricomponi la frase: <b>${esc(w.example_it)}</b>` : `Ricomponi la parola che vuol dire <b>${esc(w.translation)}</b>`}</p>`});
+      h.stop(); return {pct: Math.round(h.hits/items.length*100), score:h.score, line:`${h.hits} su ${items.length} ricomposte.`};
+    }},
+  completa:{name:"Completa al volo", icon:"book", desc:"Completa più frasi che puoi prima che scada il tempo", stages:12,
+    cfg(n){ return {time:[90,90,85,85,80,80,75,75,70,70,60,60][n-1], target:[5,6,6,7,7,8,8,9,9,10,10,10][n-1], firstLetter: n<=4}; },
+    async load(n){ return {...await stageWords("completa", n, 40), c:this.cfg(n)}; },
+    play(box, n, d){ return new Promise(resolve=>{
+      const c = d.c, h = makeHud(box, {title:"Completa al volo", n, time:c.time});
+      const items = shuffle(d.all).map(w=>({w, s:blankOut(w.example, w.word)})).filter(x=>x.s); let i = 0, ended = false;
+      if(!items.length){ resolve({pct:0, score:0, line:"Non ci sono frasi adatte: riprova."}); return; }
+      h.area.innerHTML = `<div class="panel sprint-card stage-panel"><p class="muted" id="hint"></p><div class="w" id="sent" style="font-size:1.4rem;line-height:1.35"></div>
+        <div class="row" style="justify-content:center;margin-top:18px"><input class="input" id="ans" style="max-width:260px" autocomplete="off" autocapitalize="off" placeholder="Parola mancante"><button class="btn" id="go">Invio</button><button class="btn ghost" id="pass">Passo</button></div>
+        <p class="small muted" id="last" style="margin-top:12px"></p><p class="small muted">Obiettivo: ${c.target} frasi</p></div>`;
+      const draw = () => { const q = items[i % items.length]; $("#sent").textContent = q.s; $("#hint").textContent = q.w.example_it + (c.firstLetter ? `  ·  inizia con “${[...q.w.word][0]}”` : ""); $("#ans").value = ""; $("#ans").focus(); };
+      const go = (pass) => {
+        if(ended) return; const q = items[i % items.length], v = $("#ans").value.trim(); if(!v && !pass) return;
+        if(!pass && bare(v) === bare(q.w.word)){ h.add(); $("#last").innerHTML = `<span class="status-ok">✓ ${esc(q.w.word)}</span>`; }
+        else { h.miss(); $("#last").innerHTML = `<span class="status-bad">✗ era “${esc(q.w.word)}”</span>`; if(!pass) recordMistake(q.s.replace("_____", v), q.w.example, ""); }
+        i++; draw();
+      };
+      $("#go").onclick = () => go(false); $("#pass").onclick = () => go(true); $("#ans").onkeydown = e => { if(e.key==="Enter") go(false); };
+      h.startTimer(c.time, () => { ended = true; h.stop(); const acc = h.hits+h.misses ? h.hits/(h.hits+h.misses) : 0;
+        resolve({pct: Math.min(100, Math.round(Math.min(1, h.hits/c.target)*85 + acc*15)), score:h.score, line:`${h.hits} frasi completate in ${c.time} secondi (obiettivo ${c.target}).`}); });
+      draw();
+    }); }},
+  chisono:{name:"Chi sono?", icon:"chat", desc:"Indovinelli con tre indizi, sempre più astuti", stages:12,
+    async load(n){
+      const lv = STAGE_LEVEL[n-1], theme = WB_THEMES[(n*3 + (gprog("chisono").plays||0)*7) % WB_THEMES.length];
+      const r = await ask(`Sei un autore di indovinelli in ${L().name} per studenti. ${JSON_ONLY}`,
+        `Crea 5 indovinelli "Chi sono? / Cosa sono?" di livello ${lv} del QCER, con soluzioni legate al tema "${theme}" e tutte diverse. Ognuno ha 3 indizi in ${L().name}, dal più difficile al più facile; la soluzione è una parola o un'espressione comune del livello ${lv}.
+JSON: {"riddles":[{"clues":["indizio difficile","indizio medio","indizio facile"],"answer":"soluzione in ${L().name}","alt":["altre forme accettabili"],"it":"soluzione in italiano"}]}`,
+        {temperature:0.95, maxTokens:1400}, r=>Array.isArray(r.riddles) && r.riddles.length>=3);
+      return {list: r.riddles.filter(x=>x.answer && Array.isArray(x.clues) && x.clues.length)};
+    },
+    play(box, n, d){ return new Promise(resolve=>{
+      const h = makeHud(box, {title:"Chi sono?", n}), list = d.list; let i = 0, pts = 0;
+      const show = () => {
+        if(i >= list.length){ h.stop(); return resolve({pct: Math.round(pts/(list.length*3)*100), score:h.score, line:`${pts} punti su ${list.length*3}: 3 se indovini al primo indizio, 2 al secondo, 1 al terzo.`}); }
+        const q = list[i]; let shown = 1, done = false;
+        const draw = (msg="") => {
+          h.area.innerHTML = `<div class="panel stack stage-panel"><div class="small muted" style="text-align:right">${i+1}/${list.length}</div>
+            ${q.clues.slice(0, shown).map((c,k)=>`<div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="chip">${k+1}</span><span style="font-size:1.15rem">${esc(c)}</span></div>`).join("")}
+            ${done ? `<div class="feedback ${msg==="ok"?"good":"bad"}"><h3>${msg==="ok"?"Giusto!":"La soluzione era:"} ${esc(q.answer)}</h3><p>${esc(q.it||"")}</p><button class="btn" id="nx">Continua</button></div>`
+              : `<div class="row"><input class="input" id="ans" style="flex:1;min-width:180px" placeholder="La tua risposta" autocomplete="off" autocapitalize="off"><button class="btn" id="go">Rispondi</button></div>
+                 <div class="row">${shown<q.clues.length?`<button class="btn ghost sm" id="more">Un altro indizio (−1 punto)</button>`:""}<button class="btn ghost sm" id="give">Mi arrendo</button></div>${msg==="no"?`<p class="status-bad" style="margin:0">Non è questa, riprova.</p>`:""}`}</div>`;
+          if(done){ $("#nx", h.area).onclick = () => { i++; show(); }; Voice.speak(q.answer); return; }
+          const go = () => {
+            const v = $("#ans", h.area).value.trim(); if(!v) return;
+            const strip = s => bare(s).replace(/^(the|a|an|to|el|la|los|las|le|les|il|lo|gli|der|die|das|ein|eine|un|une|uno|una) /,"");
+            if([q.answer, ...(q.alt||[])].some(a => strip(a) === strip(v))){ const p = 4 - shown; pts += p; h.add(p*5); done = true; draw("ok"); } else { SFX.bad(); draw("no"); }
+          };
+          $("#go", h.area).onclick = go; $("#ans", h.area).onkeydown = e => { if(e.key==="Enter") go(); }; $("#ans", h.area).focus();
+          const m = $("#more", h.area); if(m) m.onclick = () => { shown++; draw(); };
+          $("#give", h.area).onclick = () => { h.miss(); done = true; draw("give"); };
+        };
+        draw();
+      };
+      show();
+    }); }},
+  storia:{name:"Storia a bivi", icon:"book", desc:"Una storia sempre diversa in cui scegli tu cosa succede", free:true},
+
+  // ---------------- per bambini ----------------
+  kfoto:{kids:true, name:"Che cos'è?", icon:"🖼️", desc:"Guarda l'immagine e scegli la parola giusta", stages:10,
+    async load(n){ return kidsStage(n, {count:8}); },
+    async play(box, n, d){
+      const opts = n===1 ? 2 : n<=4 ? 3 : n<=7 ? 4 : 6, h = makeHud(box, {title:"Che cos'è?", n, kids:true}), rounds = d.words.slice(0, n<=3 ? 6 : 8);
+      await choiceRounds(box, h, rounds, {kids:true, question: w => `<div class="kemoji">${w.emoji}</div>`, options: w => shuffle([w, ...sameTheme(d.all, w, opts-1)]),
+        isRight:(w,id)=>id===w.id, label: o => `<span class="kword">${esc(o.word)}</span>`});
+      h.stop(); return {pct: Math.round(h.hits/rounds.length*100), score:h.score, line:`${h.hits} su ${rounds.length} al primo colpo!`};
+    }},
+  kascolta:{kids:true, name:"Ascolta e tocca", icon:"👂", desc:"Senti la parola e tocca l'immagine giusta", stages:10,
+    async load(n){ return kidsStage(n, {count:8}); },
+    async play(box, n, d){
+      const opts = n===1 ? 2 : n<=4 ? 3 : n<=7 ? 4 : 6, h = makeHud(box, {title:"Ascolta e tocca", n, kids:true}), rounds = d.words.slice(0, n<=3 ? 6 : 8);
+      await choiceRounds(box, h, rounds, {kids:true, speak: w => w.word, rate: n<=5 ? 0.8 : 0.95,
+        question: () => `<button class="mic" id="krep" style="margin:6px auto" aria-label="Ascolta di nuovo">${icon("play")}</button><p class="muted">Tocca l'immagine giusta</p>`,
+        options: w => shuffle([w, ...sameTheme(d.all, w, opts-1)]), isRight:(w,id)=>id===w.id, label: o => `<span class="kemoji sm">${o.emoji}</span>`});
+      h.stop(); return {pct: Math.round(h.hits/rounds.length*100), score:h.score, line:`${h.hits} su ${rounds.length} al primo colpo!`};
+    }},
+  kmemory:{kids:true, name:"Memory", icon:"🃏", desc:"Gira le carte e trova le coppie immagine e parola", stages:10,
+    async load(n){ return kidsStage(n, {count:[3,4,4,5,5,6,6,7,7,8][n-1]}); },
+    play(box, n, d){ return new Promise(resolve=>{
+      const h = makeHud(box, {title:"Memory", n, kids:true}), pool = d.words;
+      const cards = shuffle(pool.flatMap(w => [{w, face:"emoji"}, {w, face:"word"}])); let open = [], found = 0, moves = 0, lock = false;
+      h.area.innerHTML = `<p class="small muted" style="margin:6px 0">Mosse: <b id="mv">0</b> · trova le ${pool.length} coppie</p><div class="memory cols${cards.length>12?4:3}">${cards.map((c,k)=>`<button class="mcard" data-k="${k}" aria-label="Carta coperta"><span class="back">?</span><span class="front">${c.face==="emoji"?`<span class="kemoji sm">${c.w.emoji}</span>`:`<span class="kword">${esc(c.w.word)}</span>`}</span></button>`).join("")}</div>`;
+      $$(".mcard", h.area).forEach(b=>b.onclick=()=>{
+        if(lock || b.classList.contains("up")) return;
+        const c = cards[+b.dataset.k]; b.classList.add("up"); SFX.flip(); if(c.face==="word") Voice.speak(c.w.word);
+        open.push(b);
+        if(open.length === 2){
+          moves++; $("#mv").textContent = moves;
+          const [a, z] = open.map(x=>cards[+x.dataset.k]);
+          if(a.w.id === z.w.id){ open.forEach(x=>x.classList.add("done")); open = []; found++; h.add(); Voice.speak(a.w.word); cheer($(".memory", h.area));
+            if(found === pool.length){ h.stop(); setTimeout(()=>resolve({pct: Math.max(0, Math.min(100, 100 - (moves - pool.length)*8)), score:h.score, line:`Tutte le coppie in ${moves} mosse!`}), 900); } }
+          else { lock = true; h.combo = 0; setTimeout(()=>{ open.forEach(x=>x.classList.remove("up")); open = []; lock = false; }, 900); }
+        }
+      });
+    }); }},
+  kconta:{kids:true, name:"Conta!", icon:"🔢", desc:"Conta gli oggetti e scegli il numero giusto", stages:10,
+    async load(n){ return kidsStage(n, {count:8}); },
+    async play(box, n, d){
+      const maxN = [3,4,5,6,7,8,9,10,10,10][n-1], opts = n<=2 ? 2 : n<=4 ? 3 : 4, h = makeHud(box, {title:"Conta!", n, kids:true});
+      const nums = d.all.filter(w=>w.theme==="numeri"), things = d.all.filter(w=>["animali","cibo","natura","trasporti"].includes(w.theme));
+      const rounds = Array.from({length:6}, () => { const k = 1 + Math.floor(Math.random()*maxN); return {...nums[k-1], n:k, thing:things[Math.floor(Math.random()*things.length)]}; });
+      await choiceRounds(box, h, rounds, {kids:true, question: w => `<div class="kcount">${Array.from({length:w.n}, ()=>w.thing.emoji).join(" ")}</div><p class="muted">Quanti sono?</p>`,
+        options: w => shuffle([w, ...shuffle(nums.slice(0, Math.max(maxN, opts)).filter(x=>x.id!==w.id)).slice(0, opts-1)]), isRight:(w,id)=>id===w.id, label: o => `<span class="kword">${esc(o.word)}</span>`});
+      h.stop(); return {pct: Math.round(h.hits/rounds.length*100), score:h.score, line:`${h.hits} su ${rounds.length} al primo colpo!`};
+    }},
+  klettere:{kids:true, name:"Lettere in ordine", icon:"🔤", desc:"Metti in fila le lettere per scrivere la parola", stages:10,
+    async load(n){ return kidsStage(n, {count:5, maxLen:[3,4,4,5,5,6,6,7,7,8][n-1]}); },
+    async play(box, n, d){
+      const h = makeHud(box, {title:"Lettere in ordine", n, kids:true}), items = d.words.filter(w=>!w.word.includes(" ")).slice(0,5);
+      await orderRounds(box, h, items, {kids:true, hint: w => `<div class="kemoji">${w.emoji}</div>`});
+      h.stop(); return {pct: Math.round(h.hits/items.length*100), score:h.score, line:`${h.hits} parole su ${items.length}!`};
+    }},
+  kpalloncino:{kids:true, name:"Il palloncino", icon:"🎈", desc:"Indovina le lettere prima che il palloncino si sgonfi", stages:10,
+    async load(n){ return kidsStage(n, {count:4, maxLen:[4,5,5,6,6,7,7,8,9,10][n-1]}); },
+    async play(box, n, d){
+      const h = makeHud(box, {title:"Il palloncino", n, kids:true}); h.pool = d.pool; const items = d.words.slice(0,4);
+      await hangRounds(box, h, items, {kids:true, lives:[9,8,8,7,7,6,6,6,5,5][n-1], hint: w => `<div class="kemoji">${w.emoji}</div>`});
+      h.stop(); return {pct: Math.round(h.hits/items.length*100), score:h.score, line:`${h.hits} parole su ${items.length}!`};
+    }},
+  kdillo:{kids:true, name:"Dillo tu!", icon:"🎤", desc:"Guarda l'immagine e di' la parola al microfono", stages:10,
+    async load(n){ return kidsStage(n, {count:5}); },
+    async play(box, n, d){
+      const h = makeHud(box, {title:"Dillo tu!", n, kids:true}), items = d.words.slice(0,5);
+      await sayRounds(box, h, items, {kids:true, threshold: n<=5 ? 60 : 75, target: w => w.word, show: w => `<div class="kemoji">${w.emoji}</div><p class="muted">Come si dice? Tocca il microfono e dillo!</p>`});
+      h.stop(); return {pct: Math.round(h.hits/items.length*100), score:h.score, line:`${h.hits} parole dette bene su ${items.length}!`};
+    }},
+  kstoria:{kids:true, name:"Storia magica", icon:"🪄", desc:"Una fiaba sempre nuova in cui scegli tu cosa fare", free:true}
 };
+const GAME_ORDER = {adulti:["coppie","sprint","ascolto","dettato","impiccato","anagramma","completa","chisono","storia"], bambini:["kfoto","kascolta","kmemory","kconta","klettere","kpalloncino","kdillo","kstoria"]};
+const AI_GAMES = ["chisono","storia","kstoria"];
+
 RENDER.giochi = main => {
   const parts = location.hash.slice(1).split("-");
-  if(parts[1] && GAMES[parts[1]]) return startGame(main, parts[1]);
+  if(parts[1]==="album") return renderAlbum(main);
+  const g = GAMES[parts[1]];
+  if(g){ if(g.free) return runFree(main, parts[1]); if(parts[2]) return runStage(main, parts[1], Math.max(1, Math.min(g.stages, +parts[2]||1))); return renderStageMap(main, parts[1]); }
   const tab = sessionStorage.getItem("parlami.gtab") || "adulti";
-  const list = GAME_LIST[tab];
   main.innerHTML = `
   <h1>Giochi</h1>
   <div class="row" role="tablist" style="margin-bottom:14px">
     <button class="chip ${tab==="adulti"?"on":""}" data-t="adulti" role="tab" aria-selected="${tab==="adulti"}">Per adulti</button>
     <button class="chip ${tab==="bambini"?"on":""}" data-t="bambini" role="tab" aria-selected="${tab==="bambini"}">🧒 Per bambini</button>
   </div>
-  <p class="muted">${tab==="adulti" ? "Usano le parole che hai imparato nelle lezioni; se sono poche, ne aggiungo io di nuove al ripasso. I giochi segnati con ✦ creano contenuti nuovi con l'IA." : `Giochi con immagini, voce e tante stelle, per imparare le prime parole di ${L().name.toLowerCase()}: animali, cibo, colori, numeri, corpo e altro. ${S().lang==="en" ? "Funzionano anche senza IA." : "La prima volta l'IA traduce le parole, poi funzionano anche senza."}`}</p>
+  <p class="muted">${tab==="adulti" ? `Ogni gioco ha 12 livelli: le parole salgono dall'A1 al C2, il tempo stringe e le regole si complicano. A ogni partita arrivano parole nuove su argomenti diversi. Ogni livello vale fino a 3 stelle: con almeno 1 sblocchi il successivo.` : `Ogni gioco ha 10 livelli con un argomento diverso (animali, cibo, colori, numeri…) e sempre più scelte. Ogni livello superato regala un adesivo per l'album!`}</p>
+  ${tab==="bambini" ? `<a class="action kid" href="#giochi-album" style="margin-top:12px;text-decoration:none"><span class="ic"><span style="font-size:1.7rem">📒</span></span><span><h3>Album degli adesivi</h3><span class="muted small">${(state.stickers||[]).length} adesivi su ${STICKERS.length}</span></span></a>` : ""}
   <div class="grid2" style="margin-top:16px">
-    ${list.map(([id, ic, name, desc, ai])=>`<button class="action ${tab==="bambini"?"kid":""}" data-g="${id}"><span class="ic">${ICON[ic] ? icon(ic) : `<span style="font-size:1.7rem">${ic}</span>`}</span><span><h3>${esc(name)}${ai?" ✦":""}</h3><span class="muted small">${esc(desc)}</span></span></button>`).join("")}
-  </div>`;
+    ${GAME_ORDER[tab].map(id=>{ const g = GAMES[id], st = g.free ? null : totalStars(id), max = g.free ? 0 : g.stages*3;
+      return `<button class="action ${g.kids?"kid":""}" data-g="${id}"><span class="ic">${ICON[g.icon] ? icon(g.icon) : `<span style="font-size:1.7rem">${g.icon}</span>`}</span>
+        <span style="flex:1"><h3>${esc(g.name)}${AI_GAMES.includes(id)?" ✦":""}</h3><span class="muted small">${esc(g.desc)}</span>
+        ${g.free ? `<span class="small muted" style="display:block;margin-top:4px">Sempre diversa</span>` : `<span class="gprog"><span class="progress" style="flex:1"><i style="width:${st/max*100}%;background:var(--sun)"></i></span><span class="small">★ ${st}/${max}</span></span>`}</span></button>`; }).join("")}
+  </div>
+  <p class="small muted" style="margin-top:14px">✦ crea sempre contenuti nuovi con l'IA. Gli altri giochi usano l'IA solo per preparare nuovi pacchetti di parole${tab==="bambini" ? "; per i bambini in inglese non serve proprio" : ""}.</p>`;
   $$("[data-t]", main).forEach(b=>b.onclick=()=>{ sessionStorage.setItem("parlami.gtab", b.dataset.t); route(); });
   $$("[data-g]", main).forEach(b=>b.onclick=()=>location.hash="giochi-"+b.dataset.g);
 };
-function startGame(main, id){
+function renderStageMap(main, id){
+  const g = GAMES[id], p = gprog(id);
+  const nextN = Array.from({length:g.stages}, (_,i)=>i+1).find(n=>unlocked(id,n) && !(p.stars[n])) || 1;
+  main.innerHTML = `<a class="btn ghost sm" href="#giochi">${icon("back")} Giochi</a>
+    <div class="row" style="justify-content:space-between;margin-top:16px"><h1 style="margin:0">${esc(g.name)}</h1><span class="chip">★ ${totalStars(id)}/${g.stages*3}</span></div>
+    <p class="muted">${esc(g.desc)}.${g.kids ? "" : " Livelli 1–2: A1 · 3–5: A2 · 6–8: B1 · 9–10: B2 · 11: C1 · 12: C2."}</p>
+    <div class="stagemap ${g.kids?"kids":""}">${Array.from({length:g.stages}, (_,i)=>{ const n = i+1, open = unlocked(id,n), s = p.stars[n]||0;
+      return `<button class="stage ${open?"":"locked"} ${n===nextN?"next":""} ${s===3?"perfect":""}" data-n="${n}" ${open?"":"disabled"} aria-label="Livello ${n}${open?"":" bloccato"}">
+        <b>${open ? n : "🔒"}</b><span class="sst">${[1,2,3].map(k=>`<i class="${k<=s?"on":""}">★</i>`).join("")}</span>${g.kids ? `<span class="small">${esc(kidsTheme(n))}</span>` : `<span class="small">${STAGE_LEVEL[n-1]}</span>`}</button>`; }).join("")}</div>
+    <div style="margin-top:16px"><a class="btn sun" href="#giochi-${id}-${nextN}">Gioca il livello ${nextN}</a></div>`;
+  $$(".stage:not(.locked)", main).forEach(b=>b.onclick=()=>location.hash=`giochi-${id}-${b.dataset.n}`);
+}
+async function runStage(main, id, n){
   const g = GAMES[id];
-  main.innerHTML = `<button class="btn ghost sm" id="back">${icon("back")} Giochi</button><div id="game" style="margin-top:16px">${loadingHTML("Preparo il gioco…")}</div>`;
-  $("#back").onclick = () => location.hash = "giochi";
-  const load = g.kids ? kidsWords().then(all => [g.need ? shuffle(all.filter(w=>w.theme!=="numeri")).slice(0, g.need) : [], all])
-                      : (g.need ? wordPool(g.need) : Promise.resolve([])).then(p => [p, null]);
-  load.then(([pool, all])=>{
-    if(!$("#game")) return;
-    if(!g.kids && g.need && pool.length < 4) throw new Error("Servono almeno 4 parole: completa una lezione.");
-    g.run($("#game"), pool, all);
-  }).catch(e=>{ if($("#game")) $("#game").innerHTML = errorHTML(e); });
+  if(!unlocked(id, n)){ location.hash = "giochi-"+id; return; }
+  main.innerHTML = `<a class="btn ghost sm" href="#giochi-${id}">${icon("back")} Livelli</a><div id="game" style="margin-top:14px;position:relative">${loadingHTML(g.kids ? "Preparo il gioco…" : "Preparo parole nuove…")}</div>`;
+  let data;
+  try{ data = await g.load(n); }
+  catch(e){ const box = $("#game"); if(!box) return; box.innerHTML = errorHTML(e, "retry"); $("#retry").onclick = () => runStage(main, id, n); return; }
+  const box = $("#game"); if(!box || location.hash !== `#giochi-${id}-${n}`) return;
+  const res = await g.play(box, n, data);
+  if(!res || !$("#game") || location.hash !== `#giochi-${id}-${n}`) return;
+  stageResult($("#game"), id, n, res);
+}
+function stageResult(box, id, n, res){
+  const g = GAMES[id], p = gprog(id), st = starsFor(res.pct), prev = p.stars[n] || 0;
+  p.plays = (p.plays||0) + 1; if(st > prev) p.stars[n] = st; const record = (res.score||0) > (p.best[n]||0); if(record) p.best[n] = res.score||0;
+  const sticker = g.kids && st > 0 && prev === 0 ? awardSticker() : null;
+  save(); addXP(4 + st*4);
+  if(st > 0) SFX.win(); else SFX.bad();
+  const next = n < g.stages && st > 0;
+  box.innerHTML = `<div class="panel stack result ${g.kids?"kids":""}" style="text-align:center;align-items:center;position:relative;overflow:hidden">
+    <div class="bigstars">${[1,2,3].map(i=>`<span class="${i<=st?"on":""}" style="--i:${i}">★</span>`).join("")}</div>
+    <h2 style="margin:0">${st===3 ? "Perfetto!" : st===2 ? "Ottimo!" : st===1 ? "Livello superato!" : "Quasi… riprova!"}</h2>
+    <p style="margin:0">${esc(res.line)}</p>
+    <p class="small muted" style="margin:0">Punti ${res.score||0}${record ? " · nuovo record!" : ` · record ${p.best[n]||0}`} · ${res.pct}%</p>
+    ${sticker ? `<div class="sticker-new">Nuovo adesivo per l'album! <span>${sticker}</span></div>` : ""}
+    ${st===0 ? `<p class="small" style="margin:0">Serve almeno il 50% per sbloccare il livello ${n+1}.</p>` : ""}
+    <div class="row" style="justify-content:center">${next ? `<a class="btn sun" href="#giochi-${id}-${n+1}">Livello ${n+1} →</a>` : ""}<button class="btn ${next?"ghost":""}" id="again">Rigioca</button><a class="btn ghost" href="#giochi-${id}">Mappa dei livelli</a></div>
+  </div>`;
+  if(st === 3) confetti($(".result", box));
+  $("#again").onclick = () => { route(); };
+}
+function runFree(main, id){
+  const g = GAMES[id];
+  if(g.kids){ main.innerHTML = `<a class="btn ghost sm" href="#giochi">${icon("back")} Giochi</a><div id="game" style="margin-top:14px;position:relative"></div>`; storyGame($("#game"), {kids:true}); return; }
+  main.innerHTML = `<a class="btn ghost sm" href="#giochi">${icon("back")} Giochi</a>
+    <h1 style="margin-top:16px">Storia a bivi</h1><p class="muted">Una storia sempre diversa (mistero, avventura, fantascienza…) in cui scegli tu cosa succede. Scegli la difficoltà:</p>
+    <div class="row">${LEVELS.map(lv=>`<button class="chip ${lv===S().level?"on":""}" data-l="${lv}">${lv}</button>`).join("")}</div>
+    <div id="game" style="margin-top:14px;position:relative"></div>`;
+  $$("[data-l]", main).forEach(b=>b.onclick=()=>{ $$("[data-l]", main).forEach(x=>x.classList.toggle("on", x===b)); storyGame($("#game"), {kids:false, level:b.dataset.l}); });
+}
+function renderAlbum(main){
+  const have = state.stickers || [];
+  main.innerHTML = `<a class="btn ghost sm" href="#giochi">${icon("back")} Giochi</a>
+    <h1 style="margin-top:16px">Album degli adesivi</h1><p class="muted">Ogni livello superato per la prima volta in un gioco per bambini regala un adesivo. Ne hai ${have.length} su ${STICKERS.length}!</p>
+    <div class="album">${STICKERS.map(s=>`<div class="slot ${have.includes(s)?"got":""}">${have.includes(s) ? s : "?"}</div>`).join("")}</div>`;
 }
 
 /* ============ ESAMI SIMULATI ============ */
