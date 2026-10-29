@@ -32,6 +32,7 @@
   }
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{height:100%}
 body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5;
   padding-top:env(safe-area-inset-top,0px)}
@@ -66,7 +67,9 @@ a.btn,a.chip,a.action,a.lvl{text-decoration:none}
   .app{grid-template-columns:1fr}
   .rail{position:fixed;bottom:0;left:0;right:0;top:auto;height:auto;flex-direction:row;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));border-right:0;border-top:1px solid var(--line);background:var(--surface);z-index:20}
   .brand,.rail-foot{display:none}
-  .nav{display:flex;width:100%;justify-content:space-around}
+  .nav{display:flex;width:100%;justify-content:space-between;overflow-x:auto;scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}
+  .nav a{flex:1 0 54px}
   .nav a{flex-direction:column;gap:2px;font-size:.62rem;padding:6px 2px;min-width:0}
   .nav a svg{width:20px;height:20px}
   .main{padding:22px 16px calc(96px + env(safe-area-inset-bottom,0px))}
@@ -238,6 +241,58 @@ a.btn,a.chip,a.action,a.lvl{text-decoration:none}
 .album .slot.got{border-style:solid;border-color:var(--sun);background:var(--surface)}
 .memory.cols3{grid-template-columns:repeat(3,1fr)}
 
+/* Kids area */
+.kids-hero{display:flex;align-items:center;gap:16px;margin:4px 0 16px}
+.kidavatar{width:76px;height:76px;border-radius:50%;border:3px solid var(--sun);background:var(--surface);font-size:2.6rem;display:grid;place-items:center;flex:none}
+.mission{border:2px solid var(--sun)}
+.mtasks{display:grid;gap:8px;margin-top:12px}
+.mtask{display:flex;gap:12px;align-items:center;padding:10px 14px;border-radius:var(--r);background:var(--surface-2);color:var(--ink);text-decoration:none}
+.mtask .me{font-size:1.6rem}
+.mtask.ok{background:var(--ok-bg)}
+.ktiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-top:16px}
+.ktile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 10px;border-radius:24px;border:3px solid var(--line);border-bottom-width:6px;background:var(--surface);color:var(--ink);text-decoration:none;text-align:center;font-family:var(--display);font-size:1.05rem}
+.ktile:hover{border-color:var(--primary);transform:translateY(-2px)}
+.ktile .ke{font-size:3rem;line-height:1.1}
+.ktile.dim{opacity:.7}
+.kidpick{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:20px}
+.kidcard{display:flex;flex-direction:column;align-items:center;gap:6px;width:140px;padding:18px;border-radius:24px;border:3px solid var(--line);border-bottom-width:6px;background:var(--surface);font-family:var(--display);font-size:1.2rem}
+.kidcard span{font-size:3.6rem}
+.kidcard:hover{border-color:var(--primary)}
+.vocgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:16px}
+.voccard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 8px;border-radius:20px;border:3px solid var(--line);border-bottom-width:6px;background:var(--surface)}
+.pop{animation:popk .5s}
+@keyframes popk{40%{transform:scale(1.12) rotate(-3deg)}}
+.abcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px;margin-top:16px}
+.abc{display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-radius:18px;border:3px solid var(--line);border-bottom-width:6px;background:var(--surface)}
+.abc b{font-family:var(--display);font-size:2rem;line-height:1}
+.abc small{font-size:1.2rem;margin-left:4px;color:var(--muted)}
+.abc span{font-size:1.6rem}
+.song .song-e{font-size:4rem;line-height:1.1}
+.lyrics{margin:16px 0;display:flex;flex-direction:column;gap:6px}
+.lyr{font-family:var(--display);font-size:clamp(1.15rem,3vw,1.5rem);margin:0;padding:6px 12px;border-radius:12px;transition:background .2s}
+.lyr.cur{background:var(--primary-soft)}
+.lyr.echo{background:var(--sun);color:var(--sun-ink)}
+.lyr.echo::after{content:"  🗣️ tocca a te!";font-size:.9rem}
+.rw{border-radius:6px;padding:0 2px;transition:background .1s}
+.rw.on{background:var(--sun);color:var(--sun-ink)}
+.reading:not(.wordsync){background:var(--primary-soft);border-radius:10px}
+.storybook .scene{font-size:clamp(3.5rem,14vw,6rem);text-align:center;line-height:1.2;letter-spacing:6px}
+.storytext{font-family:var(--display);font-size:clamp(1.3rem,3.6vw,1.8rem);line-height:1.45;text-align:center;margin:10px 0}
+.friend{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;margin-top:16px}
+.pip{font-size:5.5rem;line-height:1;animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.fbub{background:var(--surface);border:3px solid var(--line);border-radius:26px;padding:16px 22px;font-family:var(--display);font-size:clamp(1.3rem,3.6vw,1.7rem);max-width:560px;min-height:64px}
+.mic.big{width:110px;height:110px}.mic.big svg{width:44px;height:44px}
+.overlay{position:fixed;inset:0;background:rgba(10,12,30,.55);display:grid;place-items:center;z-index:80;padding:16px}
+.pinbox{width:min(360px,100%)}
+.pindots{display:flex;gap:14px;justify-content:center;margin:8px 0}
+.pindots span{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink)}
+.pindots span.on{background:var(--ink)}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.keypad .key{height:58px;font-size:1.4rem}
+.kidnav .kne{font-size:1.4rem;line-height:1}
+body.kidsmode .brand-dot{background:var(--sun)}
+
 /* Exercise */
 .progress{height:12px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
 .progress > i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
@@ -334,7 +389,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.8";
+const APP_VERSION = "0.9";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -540,6 +595,7 @@ const ICON = {
   chat:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
   wave:'<path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 10v4M21 12h0"/>',
   game:'<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3M15 12h.01M18 13h.01"/>',
+  kid:'<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4 4 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/>',
   exam:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11l2 2 4-4M9 17h6"/>',
   cards:'<rect x="3" y="6" width="13" height="15" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v12"/>',
   gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.6 14H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.7 3.6V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5.9z"/>',
@@ -799,22 +855,39 @@ const VIEWS = [
   {id:"tutor", label:"Tutor", icon:"chat"},
   {id:"pronuncia", label:"Pronuncia", icon:"wave"},
   {id:"giochi", label:"Giochi", icon:"game"},
+  {id:"bambini", label:"Bambini", icon:"kid"},
   {id:"ripasso", label:"Ripasso", icon:"cards"},
   {id:"impostazioni", label:"Impostazioni", icon:"gear"}
 ];
 const RENDER = {};
 let cleanup = null;
+const KIDS_VIEWS = [
+  {h:"bambini", label:"Casa", e:"🏠"}, {h:"giochi", label:"Giochi", e:"🎮"}, {h:"bambini-voc", label:"Parole", e:"🖼️"},
+  {h:"bambini-canzoni", label:"Canzoni", e:"🎵"}, {h:"bambini-storie", label:"Storie", e:"📖"}, {h:"bambini-amico", label:"Pip", e:"🐧"}
+];
 function renderNav(){
+  if(kidsModeOn()){
+    const h = location.hash.slice(1) || "bambini";
+    const cur = KIDS_VIEWS.map(v=>v.h).filter(x=>h===x || h.startsWith(x+"-")).sort((a,b)=>b.length-a.length)[0];
+    $("#nav").innerHTML = KIDS_VIEWS.map(v=>`<a href="#${v.h}" class="kidnav ${cur===v.h?"active":""}" ${cur===v.h?'aria-current="page"':""}><span class="kne">${v.e}</span><span>${v.label}</span></a>`).join("");
+    return;
+  }
   const cur = (location.hash.slice(1) || "home").split("-")[0];
   $("#nav").innerHTML = VIEWS.map(v=>`<a href="#${v.id}" class="${cur===v.id?"active":""}" ${cur===v.id?'aria-current="page"':""}>${icon(v.icon)}<span>${v.label}</span></a>`).join("");
 }
 function renderRailFoot(){
+  if(kidsModeOn()){ const k = currentKid(); $("#railfoot").innerHTML = `<span>${k?k.emoji+" "+esc(k.name):"🧒"}</span><a href="#bambini-genitori" class="small">👪 Genitori</a>`; return; }
   $("#railfoot").innerHTML = `<span title="Giorni di fila">🔥 ${currentStreak()}</span><span title="Punti esperienza">⭐ ${state.xp}</span>`;
 }
 function route(){
   if(cleanup){ try{ cleanup(); }catch(e){} cleanup = null; }
   Voice.stop();
-  const id = (location.hash.slice(1) || "home").split("-")[0];
+  const parts = (location.hash.slice(1) || (kidsModeOn() ? "bambini" : "home")).split("-"), id = parts[0];
+  if(kidsModeOn()){
+    const ok = id === "bambini" || (id === "giochi" && (!parts[1] || parts[1] === "album" || GAMES[parts[1]]?.kids));
+    if(!ok){ location.hash = "bambini"; return; }
+  }
+  document.body.classList.toggle("kidsmode", kidsModeOn());
   renderNav(); renderRailFoot();
   const main = $("#main");
   (RENDER[id] || RENDER.home)(main);
@@ -898,6 +971,11 @@ RENDER.impostazioni = main => {
       <div id="provs" class="stack"></div>
       <div class="row"><select class="input" id="addp" style="max-width:320px">${Object.entries(PRESETS).filter(([k])=>k==="custom" || !s.providers.some(p=>p.preset===k)).map(([k,v])=>`<option value="${k}">${esc(v.name)}</option>`).join("")}</select><button class="btn ghost" id="addbtn">Aggiungi provider</button></div>
       <div class="row"><button class="btn" id="s-test">Prova tutti</button><span id="s-test-out" class="small"></span></div>
+    </section>
+    <section class="panel stack">
+      <h2>Bambini</h2>
+      <p class="muted" style="margin:0">Profili per i bambini, missione del giorno e modalità bambini protetta da un codice.</p>
+      <div><a class="btn ghost" href="#bambini-genitori">👪 Apri l'area genitori</a></div>
     </section>
     <section class="panel stack">
       <h2>App</h2>
@@ -1757,7 +1835,8 @@ async function stageWords(id, n, count){
 
 /* ---- Progressi: stelle per livello ---- */
 function gprog(id){
-  state.gameProg = state.gameProg || {}; const L1 = state.gameProg[S().lang] = state.gameProg[S().lang] || {};
+  const store = GAMES[id]?.kids ? kidStore() : state;
+  store.gameProg = store.gameProg || {}; const L1 = store.gameProg[S().lang] = store.gameProg[S().lang] || {};
   return L1[id] = L1[id] || {stars:{}, best:{}, plays:0};
 }
 const starsFor = pct => pct >= 90 ? 3 : pct >= 75 ? 2 : pct >= 50 ? 1 : 0;
@@ -1765,9 +1844,9 @@ const unlocked = (id, n) => n === 1 || (gprog(id).stars[n-1] || 0) >= 1;
 const totalStars = id => Object.values(gprog(id).stars).reduce((a,b)=>a+b, 0);
 const STICKERS = ["🦄","🐉","🚀","🌈","🎠","🦖","🧁","🎪","🏰","🎨","🐳","🦜","🌟","🍭","🎡","🦊","🐙","🪐","🎈","🦩","🐞","🍩","🛸","🧜","🦕","🎸","🏆","🌻","🐢","🍀","🦋","🐬","🎁","🧩","🍉","🐼","🚁","🌋","🎃","⛄"];
 function awardSticker(){
-  state.stickers = state.stickers || [];
-  const next = STICKERS.find(s=>!state.stickers.includes(s)); if(!next) return null;
-  state.stickers.push(next); return next;
+  const st = kidStore(); st.stickers = st.stickers || [];
+  const next = STICKERS.find(s=>!st.stickers.includes(s)); if(!next) return null;
+  st.stickers.push(next); return next;
 }
 
 /* ---- Motori comuni ---- */
@@ -2114,7 +2193,7 @@ JSON: {"riddles":[{"clues":["indizio difficile","indizio medio","indizio facile"
   kfoto:{kids:true, name:"Che cos'è?", icon:"🖼️", desc:"Guarda l'immagine e scegli la parola giusta", stages:10,
     async load(n){ return kidsStage(n, {count:8}); },
     async play(box, n, d){
-      const opts = n===1 ? 2 : n<=4 ? 3 : n<=7 ? 4 : 6, h = makeHud(box, {title:"Che cos'è?", n, kids:true}), rounds = d.words.slice(0, n<=3 ? 6 : 8);
+      const opts = ageOpts(n===1 ? 2 : n<=4 ? 3 : n<=7 ? 4 : 6), h = makeHud(box, {title:"Che cos'è?", n, kids:true}), rounds = d.words.slice(0, n<=3 ? 6 : 8);
       await choiceRounds(box, h, rounds, {kids:true, question: w => `<div class="kemoji">${w.emoji}</div>`, options: w => shuffle([w, ...sameTheme(d.all, w, opts-1)]),
         isRight:(w,id)=>id===w.id, label: o => `<span class="kword">${esc(o.word)}</span>`});
       h.stop(); return {pct: Math.round(h.hits/rounds.length*100), score:h.score, line:`${h.hits} su ${rounds.length} al primo colpo!`};
@@ -2122,7 +2201,7 @@ JSON: {"riddles":[{"clues":["indizio difficile","indizio medio","indizio facile"
   kascolta:{kids:true, name:"Ascolta e tocca", icon:"👂", desc:"Senti la parola e tocca l'immagine giusta", stages:10,
     async load(n){ return kidsStage(n, {count:8}); },
     async play(box, n, d){
-      const opts = n===1 ? 2 : n<=4 ? 3 : n<=7 ? 4 : 6, h = makeHud(box, {title:"Ascolta e tocca", n, kids:true}), rounds = d.words.slice(0, n<=3 ? 6 : 8);
+      const opts = ageOpts(n===1 ? 2 : n<=4 ? 3 : n<=7 ? 4 : 6), h = makeHud(box, {title:"Ascolta e tocca", n, kids:true}), rounds = d.words.slice(0, n<=3 ? 6 : 8);
       await choiceRounds(box, h, rounds, {kids:true, speak: w => w.word, rate: n<=5 ? 0.8 : 0.95,
         question: () => `<button class="mic" id="krep" style="margin:6px auto" aria-label="Ascolta di nuovo">${icon("play")}</button><p class="muted">Tocca l'immagine giusta</p>`,
         options: w => shuffle([w, ...sameTheme(d.all, w, opts-1)]), isRight:(w,id)=>id===w.id, label: o => `<span class="kemoji sm">${o.emoji}</span>`});
@@ -2150,7 +2229,7 @@ JSON: {"riddles":[{"clues":["indizio difficile","indizio medio","indizio facile"
   kconta:{kids:true, name:"Conta!", icon:"🔢", desc:"Conta gli oggetti e scegli il numero giusto", stages:10,
     async load(n){ return kidsStage(n, {count:8}); },
     async play(box, n, d){
-      const maxN = [3,4,5,6,7,8,9,10,10,10][n-1], opts = n<=2 ? 2 : n<=4 ? 3 : 4, h = makeHud(box, {title:"Conta!", n, kids:true});
+      const maxN = [3,4,5,6,7,8,9,10,10,10][n-1], opts = ageOpts(n<=2 ? 2 : n<=4 ? 3 : 4), h = makeHud(box, {title:"Conta!", n, kids:true});
       const nums = d.all.filter(w=>w.theme==="numeri"), things = d.all.filter(w=>["animali","cibo","natura","trasporti"].includes(w.theme));
       const rounds = Array.from({length:6}, () => { const k = 1 + Math.floor(Math.random()*maxN); return {...nums[k-1], n:k, thing:things[Math.floor(Math.random()*things.length)]}; });
       await choiceRounds(box, h, rounds, {kids:true, question: w => `<div class="kcount">${Array.from({length:w.n}, ()=>w.thing.emoji).join(" ")}</div><p class="muted">Quanti sono?</p>`,
@@ -2188,15 +2267,15 @@ RENDER.giochi = main => {
   if(parts[1]==="album") return renderAlbum(main);
   const g = GAMES[parts[1]];
   if(g){ if(g.free) return runFree(main, parts[1]); if(parts[2]) return runStage(main, parts[1], Math.max(1, Math.min(g.stages, +parts[2]||1))); return renderStageMap(main, parts[1]); }
-  const tab = sessionStorage.getItem("parlami.gtab") || "adulti";
+  const tab = kidsModeOn() ? "bambini" : (sessionStorage.getItem("parlami.gtab") || "adulti");
   main.innerHTML = `
   <h1>Giochi</h1>
-  <div class="row" role="tablist" style="margin-bottom:14px">
+  <div class="row" role="tablist" style="margin-bottom:14px" ${kidsModeOn()?"hidden":""}>
     <button class="chip ${tab==="adulti"?"on":""}" data-t="adulti" role="tab" aria-selected="${tab==="adulti"}">Per adulti</button>
     <button class="chip ${tab==="bambini"?"on":""}" data-t="bambini" role="tab" aria-selected="${tab==="bambini"}">🧒 Per bambini</button>
   </div>
   <p class="muted">${tab==="adulti" ? `Ogni gioco ha 12 livelli: le parole salgono dall'A1 al C2, il tempo stringe e le regole si complicano. A ogni partita arrivano parole nuove su argomenti diversi. Ogni livello vale fino a 3 stelle: con almeno 1 sblocchi il successivo.` : `Ogni gioco ha 10 livelli con un argomento diverso (animali, cibo, colori, numeri…) e sempre più scelte. Ogni livello superato regala un adesivo per l'album!`}</p>
-  ${tab==="bambini" ? `<a class="action kid" href="#giochi-album" style="margin-top:12px;text-decoration:none"><span class="ic"><span style="font-size:1.7rem">📒</span></span><span><h3>Album degli adesivi</h3><span class="muted small">${(state.stickers||[]).length} adesivi su ${STICKERS.length}</span></span></a>` : ""}
+  ${tab==="bambini" ? `<a class="action kid" href="#giochi-album" style="margin-top:12px;text-decoration:none"><span class="ic"><span style="font-size:1.7rem">📒</span></span><span><h3>Album degli adesivi</h3><span class="muted small">${(kidStore().stickers||[]).length} adesivi su ${STICKERS.length}</span></span></a>` : ""}
   <div class="grid2" style="margin-top:16px">
     ${GAME_ORDER[tab].map(id=>{ const g = GAMES[id], st = g.free ? null : totalStars(id), max = g.free ? 0 : g.stages*3;
       return `<button class="action ${g.kids?"kid":""}" data-g="${id}"><span class="ic">${ICON[g.icon] ? icon(g.icon) : `<span style="font-size:1.7rem">${g.icon}</span>`}</span>
@@ -2235,6 +2314,7 @@ function stageResult(box, id, n, res){
   const g = GAMES[id], p = gprog(id), st = starsFor(res.pct), prev = p.stars[n] || 0;
   p.plays = (p.plays||0) + 1; if(st > prev) p.stars[n] = st; const record = (res.score||0) > (p.best[n]||0); if(record) p.best[n] = res.score||0;
   const sticker = g.kids && st > 0 && prev === 0 ? awardSticker() : null;
+  if(g.kids && st > 0) setTimeout(()=>missionTick("gioco"), 1500);
   save(); addXP(4 + st*4);
   if(st > 0) SFX.win(); else SFX.bad();
   const next = n < g.stages && st > 0;
@@ -2260,10 +2340,392 @@ function runFree(main, id){
   $$("[data-l]", main).forEach(b=>b.onclick=()=>{ $$("[data-l]", main).forEach(x=>x.classList.toggle("on", x===b)); storyGame($("#game"), {kids:false, level:b.dataset.l}); });
 }
 function renderAlbum(main){
-  const have = state.stickers || [];
+  const have = kidStore().stickers || [];
   main.innerHTML = `<a class="btn ghost sm" href="#giochi">${icon("back")} Giochi</a>
     <h1 style="margin-top:16px">Album degli adesivi</h1><p class="muted">Ogni livello superato per la prima volta in un gioco per bambini regala un adesivo. Ne hai ${have.length} su ${STICKERS.length}!</p>
     <div class="album">${STICKERS.map(s=>`<div class="slot ${have.includes(s)?"got":""}">${have.includes(s) ? s : "?"}</div>`).join("")}</div>`;
+}
+
+/* ============ AREA BAMBINI: profili, modalità protetta, missioni ============ */
+const KID_EMOJIS = ["🐻","🐰","🦊","🐼","🐯","🦄","🐸","🐵","🐧","🐱","🐶","🦁"];
+function kidsState(){ return state.kids = state.kids || {profiles:[], current:null, data:{}}; }
+function currentKid(){ const k = kidsState(); return k.profiles.find(p=>p.id===k.current) || null; }
+function kidAge(){ return currentKid()?.age || "6-8"; }
+function kidStore(){
+  const k = kidsState(), p = currentKid();
+  if(p) return k.data[p.id] = k.data[p.id] || {stickers:[], gameProg:{}, mission:null};
+  // senza profilo: dati comuni (anche quelli delle versioni precedenti)
+  if(!state.kidsDefault){
+    const old = {}; for(const [lang, games] of Object.entries(state.gameProg||{})) for(const [id, v] of Object.entries(games)) if(id.startsWith("k")){ (old[lang] ||= {})[id] = v; }
+    state.kidsDefault = {stickers: state.stickers || [], gameProg: old, mission:null};
+  }
+  return state.kidsDefault;
+}
+const ageOpts = n => kidAge()==="3-5" ? Math.max(2, n-1) : n;
+function theLang(){ const n = L().name.toLowerCase(); return /^[aeiou]/.test(n) ? "l'"+n : /^s[^aeiou]/.test(n) ? "lo "+n : "il "+n; }
+function kidsModeOn(){ return !!state.kidsMode?.on; }
+
+/* Lettura ad alta voce con la parola evidenziata */
+function readAloud(el, text, {rate}={}){
+  let pos = 0;
+  el.innerHTML = String(text).split(/(\s+)/).map(p=>{ const s = pos; pos += p.length; return /^\s+$/.test(p) ? p : `<span class="rw" data-s="${s}">${esc(p)}</span>`; }).join("");
+  return new Promise(resolve=>{
+    if(!("speechSynthesis" in window)){ resolve(); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text); u.lang = L().code; const v = Voice.pick(); if(v) u.voice = v; u.rate = rate ?? (kidAge()==="3-5" ? 0.75 : 0.85);
+    const spans = [...el.querySelectorAll(".rw")];
+    u.onboundary = e => { if(e.name && e.name !== "word") return; el.classList.add("wordsync"); let cur = null; for(const sp of spans){ if(+sp.dataset.s <= e.charIndex) cur = sp; else break; } spans.forEach(sp=>sp.classList.toggle("on", sp===cur)); };
+    u.onstart = () => { setAvatar("talk"); el.classList.add("reading"); };
+    u.onend = u.onerror = () => { setAvatar(null); spans.forEach(sp=>sp.classList.remove("on")); el.classList.remove("reading","wordsync"); resolve(); };
+    speechSynthesis.speak(u);
+  });
+}
+
+/* ---- Codice dei genitori ---- */
+function askPin(title="Codice dei genitori"){
+  return new Promise(resolve=>{
+    const ov = document.createElement("div"); ov.className = "overlay"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true");
+    let code = "";
+    const draw = (msg="") => {
+      ov.innerHTML = `<div class="panel stack pinbox"><h2 style="margin:0">${esc(title)}</h2><p class="small muted" style="margin:0">Inserisci il codice di 4 cifre</p>
+        <div class="pindots">${[0,1,2,3].map(i=>`<span class="${i<code.length?"on":""}"></span>`).join("")}</div>${msg?`<p class="status-bad" style="margin:0">${msg}</p>`:""}
+        <div class="keypad">${[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map(k=>k===""?"<span></span>":`<button class="key" data-k="${k}">${k}</button>`).join("")}</div>
+        <div class="row" style="justify-content:space-between"><button class="btn ghost sm" id="pc">Annulla</button><button class="btn ghost sm" id="pf">Ho dimenticato il codice</button></div></div>`;
+      $$("[data-k]", ov).forEach(b=>b.onclick=()=>{ const k = b.dataset.k; if(k==="⌫") code = code.slice(0,-1); else if(code.length<4) code += k;
+        if(code.length===4){ if(code === state.kidsMode?.pin){ ov.remove(); resolve(true); return; } code = ""; draw("Codice sbagliato"); return; } draw(); });
+      $("#pc", ov).onclick = () => { ov.remove(); resolve(false); };
+      $("#pf", ov).onclick = () => { const a = 6+Math.floor(Math.random()*4), b = 6+Math.floor(Math.random()*4);
+        ov.innerHTML = `<div class="panel stack pinbox"><h2 style="margin:0">Domanda per adulti</h2><p style="margin:0">Quanto fa ${a} × ${b}?</p><input class="input" id="pa" inputmode="numeric" autocomplete="off">
+          <div class="row"><button class="btn" id="pok">Conferma</button><button class="btn ghost" id="pno">Annulla</button></div></div>`;
+        $("#pa", ov).focus();
+        $("#pok", ov).onclick = () => { if(+$("#pa", ov).value === a*b){ ov.remove(); resolve(true); } else { $("#pa", ov).value = ""; $("#pa", ov).placeholder = "Risposta sbagliata"; } };
+        $("#pno", ov).onclick = () => { ov.remove(); resolve(false); }; };
+    };
+    draw(); document.body.appendChild(ov);
+  });
+}
+function choosePin(){
+  return new Promise(resolve=>{
+    const ov = document.createElement("div"); ov.className = "overlay"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true");
+    ov.innerHTML = `<div class="panel stack pinbox"><h2 style="margin:0">Scegli il codice dei genitori</h2>
+      <p class="small" style="margin:0">Servirà per uscire dalla modalità bambini. Scegli 4 cifre che i bambini non conoscono.</p>
+      <input class="input" id="p1" inputmode="numeric" maxlength="4" placeholder="4 cifre" autocomplete="off"><input class="input" id="p2" inputmode="numeric" maxlength="4" placeholder="Ripeti le 4 cifre" autocomplete="off">
+      <p class="status-bad" id="pm" style="margin:0"></p><div class="row"><button class="btn" id="pok">Attiva</button><button class="btn ghost" id="pno">Annulla</button></div></div>`;
+    document.body.appendChild(ov); $("#p1", ov).focus();
+    $("#pok", ov).onclick = () => { const a = $("#p1", ov).value.trim(), b = $("#p2", ov).value.trim();
+      if(!/^\d{4}$/.test(a)) { $("#pm", ov).textContent = "Il codice deve avere 4 cifre."; return; }
+      if(a !== b){ $("#pm", ov).textContent = "I due codici sono diversi."; return; }
+      ov.remove(); resolve(a); };
+    $("#pno", ov).onclick = () => { ov.remove(); resolve(null); };
+  });
+}
+
+/* ---- Missione del giorno ---- */
+const MISSIONS = {
+  gioco:{t:"Supera un livello in un gioco", e:"🎮", go:"#giochi", need:1},
+  canzone:{t:"Ascolta una canzoncina fino alla fine", e:"🎵", go:"#bambini-canzoni", need:1},
+  storia:{t:"Ascolta una storia fino alla fine", e:"📖", go:"#bambini-storie", need:1},
+  parole:{t:"Ascolta 5 parole del vocabolario", e:"🔤", go:"#bambini-voc", need:5},
+  abc:{t:"Ascolta 5 lettere dell'alfabeto", e:"🅰️", go:"#bambini-abc", need:5},
+  amico:{t:"Fai 3 chiacchiere con Pip", e:"🐧", go:"#bambini-amico", need:3}
+};
+function todayMission(){
+  const st = kidStore(); if(!currentKid()) return null;
+  if(st.mission?.date === today() && st.mission.lang === S().lang) return st.mission;
+  const keys = Object.keys(MISSIONS).filter(k => k!=="abc" || hasABC());
+  const seed = [...(today()+currentKid().id)].reduce((a,c)=>a + c.charCodeAt(0), 0);
+  const pick = keys.map((k,i)=>({k, r:(seed*31 + i*17) % 97})).sort((a,b)=>a.r-b.r).slice(0,3).map(x=>x.k);
+  st.mission = {date:today(), lang:S().lang, tasks:pick, prog:{}, seen:{}, rewarded:false}; save();
+  return st.mission;
+}
+function missionTick(type, key){
+  const m = todayMission(); if(!m || !m.tasks.includes(type)) return;
+  if(key != null){ m.seen[type] = m.seen[type] || []; if(m.seen[type].includes(key)) return; m.seen[type].push(key); }
+  m.prog[type] = Math.min(MISSIONS[type].need, (m.prog[type]||0) + 1);
+  if(m.prog[type] === MISSIONS[type].need) toast(`${MISSIONS[type].e} Missione: fatto!`);
+  if(!m.rewarded && m.tasks.every(t => (m.prog[t]||0) >= MISSIONS[t].need)){ m.rewarded = true; const s = awardSticker(); setTimeout(()=>toast(`🏆 Missione del giorno completata!${s?" Nuovo adesivo "+s:""}`), 1200); SFX.win(); addXP(15); }
+  save();
+}
+
+/* ---- Contenuti: alfabeto e canzoncine ---- */
+const ABC = {en:"ABCDEFGHIJKLMNOPQRSTUVWXYZ", es:"ABCDEFGHIJKLMNÑOPQRSTUVWXYZ", fr:"ABCDEFGHIJKLMNOPQRSTUVWXYZ", de:"ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ", pt:"ABCDEFGHIJKLMNOPQRSTUVWXYZ", nl:"ABCDEFGHIJKLMNOPQRSTUVWXYZ"};
+const hasABC = () => !!ABC[S().lang];
+const SONGS_EN = [
+  {id:"twinkle", e:"⭐", title:"Twinkle, Twinkle, Little Star", it:"La stellina che brilla in cielo", age:"3-5",
+    lines:["Twinkle, twinkle, little star,","How I wonder what you are!","Up above the world so high,","Like a diamond in the sky.","Twinkle, twinkle, little star,","How I wonder what you are!"],
+    words:[["star","stella"],["little","piccola"],["sky","cielo"],["high","in alto"]]},
+  {id:"row", e:"🚣", title:"Row, Row, Row Your Boat", it:"Rema con la tua barchetta lungo il fiume", age:"3-5",
+    lines:["Row, row, row your boat,","Gently down the stream.","Merrily, merrily, merrily, merrily,","Life is but a dream."], words:[["boat","barca"],["row","remare"],["stream","ruscello"],["dream","sogno"]]},
+  {id:"oldmac", e:"🐮", title:"Old MacDonald Had a Farm", it:"La fattoria del vecchio MacDonald e i versi degli animali", age:"3-5",
+    lines:["Old MacDonald had a farm, E-I-E-I-O,","And on that farm he had a cow, E-I-E-I-O,","With a moo moo here and a moo moo there,","Here a moo, there a moo, everywhere a moo moo,","Old MacDonald had a farm, E-I-E-I-O.",
+      "And on that farm he had a duck, E-I-E-I-O,","With a quack quack here and a quack quack there,","Here a quack, there a quack, everywhere a quack quack,","Old MacDonald had a farm, E-I-E-I-O."], words:[["farm","fattoria"],["cow","mucca"],["duck","anatra"],["here","qui"],["there","là"]]},
+  {id:"baa", e:"🐑", title:"Baa, Baa, Black Sheep", it:"La pecorella nera che ha tre sacchi di lana", age:"3-5",
+    lines:["Baa, baa, black sheep, have you any wool?","Yes sir, yes sir, three bags full;","One for the master, and one for the dame,","And one for the little boy who lives down the lane."], words:[["sheep","pecora"],["black","nera"],["wool","lana"],["three","tre"],["bags","sacchi"]]},
+  {id:"hickory", e:"🐭", title:"Hickory Dickory Dock", it:"Il topolino che corre su per l'orologio", age:"3-5",
+    lines:["Hickory, dickory, dock,","The mouse ran up the clock.","The clock struck one,","The mouse ran down,","Hickory, dickory, dock."], words:[["mouse","topo"],["clock","orologio"],["up","su"],["down","giù"],["one","uno"]]},
+  {id:"buckle", e:"👞", title:"One, Two, Buckle My Shoe", it:"Una filastrocca per contare fino a dieci", age:"3-5",
+    lines:["One, two, buckle my shoe;","Three, four, knock at the door;","Five, six, pick up sticks;","Seven, eight, lay them straight;","Nine, ten, a big fat hen."], words:[["shoe","scarpa"],["door","porta"],["sticks","bastoncini"],["hen","gallina"]]},
+  {id:"rain", e:"🌧️", title:"Rain, Rain, Go Away", it:"Pioggia, vai via: voglio giocare!", age:"3-5",
+    lines:["Rain, rain, go away,","Come again another day.","Little Johnny wants to play,","Rain, rain, go away."], words:[["rain","pioggia"],["day","giorno"],["play","giocare"],["go away","vai via"]]},
+  {id:"mary", e:"🐑", title:"Mary Had a Little Lamb", it:"Mary e l'agnellino bianco come la neve", age:"6-8",
+    lines:["Mary had a little lamb,","Its fleece was white as snow;","And everywhere that Mary went,","The lamb was sure to go."], words:[["lamb","agnello"],["white","bianco"],["snow","neve"],["everywhere","dappertutto"]]},
+  {id:"humpty", e:"🥚", title:"Humpty Dumpty", it:"L'uovo Humpty Dumpty cade dal muro", age:"6-8",
+    lines:["Humpty Dumpty sat on a wall,","Humpty Dumpty had a great fall.","All the king's horses and all the king's men","Couldn't put Humpty together again."], words:[["wall","muro"],["fall","caduta"],["king","re"],["horses","cavalli"]]},
+  {id:"jack", e:"🪣", title:"Jack and Jill", it:"Jack e Jill vanno sulla collina a prendere l'acqua", age:"6-8",
+    lines:["Jack and Jill went up the hill","To fetch a pail of water.","Jack fell down and broke his crown,","And Jill came tumbling after."], words:[["hill","collina"],["water","acqua"],["fell down","è caduto"],["after","dopo"]]},
+  {id:"diddle", e:"🐄", title:"Hey Diddle Diddle", it:"La mucca che salta sopra la luna", age:"6-8",
+    lines:["Hey diddle diddle,","The cat and the fiddle,","The cow jumped over the moon;","The little dog laughed","To see such sport,","And the dish ran away with the spoon."], words:[["cat","gatto"],["moon","luna"],["dog","cane"],["spoon","cucchiaio"],["jumped","saltò"]]},
+  {id:"buns", e:"🥯", title:"Hot Cross Buns", it:"Le focaccine calde da comprare con un penny", age:"6-8",
+    lines:["Hot cross buns! Hot cross buns!","One a penny, two a penny,","Hot cross buns!","If you have no daughters,","Give them to your sons;","One a penny, two a penny,","Hot cross buns!"], words:[["hot","caldo"],["buns","panini dolci"],["daughters","figlie"],["sons","figli"]]}
+];
+function songLibrary(){ const own = (state.kidsSongs||{})[S().lang] || []; return [...(S().lang==="en" ? SONGS_EN : []), ...own]; }
+function storyLibrary(){ return (state.kidsStories||{})[S().lang] || []; }
+
+/* ---- Pagine ---- */
+const KID_TILES = [
+  ["giochi","🎮","Giochi","#giochi"],["voc","🖼️","Le prime parole","#bambini-voc"],["abc","🔤","L'alfabeto","#bambini-abc"],
+  ["canzoni","🎵","Canzoncine","#bambini-canzoni"],["storie","📖","Storie","#bambini-storie"],["amico","🐧","Parla con Pip","#bambini-amico"],["album","📒","Album","#giochi-album"]
+];
+RENDER.bambini = main => {
+  const parts = location.hash.slice(1).split("-"), sub = parts[1];
+  if(sub === "genitori") return kidsParents(main);
+  if(sub === "chi") return kidsWho(main);
+  const k = kidsState();
+  if(!sub && (!currentKid() && k.profiles.length)) return kidsWho(main);
+  if(sub === "voc") return kidsVoc(main, parts[2]);
+  if(sub === "abc") return kidsABC(main);
+  if(sub === "canzoni") return kidsSongs(main, parts[2]);
+  if(sub === "storie") return kidsStories(main, parts[2]);
+  if(sub === "amico") return kidsFriend(main);
+  const kid = currentKid(), m = todayMission();
+  main.innerHTML = `
+  ${!kid ? `<div class="panel stack" style="margin-bottom:16px"><h2 style="margin:0">Area bambini</h2><p style="margin:0">Crea un profilo per ogni bambino: così ognuno ha i suoi adesivi, i suoi livelli e la sua missione del giorno, e le attività si adattano alla sua età.</p><div><a class="btn" href="#bambini-genitori">Crea il primo profilo</a></div></div>` : ""}
+  <section class="kids-hero">
+    ${kid ? `<button class="kidavatar" id="who" aria-label="Cambia bambino">${kid.emoji}</button>` : `<span class="kidavatar">🧒</span>`}
+    <div><h1 style="margin:0">Ciao${kid ? " " + esc(kid.name) : ""}!</h1><p class="muted" style="margin:0">Impariamo ${theLang()} giocando 🎈</p></div>
+  </section>
+  ${m ? `<section class="panel mission"><div class="row" style="justify-content:space-between"><h2 style="margin:0">🎯 Missione del giorno</h2>${m.rewarded?`<span class="chip on">Completata! 🏆</span>`:""}</div>
+    <div class="mtasks">${m.tasks.map(t=>{ const d = MISSIONS[t], p = m.prog[t]||0, ok = p >= d.need; return `<a class="mtask ${ok?"ok":""}" href="${d.go}"><span class="me">${ok?"✅":d.e}</span><span><b>${esc(d.t)}</b>${d.need>1?`<span class="small muted"> ${p}/${d.need}</span>`:""}</span></a>`; }).join("")}</div></section>` : ""}
+  <div class="ktiles">${KID_TILES.filter(t=>t[0]!=="abc" || hasABC()).map(([id,e,name,href])=>`<a class="ktile" href="${href}"><span class="ke">${e}</span><b>${name}</b></a>`).join("")}</div>
+  <div class="row" style="margin-top:20px;justify-content:center"><a class="btn ghost sm" href="#bambini-genitori">👪 Area genitori</a></div>`;
+  const w = $("#who"); if(w) w.onclick = () => location.hash = "bambini-chi";
+};
+function kidsWho(main){
+  const k = kidsState();
+  main.innerHTML = `<h1 style="text-align:center">Chi gioca oggi?</h1>
+    <div class="kidpick">${k.profiles.map(p=>`<button class="kidcard" data-id="${p.id}"><span>${p.emoji}</span><b>${esc(p.name)}</b></button>`).join("")}</div>
+    <div class="row" style="justify-content:center;margin-top:20px"><a class="btn ghost sm" href="#bambini-genitori">👪 Area genitori</a></div>`;
+  $$(".kidcard", main).forEach(b=>b.onclick=()=>{ k.current = b.dataset.id; save(); location.hash = "bambini"; });
+}
+async function kidsParents(main){
+  if(kidsModeOn() && !(await askPin("Area genitori"))){ location.hash = "bambini"; return; }
+  const k = kidsState(), on = kidsModeOn();
+  main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Area bambini</a>
+    <h1 style="margin-top:16px">Area genitori</h1>
+    <section class="panel stack"><h2 style="margin:0">Profili dei bambini</h2>
+      ${k.profiles.length ? `<div class="stack" style="gap:8px">${k.profiles.map(p=>`<div class="row" style="justify-content:space-between;border:1px solid var(--line);border-radius:var(--r);padding:8px 12px"><span style="font-size:1.6rem">${p.emoji}</span><b style="flex:1">${esc(p.name)}</b><span class="chip">${p.age} anni</span>${k.current===p.id?`<span class="chip on">Sta giocando</span>`:`<button class="btn ghost sm" data-use="${p.id}">Usa</button>`}<button class="btn ghost sm" data-del="${p.id}">Elimina</button></div>`).join("")}</div>` : `<p class="muted" style="margin:0">Nessun profilo per ora.</p>`}
+      <h3 style="margin:8px 0 0">Aggiungi un bambino</h3>
+      <div class="grid2"><label class="field">Nome<input id="kn" maxlength="20" placeholder="Solo il nome, per esempio Sara" autocomplete="off"></label>
+        <label class="field">Età<select id="ka"><option value="3-5">3–5 anni (non legge ancora)</option><option value="6-8">6–8 anni</option></select></label></div>
+      <div class="row" id="ke">${KID_EMOJIS.map((e,i)=>`<button class="chip ${i===0?"on":""}" data-e="${e}" style="font-size:1.4rem">${e}</button>`).join("")}</div>
+      <div><button class="btn" id="kadd">Aggiungi</button></div>
+      <p class="small muted" style="margin:0">I profili restano solo su questo dispositivo. Basta il nome di battesimo: non servono altri dati.</p>
+    </section>
+    <section class="panel stack" style="margin-top:16px"><h2 style="margin:0">Modalità bambini</h2>
+      <p style="margin:0">Quando è attiva, l'app mostra solo l'area bambini: giochi, parole, canzoni, storie e Pip. Lezioni, esami, impostazioni e chiavi dell'IA restano nascoste, e per uscire serve il tuo codice di 4 cifre.</p>
+      <div>${on ? `<button class="btn" id="koff">Disattiva la modalità bambini</button> <button class="btn ghost" id="kpin">Cambia codice</button>` : `<button class="btn sun" id="kon">Attiva la modalità bambini</button>`}</div>
+    </section>
+    <section class="panel stack" style="margin-top:16px"><h2 style="margin:0">Su Pip, l'amico parlante</h2>
+      <p style="margin:0">Pip è un personaggio guidato dall'IA, con regole pensate per i bambini: frasi brevissime, solo argomenti adatti, nessuna domanda su dati personali. Se un bambino sembra triste o spaventato, Pip gli dice di parlarne con un adulto di fiducia. Le chiacchierate non vengono salvate. L'IA può comunque sbagliare: è meglio usarlo con un adulto vicino.</p>
+    </section>`;
+  let em = KID_EMOJIS[0];
+  $$("#ke .chip", main).forEach(b=>b.onclick=()=>{ em = b.dataset.e; $$("#ke .chip", main).forEach(x=>x.classList.toggle("on", x===b)); });
+  $("#kadd").onclick = () => { const name = $("#kn").value.trim(); if(!name){ $("#kn").focus(); return; }
+    const p = {id:uid(), name, emoji:em, age:$("#ka").value};
+    if(!k.profiles.length && state.kidsDefault){ k.data[p.id] = {...state.kidsDefault, mission:null}; delete state.kidsDefault; }
+    k.profiles.push(p); k.current = p.id; save(); toast(`Profilo di ${name} creato`); route(); };
+  $$("[data-use]", main).forEach(b=>b.onclick=()=>{ k.current = b.dataset.use; save(); route(); });
+  $$("[data-del]", main).forEach(b=>b.onclick=()=>{ const p = k.profiles.find(x=>x.id===b.dataset.del);
+    if(confirm(`Eliminare il profilo di ${p.name}, con i suoi adesivi e progressi?`)){ k.profiles = k.profiles.filter(x=>x!==p); delete k.data[p.id]; if(k.current===p.id) k.current = k.profiles[0]?.id || null; save(); route(); } });
+  const kon = $("#kon"); if(kon) kon.onclick = async () => { if(!k.profiles.length){ toast("Crea prima almeno un profilo"); return; } const pin = await choosePin(); if(!pin) return; state.kidsMode = {on:true, pin}; save(); location.hash = "bambini"; route(); };
+  const koff = $("#koff"); if(koff) koff.onclick = () => { state.kidsMode.on = false; save(); toast("Modalità bambini disattivata"); location.hash = "home"; };
+  const kp = $("#kpin"); if(kp) kp.onclick = async () => { const pin = await choosePin(); if(pin){ state.kidsMode.pin = pin; save(); toast("Codice cambiato"); } };
+}
+
+/* Il mio primo vocabolario */
+async function kidsVoc(main, theme){
+  main.innerHTML = loadingHTML("Apro il vocabolario…");
+  let all; try{ all = await kidsWords(); }catch(e){ main.innerHTML = errorHTML(e); return; }
+  const themes = [...new Set(all.map(w=>w.theme))], tE = th => all.find(w=>w.theme===th).emoji;
+  if(!theme || !themes.includes(theme)){
+    main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><h1 style="margin-top:16px">Le prime parole</h1><p class="muted">Scegli un argomento, poi tocca le immagini per sentire le parole.</p>
+      <div class="ktiles">${themes.map(th=>`<a class="ktile" href="#bambini-voc-${th}"><span class="ke">${tE(th)}</span><b>${th}</b></a>`).join("")}</div>`;
+    return;
+  }
+  const list = all.filter(w=>w.theme===theme);
+  main.innerHTML = `<a class="btn ghost sm" href="#bambini-voc">${icon("back")} Argomenti</a>
+    <div class="row" style="justify-content:space-between;margin-top:16px"><h1 style="margin:0">${tE(theme)} ${esc(theme)}</h1><button class="btn sun" id="all">${icon("play")} Ascolta tutte</button></div>
+    <div class="vocgrid">${list.map(w=>`<button class="voccard" data-id="${esc(w.id)}"><span class="kemoji sm">${w.emoji}</span><b class="kword">${esc(w.word)}</b>${kidAge()==="6-8"?`<span class="small muted">${esc(w.it)}</span>`:""}</button>`).join("")}</div>`;
+  const play = async w => { const c = $(`.voccard[data-id="${CSS.escape(w.id)}"]`, main); if(c){ c.classList.add("pop"); setTimeout(()=>c.classList.remove("pop"), 600); } missionTick("parole", w.id); await Voice.speak(w.word, {rate:0.8}); };
+  $$(".voccard", main).forEach(b=>b.onclick=()=>play(list.find(w=>w.id===b.dataset.id)));
+  let stop = false; cleanup = () => { stop = true; };
+  $("#all").onclick = async () => { stop = false; for(const w of list){ if(stop || !$("#all")) break; await play(w); await wait(500); } };
+}
+/* Alfabeto */
+async function kidsABC(main){
+  if(!hasABC()){ main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><p style="margin-top:16px">L'alfabeto è disponibile per le lingue con alfabeto latino.</p>`; return; }
+  main.innerHTML = loadingHTML("Apro l'alfabeto…");
+  let all; try{ all = await kidsWords(); }catch(e){ main.innerHTML = errorHTML(e); return; }
+  const letters = [...ABC[S().lang]];
+  const ex = ch => all.find(w=>w.theme!=="numeri" && w.theme!=="colori" && bare(w.word).startsWith(bare(ch))) || all.find(w=>bare(w.word).startsWith(bare(ch)));
+  main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><h1 style="margin-top:16px">L'alfabeto</h1><p class="muted">Tocca una lettera per sentire come si chiama e una parola che comincia così.</p>
+    <div class="abcgrid">${letters.map(ch=>{ const w = ex(ch); return `<button class="abc" data-ch="${ch}"><b>${ch}<small>${ch.toLowerCase()}</small></b><span>${w?w.emoji:""}</span></button>`; }).join("")}</div>`;
+  $$(".abc", main).forEach(b=>b.onclick=async ()=>{ const ch = b.dataset.ch, w = ex(ch); b.classList.add("pop"); setTimeout(()=>b.classList.remove("pop"), 600);
+    missionTick("abc", ch); await Voice.speak(ch, {rate:0.7}); if(w){ await wait(250); await Voice.speak(w.word, {rate:0.8}); } });
+}
+/* Canzoncine e filastrocche */
+async function kidsSongs(main, id){
+  const lib = songLibrary();
+  if(id){
+    const s = lib.find(x=>x.id===id); if(!s){ location.hash = "bambini-canzoni"; return; }
+    main.innerHTML = `<a class="btn ghost sm" href="#bambini-canzoni">${icon("back")} Canzoncine</a>
+      <div class="panel kids song" style="margin-top:16px"><div class="song-e">${s.e}</div><h1 style="margin:0">${esc(s.title)}</h1><p class="muted">${esc(s.it||"")}</p>
+        <div class="row"><button class="btn sun" id="sing">${icon("play")} Ascolta</button><button class="btn ghost" id="echo">🔁 Ripeti con me</button><button class="btn ghost" id="stop">${icon("stop")} Stop</button></div>
+        <div class="lyrics">${s.lines.map((l,i)=>`<p class="lyr" data-i="${i}">${esc(l)}</p>`).join("")}</div>
+        ${s.words?.length ? `<p class="small muted" style="margin-bottom:6px">Parole della canzone: tocca per ascoltare</p><div class="row">${s.words.map(([w,t])=>`<button class="chip" data-w="${esc(w)}">${esc(w)} · ${esc(t)}</button>`).join("")}</div>` : ""}
+        <p class="small muted" style="margin-top:14px">La voce legge la filastrocca a ritmo: non può cantarla con la melodia.</p></div>`;
+    let stop = false; cleanup = () => { stop = true; speechSynthesis.cancel(); };
+    const run = async (echo) => { stop = false; speechSynthesis.cancel(); await wait(100);
+      const ps = $$(".lyr", main);
+      for(const p of ps){ if(stop || !$(".lyrics")) return; ps.forEach(x=>x.classList.toggle("cur", x===p)); p.scrollIntoView({block:"nearest", behavior:"smooth"});
+        await readAloud(p, s.lines[+p.dataset.i]); if(echo && !stop){ p.classList.add("echo"); await wait(Math.max(2500, s.lines[+p.dataset.i].length*120)); p.classList.remove("echo"); } }
+      ps.forEach(x=>x.classList.remove("cur")); if(!stop){ missionTick("canzone"); SFX.win(); cheer($(".song", main)); } };
+    $("#sing").onclick = () => run(false); $("#echo").onclick = () => run(true);
+    $("#stop").onclick = () => { stop = true; speechSynthesis.cancel(); };
+    $$("[data-w]", main).forEach(b=>b.onclick=()=>Voice.speak(b.dataset.w, {rate:0.8}));
+    return;
+  }
+  const age = kidAge();
+  main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><h1 style="margin-top:16px">Canzoncine e filastrocche</h1>
+    <p class="muted">${S().lang==="en" ? "Le filastrocche tradizionali inglesi più famose, più quelle nuove che inventiamo insieme." : `Filastrocche originali in ${L().name.toLowerCase()}, inventate apposta.`} La voce le legge e le parole si illuminano: “Ripeti con me” lascia il tempo per ripetere ogni verso.</p>
+    <div class="row" style="margin:12px 0"><button class="btn sun" id="newsong">✨ Inventa una filastrocca nuova</button><span id="nsm" class="small"></span></div>
+    <div class="ktiles">${lib.map(s=>`<a class="ktile ${s.age && s.age!==age ? "dim" : ""}" href="#bambini-canzoni-${s.id}"><span class="ke">${s.e}</span><b>${esc(s.title)}</b>${s.age && s.age!==age ? `<span class="small muted">${s.age} anni</span>` : ""}</a>`).join("") || `<p class="muted">Ancora nessuna filastrocca: inventane una!</p>`}</div>`;
+  $("#newsong").onclick = async () => {
+    $("#newsong").disabled = true; $("#nsm").innerHTML = `<span class="spinner"></span> Sto inventando…`;
+    const topic = shuffle(["animali","colori","numeri","cibo","stagioni","giochi","corpo","mare","notte e stelle","fattoria","trasporti","festa"])[0];
+    try{
+      const r = await ask(`Scrivi filastrocche originali e allegre per bambini di ${age} anni che imparano il ${L().name.toLowerCase()}. Contenuti sempre gentili e adatti ai bambini. Non copiare canzoni esistenti. ${JSON_ONLY}`,
+        `Scrivi una filastrocca originale in ${L().name} sul tema "${topic}", con rime e ritmo, ${age==="3-5" ? "4 versi brevissimi con parole facilissime e ripetute" : "6-8 versi brevi con parole facili"}.
+JSON: {"title":"titolo in ${L().name}","emoji":"una emoji","it":"di cosa parla, in italiano, una frase","lines":["verso"],"words":[["parola in ${L().name}","traduzione"]]}`,
+        {temperature:1, maxTokens:700}, r=>Array.isArray(r.lines) && r.lines.length>=3 && r.title);
+      const s = {id:uid(), e:r.emoji||"🎶", title:r.title, it:r.it||"", lines:r.lines.map(String), words:(r.words||[]).filter(x=>Array.isArray(x)&&x.length===2).slice(0,6), age};
+      state.kidsSongs = state.kidsSongs || {}; state.kidsSongs[S().lang] = [s, ...(state.kidsSongs[S().lang]||[])].slice(0,20); save();
+      location.hash = "bambini-canzoni-" + s.id;
+    }catch(e){ $("#newsong").disabled = false; $("#nsm").innerHTML = `<span class="status-bad">${esc(e.message)}</span>`; }
+  };
+}
+/* Storie da ascoltare */
+async function kidsStories(main, id){
+  const age = kidAge();
+  if(id === "nuova"){
+    main.innerHTML = `<a class="btn ghost sm" href="#bambini-storie">${icon("back")} Storie</a>${loadingHTML("Sto scrivendo una storia nuova…")}`;
+    const hero = shuffle(["un coniglietto curioso","una piccola draghessa gentile","un robot che impara a ballare","una tartaruga velocissima","un gattino astronauta","una balena che canta","un orsetto che cerca il miele","una formica coraggiosa"])[0];
+    try{
+      const r = await ask(`Scrivi storie illustrate per bambini di ${age} anni che imparano il ${L().name.toLowerCase()}: dolci, allegre, senza paura né violenza, con un piccolo insegnamento positivo. ${JSON_ONLY}`,
+        `Scrivi una storia originale in ${L().name} con protagonista ${hero}. ${age==="3-5" ? "5 pagine, ognuna con UNA frase brevissima (massimo 7 parole) e parole facilissime, anche ripetute." : "6 pagine, ognuna con 2 frasi brevi e parole facili."}
+Ogni pagina ha una scena fatta di 2-4 emoji. Alla fine 2 domande facili di comprensione con 3 risposte fatte di emoji e una parola.
+JSON: {"title":"titolo in ${L().name}","cover":"emoji","pages":[{"scene":"🐰🌳","text":"testo in ${L().name}","it":"traduzione italiana"}],"questions":[{"q":"domanda in ${L().name}","q_it":"traduzione","options":[{"e":"🥕","t":"parola"}],"answer":0}]}`,
+        {temperature:0.95, maxTokens:1800}, r=>Array.isArray(r.pages) && r.pages.length>=3 && r.title);
+      const s = {id:uid(), title:r.title, cover:r.cover||"📖", pages:r.pages.filter(p=>p.text), questions:(r.questions||[]).filter(q=>Array.isArray(q.options) && q.options.length>=2 && Number.isInteger(+q.answer)), age, date:today()};
+      state.kidsStories = state.kidsStories || {}; state.kidsStories[S().lang] = [s, ...storyLibrary()].slice(0,15); save();
+      if(location.hash === "#bambini-storie-nuova") location.hash = "bambini-storie-" + s.id;
+    }catch(e){ main.innerHTML = `<a class="btn ghost sm" href="#bambini-storie">${icon("back")} Storie</a><div style="margin-top:16px">${errorHTML(e)}</div>`; }
+    return;
+  }
+  const lib = storyLibrary();
+  if(id){
+    const s = lib.find(x=>x.id===id); if(!s){ location.hash = "bambini-storie"; return; }
+    let pg = 0, auto = true, stop = false; cleanup = () => { stop = true; speechSynthesis.cancel(); };
+    const page = () => {
+      if(pg >= s.pages.length) return quiz(0, 0);
+      const p = s.pages[pg];
+      main.innerHTML = `<a class="btn ghost sm" href="#bambini-storie">${icon("back")} Storie</a>
+        <div class="panel kids storybook" style="margin-top:16px"><div class="small muted" style="text-align:right">${pg+1}/${s.pages.length}</div>
+          <div class="scene">${esc(p.scene||s.cover)}</div><p class="storytext" id="st">${esc(p.text)}</p>
+          ${kidAge()==="6-8" ? `<details><summary class="small" style="cursor:pointer">In italiano</summary><p class="muted">${esc(p.it||"")}</p></details>` : `<p class="small muted">${esc(p.it||"")}</p>`}
+          <div class="row" style="justify-content:space-between;margin-top:12px"><button class="btn ghost" id="prev" ${pg===0?"disabled":""}>◀</button><button class="btn ghost" id="again">${icon("play")} Rileggi</button><button class="btn sun" id="next">▶</button></div></div>`;
+      const read = () => readAloud($("#st"), p.text);
+      $("#again").onclick = read; $("#prev").onclick = () => { pg--; page(); }; $("#next").onclick = () => { pg++; page(); };
+      read().then(async ()=>{ if(auto && !stop && $("#st")){ await wait(1200); if(!stop && $("#st") && $("#next")) { pg++; page(); } } });
+      $$("#prev, #next, #again", main).forEach(b=>b.addEventListener("click", ()=>{ auto = false; }, {once:true}));
+    };
+    const quiz = (qi, ok) => {
+      const qs = s.questions || [];
+      if(qi >= qs.length){
+        missionTick("storia"); SFX.win(); addXP(6);
+        main.innerHTML = `<a class="btn ghost sm" href="#bambini-storie">${icon("back")} Storie</a><div class="panel kids stack" style="margin-top:16px;text-align:center;align-items:center"><div class="scene">${esc(s.cover)}</div><h2>Fine della storia!</h2>${qs.length?`<div class="kstars">${"⭐".repeat(ok)}${"☆".repeat(qs.length-ok)}</div>`:""}<div class="row"><button class="btn sun" id="re">${icon("play")} Riascoltala</button><a class="btn ghost" href="#bambini-storie">Altre storie</a></div></div>`;
+        confetti($(".panel", main)); $("#re").onclick = () => { pg = 0; auto = true; page(); }; return;
+      }
+      const q = qs[qi];
+      main.innerHTML = `<a class="btn ghost sm" href="#bambini-storie">${icon("back")} Storie</a><div class="panel kids stage-panel" style="margin-top:16px;text-align:center"><p class="small muted">Domanda ${qi+1} di ${qs.length}</p><p class="storytext" id="qq">${esc(q.q)}</p><p class="small muted">${esc(q.q_it||"")}</p>
+        <div class="kopts cols3">${q.options.map((o,k)=>`<button class="kopt" data-k="${k}"><span class="kemoji sm">${esc(o.e||"")}</span><span class="kword" style="display:block;font-size:1.1rem">${esc(o.t||"")}</span></button>`).join("")}</div></div>`;
+      readAloud($("#qq"), q.q); let first = true;
+      $$(".kopt", main).forEach(b=>b.onclick=()=>{ if(+b.dataset.k === +q.answer){ b.classList.add("right"); SFX.ok(); cheer($(".stage-panel", main)); setTimeout(()=>quiz(qi+1, ok + (first?1:0)), 1100); } else { first = false; b.classList.add("wrong","shake"); SFX.bad(); setTimeout(()=>b.classList.remove("shake"), 400); } });
+    };
+    page(); return;
+  }
+  main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><h1 style="margin-top:16px">Storie da ascoltare</h1>
+    <p class="muted">Storie brevi con le immagini, lette ad alta voce con le parole che si illuminano. Alla fine qualche domanda facile. Restano salvate per riascoltarle.</p>
+    <div style="margin:12px 0"><a class="btn sun" href="#bambini-storie-nuova">✨ Una storia nuova</a></div>
+    <div class="ktiles">${lib.map(s=>`<a class="ktile" href="#bambini-storie-${s.id}"><span class="ke">${esc(s.cover)}</span><b>${esc(s.title)}</b></a>`).join("") || `<p class="muted">Ancora nessuna storia: premi “Una storia nuova”!</p>`}</div>`;
+}
+/* Pip, l'amico parlante */
+async function kidsFriend(main){
+  const kid = currentKid(), age = kidAge(), turns = [];
+  const sys = `Sei Pip, un pinguino allegro, gentile e paziente che aiuta un bambino di ${age} anni a imparare il ${L().name.toLowerCase()}. Il bambino è italiano.
+Come parli: SEMPRE in ${L().name}, ${age==="3-5" ? "una o due frasi brevissime (massimo 6 parole ciascuna), parole facilissime" : "massimo due frasi brevi con parole facili"}. Fai UNA domanda semplice alla volta su argomenti da bambini: animali, colori, cibo, giochi, numeri, stagioni, giocattoli. Lodi spesso. Se il bambino parla in italiano, gli dici con dolcezza come si dice in ${L().name} e gli chiedi di ripeterlo.
+Regole di sicurezza, sempre valide:
+- Non chiedere mai nome completo, cognome, indirizzo, città, scuola, numero di telefono, foto o altri dati personali. Se il bambino li dice, non ripeterli e cambia argomento con un gioco.
+- Non proporre segreti e non dire mai di tenere qualcosa nascosto ai genitori.
+- Niente argomenti per adulti, paura, violenza, acquisti o marche. Se il bambino ne parla, rispondi con dolcezza e proponi un altro gioco.
+- Se il bambino sembra triste, spaventato o dice che qualcuno gli fa male, rispondi con gentilezza, in italiano nella traduzione, che è importante dirlo subito alla mamma, al papà o a un adulto di cui si fida.
+${JSON_ONLY}
+Formato: {"reply":"risposta in ${L().name}","it":"traduzione italiana","emoji":"una emoji legata alla risposta"}`;
+  main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a>
+    <div class="friend"><div class="pip" id="pip">🐧</div><div class="fbub" id="fb">…</div><p class="small muted" id="fit"></p>
+      <button class="mic big" id="mic" aria-label="Parla con Pip">${icon("mic")}</button><p class="muted" id="heard">Tocca il microfono e parla con Pip!</p>
+      ${age==="6-8" ? `<div class="row" style="justify-content:center"><input class="input" id="ft" placeholder="Oppure scrivi qui" style="max-width:260px" autocomplete="off"><button class="btn ghost" id="fsend">Invia</button></div>` : ""}
+      <button class="btn ghost sm" id="rep" style="margin-top:8px">${icon("play")} Riascolta Pip</button></div>`;
+  let last = "", session = null, busy = false;
+  cleanup = () => { if(session) session.stop(); };
+  const say = async (userText) => {
+    if(busy) return; busy = true;
+    if(userText) turns.push({role:"user", content:userText});
+    $("#fb").innerHTML = `<span class="spinner"></span>`;
+    try{
+      const msgs = [{role:"system", content:sys}, ...turns.slice(-10)];
+      if(!userText) msgs.push({role:"user", content:`[inizio] Saluta ${kid ? "il bambino" : "il bambino"} e fai una prima domanda facile.`});
+      const r = await llm(msgs, {temperature:0.8, maxTokens:300});
+      if(!r.reply) throw new Error("Pip non ha capito, riprova.");
+      turns.push({role:"assistant", content:JSON.stringify(r)}); last = r.reply;
+      if(!$("#fb")) return;
+      $("#pip").textContent = r.emoji ? "🐧" + r.emoji : "🐧"; $("#fit").textContent = r.it || "";
+      await readAloud($("#fb"), r.reply);
+      if(userText) missionTick("amico");
+    }catch(e){ if($("#fb")) $("#fb").textContent = "Ops! Pip non risponde. " + e.message; }
+    busy = false;
+  };
+  $("#rep").onclick = () => last && readAloud($("#fb"), last);
+  $("#mic").onclick = async () => {
+    if(busy) return; if(session){ session.stop(); return; }
+    const mic = $("#mic"); mic.classList.add("on"); mic.innerHTML = icon("stop");
+    session = Voice.listen({onInterim: t => { const el = $("#heard"); if(el) el.textContent = t; }});
+    let r = null; try{ r = await session; }catch(e){ const el = $("#heard"); if(el) el.textContent = e.message; }
+    session = null; if(!$("#mic")) return; mic.classList.remove("on"); mic.innerHTML = icon("mic");
+    if(r && r.text){ $("#heard").textContent = "Hai detto: " + r.text; say(r.text); } else if(!r) $("#heard").textContent = "Non ho sentito. Riprova!";
+  };
+  const fs = $("#fsend"); if(fs){ const go = () => { const v = $("#ft").value.trim(); if(!v) return; $("#ft").value = ""; $("#heard").textContent = "Hai scritto: " + v; say(v); }; fs.onclick = go; $("#ft").onkeydown = e => { if(e.key==="Enter") go(); }; }
+  say(null);
 }
 
 /* ============ ESAMI SIMULATI ============ */
