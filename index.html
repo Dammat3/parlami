@@ -8,6 +8,10 @@
 <meta name="theme-color" content="#3446E8">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Parlami">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap" rel="stylesheet">
@@ -32,6 +36,13 @@
   }
 }
 *{box-sizing:border-box}
+/* Comportamento da app: niente rimbalzo elastico, niente spostamento laterale, niente zoom col doppio tocco */
+html,body{overscroll-behavior:none;overflow-x:clip;max-width:100%}
+body{touch-action:manipulation;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+.main{overflow-x:clip;min-width:0}
+@media (display-mode: standalone){ body{-webkit-user-select:none;user-select:none} input,textarea,.story,.reading,.lyrics,.storytext,.fbub{-webkit-user-select:text;user-select:text} }
+/* Su iPhone i campi con scritte sotto i 16px fanno zoomare la pagina: li porto a 16px */
+@media (max-width:820px){ input,select,textarea{font-size:16px !important} }
 [hidden]{display:none!important}
 html{height:100%}
 body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5;
@@ -293,6 +304,81 @@ a.btn,a.chip,a.action,a.lvl{text-decoration:none}
 .kidnav .kne{font-size:1.4rem;line-height:1}
 body.kidsmode .brand-dot{background:var(--sun)}
 
+/* Kids games 2 */
+.agechip{font-size:.7rem;padding:2px 8px;vertical-align:middle;font-family:var(--body)}
+.caller{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px;min-height:60px}
+.caller .mic{width:56px;height:56px}.caller .mic svg{width:24px;height:24px}
+.sky{position:relative;height:440px;overflow:hidden;background:linear-gradient(#bfe3ff,#eef8ff);padding:0}
+@media (prefers-color-scheme: dark){.sky{background:linear-gradient(#1c2a5a,#2b3a74)}}
+.skytxt{position:absolute;top:18px;left:80px;right:12px;margin:0;font-weight:700;color:#1a1d3a}
+@media (prefers-color-scheme: dark){.skytxt{color:#eef}}
+.balloon-b{position:absolute;bottom:-130px;width:88px;height:106px;border:0;border-radius:50% 50% 46% 46%;background:hsl(var(--hue) 80% 66%);box-shadow:inset -10px -12px 0 rgba(0,0,0,.08);animation:rise var(--dur) linear var(--delay) forwards;display:grid;place-items:center;cursor:pointer}
+.balloon-b::after{content:"";position:absolute;bottom:-26px;left:50%;width:2px;height:26px;background:rgba(0,0,0,.25)}
+.balloon-b span{font-size:2.6rem}
+.balloon-b.popped{animation-play-state:paused;background:transparent;box-shadow:none}
+.balloon-b.popped::after{display:none}
+@keyframes rise{to{transform:translateY(-610px)}}
+@media (prefers-reduced-motion: reduce){.balloon-b{bottom:60px}}
+.bingo{display:grid;gap:10px;max-width:420px;margin:0 auto}
+.bingo.cols2{grid-template-columns:repeat(2,1fr)}.bingo.cols3{grid-template-columns:repeat(3,1fr)}
+.bcell{aspect-ratio:1;border-radius:20px;border:3px solid var(--line);border-bottom-width:6px;background:var(--surface);position:relative}
+.bcell.marked{background:var(--ok-bg);border-color:var(--ok)}
+.bcell.marked::after{content:"✓";position:absolute;top:4px;right:10px;font-weight:800;color:var(--ok);font-size:1.4rem}
+.bcell.hint{box-shadow:0 0 0 5px var(--sun)}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media (max-width:640px){.duo{grid-template-columns:1fr}}
+.duocard h3{margin-bottom:8px}
+.palette{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:16px}
+.swatch{width:56px;height:56px;border-radius:50%;border:4px solid var(--line)}
+.swatch.on{border-color:var(--ink);transform:scale(1.15)}
+.colgrid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.coltile{width:110px;height:110px;border-radius:24px;border:3px solid var(--line);background:var(--surface-2);filter:grayscale(1);transition:background .2s}
+.coltile.painted{filter:none}
+.orso-wrap{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
+@media (max-width:640px){.orso-wrap{grid-template-columns:1fr;justify-items:center}}
+.orso{position:relative;width:220px;height:250px}
+.teddy{position:absolute;left:50%;top:30px;transform:translateX(-50%);font-size:150px;line-height:1}
+.worn{position:absolute;left:50%;transform:translateX(-50%);line-height:1;animation:popk .5s}
+.s-head{top:-6px;font-size:68px}.s-eyes{top:66px;font-size:48px}.s-neck{top:118px;font-size:44px}.s-body{top:132px;font-size:66px}
+.s-legs{top:182px;font-size:48px}.s-feet{top:214px;font-size:38px}.s-hands{top:150px;font-size:36px;left:16%}
+.wardrobe{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.witem{width:80px;height:80px;border-radius:18px;border:3px solid var(--line);border-bottom-width:5px;background:var(--surface)}
+.witem.used{opacity:.4}
+.sortitems{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:60px;margin-bottom:16px}
+.sitem{border:3px solid var(--line);border-bottom-width:5px;border-radius:16px;background:var(--surface);padding:8px 14px;font-size:1.1rem}
+.sitem span{font-size:1.5rem}
+.sitem.sel{border-color:var(--primary);background:var(--primary-soft)}
+.sortboxes{display:grid;gap:12px}
+.sortboxes.cols2{grid-template-columns:1fr 1fr}.sortboxes.cols3{grid-template-columns:repeat(3,1fr)}.sortboxes.cols4{grid-template-columns:repeat(2,1fr)}
+.sbox{border:3px dashed var(--primary);border-radius:22px;background:var(--surface-2);padding:14px 8px;min-height:120px;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--display);font-size:1.1rem}
+.sbe{font-size:2.4rem}
+.sbin{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;font-size:1.3rem}
+.sbin i{font-style:normal}
+.scenes{display:grid;gap:12px}
+.scenes.cols2{grid-template-columns:1fr 1fr}.scenes.cols3{grid-template-columns:repeat(3,1fr)}.scenes.cols4{grid-template-columns:repeat(2,1fr)}
+.scenebtn{border:3px solid var(--line);border-bottom-width:6px;border-radius:20px;background:var(--surface);padding:6px}
+.scenebtn.right{border-color:var(--ok);background:var(--ok-bg)}.scenebtn.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.scene-tile{position:relative;display:block;width:100%;aspect-ratio:1;max-height:180px;margin:0 auto}
+.scene-tile .sc-obj,.scene-tile .sc-ani{position:absolute;left:50%;transform:translateX(-50%);line-height:1}
+.sc-obj{font-size:4rem}.sc-ani{font-size:2.8rem}
+.p-on .sc-obj{bottom:6%}.p-on .sc-ani{bottom:52%}
+.p-under .sc-obj{bottom:46%}.p-under .sc-ani{bottom:4%}
+.p-in .sc-obj{bottom:8%;z-index:2}.p-in .sc-ani{bottom:26%;font-size:2.2rem;z-index:1}
+.p-next .sc-obj{bottom:12%;left:32%}.p-next .sc-ani{bottom:12%;left:74%}
+.p-behind .sc-obj{bottom:8%;z-index:2;font-size:4.4rem}.p-behind .sc-ani{bottom:34%;left:62%;font-size:2.2rem;z-index:1}
+.p-front .sc-obj{bottom:30%;font-size:3.4rem;z-index:1}.p-front .sc-ani{bottom:4%;font-size:3.2rem;z-index:2}
+.cwrap{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-items:flex-start}
+.cgrid{display:grid;gap:3px}
+.cblank{aspect-ratio:1}
+.ccell{position:relative;aspect-ratio:1;background:var(--surface);border:2px solid var(--ink);border-radius:6px}
+.ccell i{position:absolute;top:1px;left:3px;font-size:.62rem;font-style:normal;font-weight:800}
+.ccell input{width:100%;height:100%;border:0;background:transparent;text-align:center;font-family:var(--display);font-size:1.3rem;font-weight:800;text-transform:uppercase;padding:0;color:var(--ink)}
+.ccell input:focus{outline:none;background:var(--primary-soft)}
+.ccell.good{background:var(--ok-bg)}.ccell.bad{background:var(--bad-bg)}
+.clues{display:flex;flex-direction:column;gap:6px;min-width:200px}
+.clue{display:flex;align-items:center;gap:8px;border:2px solid var(--line);border-radius:14px;background:var(--surface);padding:4px 10px;text-align:left}
+.clue svg{width:18px;height:18px;color:var(--primary)}
+
 /* Exercise */
 .progress{height:12px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
 .progress > i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
@@ -389,7 +475,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.9.2";
+const APP_VERSION = "0.10.1";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -987,7 +1073,7 @@ RENDER.impostazioni = main => {
     <section class="panel stack">
       <h2>App</h2>
       <p class="muted">Versione ${APP_VERSION}. ${isStandalone() ? "Stai usando l'app installata." : "Puoi installarla come app, sul PC e sul telefono."}</p>
-      <div class="row" id="installrow">${deferredInstall ? `<button class="btn" id="s-install">Installa l'app</button>` : (isStandalone() ? "" : IS_IOS ? `<span class="small muted">Su iPhone: in Safari tocca il pulsante Condividi e poi “Aggiungi alla schermata Home”. Attenzione: dall'icona il microfono non funziona, per parlare apri Parlami in Safari.</span>` : `<span class="small muted">Se il pulsante non compare: nel menu di Chrome scegli “Installa app” o “Aggiungi a schermata Home”. Serve un indirizzo https o localhost.</span>`)}</div>
+      <div class="row" id="installrow">${deferredInstall ? `<button class="btn" id="s-install">Installa l'app</button>` : (isStandalone() ? (IS_IOS ? `<span class="small muted">Su iPhone, aperta come app, il microfono potrebbe non funzionare: se succede, per le attività a voce apri Parlami da Safari.</span>` : "") : IS_IOS ? `<span class="small muted">Su iPhone: in Safari tocca Condividi, poi “Aggiungi alla schermata Home”, e lascia attivo l'interruttore per aprirla come app web. Se l'icona apre Safari con le sue barre, quell'interruttore era spento: togli l'icona e aggiungila di nuovo.</span>` : `<span class="small muted">Se il pulsante non compare: nel menu di Chrome scegli “Installa app” o “Aggiungi a schermata Home”. Serve un indirizzo https o localhost.</span>`)}</div>
     </section>
     <section class="panel stack">
       <h2>I tuoi dati</h2>
@@ -1702,28 +1788,38 @@ const KIDS_WORDS = [
   ["🍉","anguria","watermelon","cibo"],["🥕","carota","carrot","cibo"],["🍞","pane","bread","cibo"],["🧀","formaggio","cheese","cibo"],["🥛","latte","milk","cibo"],
   ["🍕","pizza","pizza","cibo"],["🍦","gelato","ice cream","cibo"],["🍰","torta","cake","cibo"],["🥚","uovo","egg","cibo"],["🍪","biscotto","cookie","cibo"],
   ["🏠","casa","house","casa"],["🚪","porta","door","casa"],["🪑","sedia","chair","casa"],["🛏️","letto","bed","casa"],["📖","libro","book","casa"],
-  ["✏️","matita","pencil","casa"],["⚽","palla","ball","casa"],["🧸","orsacchiotto","teddy bear","casa"],["☂️","ombrello","umbrella","casa"],["⏰","sveglia","clock","casa"],
+  ["✏️","matita","pencil","casa"],["⚽","palla","ball","casa"],["🧸","orsacchiotto","teddy bear","casa"],["☂️","ombrello","umbrella","casa"],["⏰","sveglia","clock","casa"],["📦","scatola","box","casa"],["🧺","cesto","basket","casa"],
   ["👀","occhi","eyes","corpo"],["👂","orecchio","ear","corpo"],["👃","naso","nose","corpo"],["👄","bocca","mouth","corpo"],["✋","mano","hand","corpo"],["🦶","piede","foot","corpo"],
   ["👕","maglietta","T-shirt","vestiti"],["👖","pantaloni","trousers","vestiti"],["👗","vestito","dress","vestiti"],["👟","scarpe","shoes","vestiti"],["🧢","cappello","cap","vestiti"],["🧦","calzini","socks","vestiti"],
+  ["🎩","cappello elegante","hat","vestiti"],["👑","corona","crown","vestiti"],["🧥","cappotto","coat","vestiti"],["🧣","sciarpa","scarf","vestiti"],["🕶️","occhiali da sole","sunglasses","vestiti"],["🧤","guanti","gloves","vestiti"],["👢","stivali","boots","vestiti"],["🩳","pantaloncini","shorts","vestiti"],
   ["🚗","macchina","car","trasporti"],["🚌","autobus","bus","trasporti"],["🚲","bicicletta","bike","trasporti"],["✈️","aereo","plane","trasporti"],["🚂","treno","train","trasporti"],["🚢","nave","ship","trasporti"],
   ["☀️","sole","sun","natura"],["🌙","luna","moon","natura"],["⭐","stella","star","natura"],["🌧️","pioggia","rain","natura"],["❄️","neve","snow","natura"],["🌳","albero","tree","natura"],["🌸","fiore","flower","natura"],
   ["🔴","rosso","red","colori"],["🔵","blu","blue","colori"],["🟢","verde","green","colori"],["🟡","giallo","yellow","colori"],["🟠","arancione","orange","colori"],["🟣","viola","purple","colori"],["⚫","nero","black","colori"],["⚪","bianco","white","colori"],["🟤","marrone","brown","colori"],
   ["1️⃣","uno","one","numeri"],["2️⃣","due","two","numeri"],["3️⃣","tre","three","numeri"],["4️⃣","quattro","four","numeri"],["5️⃣","cinque","five","numeri"],["6️⃣","sei","six","numeri"],["7️⃣","sette","seven","numeri"],["8️⃣","otto","eight","numeri"],["9️⃣","nove","nine","numeri"],["🔟","dieci","ten","numeri"]
 ];
-async function kidsWords(){
+/* Nomi dei gruppi (per “Metti a posto”), tradotti insieme alle parole */
+const KIDS_CATS = [["🐾","animali","animals","animali"],["🍽️","cibo","food","cibo"],["🏠","casa","home","casa"],["🧍","corpo","body","corpo"],["👚","vestiti","clothes","vestiti"],["🚦","trasporti","transport","trasporti"],["🌿","natura","nature","natura"]];
+const KIDS_ALL = [...KIDS_WORDS, ...KIDS_CATS];
+async function kidsTranslations(){
   const lang = S().lang;
-  let tr;
-  if(lang === "en") tr = KIDS_WORDS.map(w=>w[2]);
-  else {
-    tr = state.kidsVocab?.[lang];
-    if(!tr){
-      const r = await ask(`Sei un insegnante di ${L().name} per bambini. ${JSON_ONLY}`,
-        `Traduci in ${L().name} queste parole italiane per bambini, una per una e nello stesso ordine. Usa la forma più semplice e comune, senza articolo.\nJSON: {"words":["..."]}\n${JSON.stringify(KIDS_WORDS.map(w=>w[1]))}`,
-        {temperature:0.2, maxTokens:2000}, r=>Array.isArray(r.words) && r.words.length===KIDS_WORDS.length);
-      tr = r.words.map(String); state.kidsVocab = {...(state.kidsVocab||{}), [lang]:tr}; save();
-    }
+  if(lang === "en") return KIDS_ALL.map(w=>w[2]);
+  let tr = state.kidsVocab?.[lang];
+  if(!Array.isArray(tr) || tr.length !== KIDS_ALL.length){
+    const r = await ask(`Sei un insegnante di ${L().name} per bambini. ${JSON_ONLY}`,
+      `Traduci in ${L().name} queste parole italiane per bambini, una per una e nello stesso ordine. Usa la forma più semplice e comune, senza articolo.\nJSON: {"words":["..."]}\n${JSON.stringify(KIDS_ALL.map(w=>w[1]))}`,
+      {temperature:0.2, maxTokens:2500}, r=>Array.isArray(r.words) && r.words.length===KIDS_ALL.length);
+    tr = r.words.map(String); state.kidsVocab = {...(state.kidsVocab||{}), [lang]:tr}; save();
   }
+  return tr;
+}
+async function kidsWords(){
+  const tr = await kidsTranslations();
   return KIDS_WORDS.map(([emoji,it,,theme],i)=>({id:emoji, emoji, it, word:tr[i], translation:it, theme}));
+}
+async function kidsCats(){
+  const tr = await kidsTranslations(), out = {};
+  KIDS_CATS.forEach(([emoji, it, , theme], i) => { out[theme] = {emoji, it, word: tr[KIDS_WORDS.length + i]}; });
+  return out;
 }
 /* ============ GIOCHI: livelli, punteggi, suoni ============ */
 const wait = ms => new Promise(r=>setTimeout(r, ms));
@@ -2327,11 +2423,359 @@ JSON: {"riddles":[{"clues":["indizio difficile","indizio medio","indizio facile"
 const GAME_ORDER = {adulti:["coppie","sprint","ascolto","dettato","impiccato","anagramma","completa","chisono","storia"], bambini:["kfoto","kascolta","kmemory","kconta","klettere","kpalloncino","kdillo","kstoria"]};
 const AI_GAMES = ["chisono","storia","kstoria"];
 
+/* ============ GIOCHI PER BAMBINI (seconda serie) ============ */
+const COLOR_CSS = {"🔴":"#e53935","🔵":"#1e88e5","🟢":"#43a047","🟡":"#fdd835","🟠":"#fb8c00","🟣":"#8e24aa","⚫":"#2b2b2b","⚪":"#fafafa","🟤":"#6d4c41"};
+const kidSay = (t, slow) => Voice.speak(t, {rate: slow || kidAge()==="3-5" ? 0.75 : 0.85});
+const isEN = () => S().lang === "en";
+const byId = (all, id) => all.find(w => w.id === id);
+function kidsEnd(h, resolve, total, line){ h.stop(); resolve({pct: Math.round(Math.min(1, h.hits/Math.max(1,total))*100), score:h.score, line}); }
+
+/* Dov'è il gatto?: scene disegnate con le emoji */
+const PREPS = [["on","on"],["under","under"],["in","in"],["next","next to"],["behind","behind"],["front","in front of"]];
+const PREP_STAGE = [["on","under"],["on","under"],["on","under","in"],["on","under","in"],["on","under","in","next"],["on","under","in","next"],["on","under","in","next","behind"],["on","under","in","next","behind","front"],["on","under","in","next","behind","front"],["on","under","in","next","behind","front"]];
+const SCENE_ANIMALS = ["🐱","🐶"], SCENE_OBJECTS = ["📦","🪑","🛏️","🧺"];
+const sceneOk = (prep, obj) => prep !== "in" || obj === "📦" || obj === "🧺";
+function sceneHTML(ani, prep, obj){ return `<span class="scene-tile p-${prep}"><span class="sc-obj">${obj}</span><span class="sc-ani">${ani}</span></span>`; }
+async function scenePhrases(all){
+  // Inglese: frasi già pronte. Altre lingue: l'IA le scrive una volta e restano salvate.
+  const combos = [];
+  for(const a of SCENE_ANIMALS) for(const [p] of PREPS) for(const o of SCENE_OBJECTS) if(sceneOk(p,o)) combos.push([a,p,o]);
+  const key = (a,p,o) => `${a}|${p}|${o}`, out = {};
+  if(isEN()){
+    for(const [a,p,o] of combos) out[key(a,p,o)] = `The ${byId(all,a).word} is ${PREPS.find(x=>x[0]===p)[1]} the ${byId(all,o).word}.`;
+    return out;
+  }
+  const cached = (state.kidsPhr || {})[S().lang];
+  if(cached && Object.keys(cached).length >= combos.length) return cached;
+  const itP = {on:"sopra", under:"sotto", in:"dentro", next:"accanto a", behind:"dietro", front:"davanti a"};
+  const list = combos.map(([a,p,o]) => `${byId(all,a).it} ${itP[p]} ${byId(all,o).it}`);
+  const r = await ask(`Sei un insegnante di ${L().name} per bambini. ${JSON_ONLY}`,
+    `Per ognuna di queste situazioni scrivi una frase semplicissima in ${L().name} del tipo "Il gatto è sotto la scatola", nello stesso ordine.\n${JSON.stringify(list)}\nJSON: {"sentences":["..."]}`,
+    {temperature:0.2, maxTokens:2500}, r => Array.isArray(r.sentences) && r.sentences.length === combos.length);
+  combos.forEach(([a,p,o], i) => { out[key(a,p,o)] = String(r.sentences[i]); });
+  state.kidsPhr = {...(state.kidsPhr||{}), [S().lang]:out}; save();
+  return out;
+}
+
+/* Cruciverba: incastra le parole in una griglia */
+function makeCrossword(words, maxN = 99){
+  for(let attempt = 0; attempt < 25; attempt++){
+    const list = attempt ? shuffle(words) : [...words].sort((a,b)=>b.w.length-a.w.length);
+    const grid = new Map(), placed = [], get = (r,c) => grid.get(r+","+c);
+    const fits = (w, r, c, across) => {
+      let cross = 0;
+      if(get(across ? r : r-1, across ? c-1 : c) || get(across ? r : r+w.length, across ? c+w.length : c)) return false;
+      for(let k = 0; k < w.length; k++){
+        const rr = across ? r : r+k, cc = across ? c+k : c, ex = get(rr, cc);
+        if(ex){ if(ex !== w[k]) return false; cross++; continue; }
+        if(across ? (get(rr-1,cc) || get(rr+1,cc)) : (get(rr,cc-1) || get(rr,cc+1))) return false;
+      }
+      return placed.length === 0 || cross > 0;
+    };
+    const put = (item, r, c, across) => { for(let k = 0; k < item.w.length; k++) grid.set((across ? r : r+k) + "," + (across ? c+k : c), item.w[k]); placed.push({...item, r, c, across}); };
+    put(list[0], 0, 0, true);
+    for(const item of list.slice(1)){
+      if(placed.length >= maxN) break;
+      let done = false;
+      for(const p of shuffle(placed)){
+        for(let i = 0; i < p.w.length && !done; i++) for(let j = 0; j < item.w.length && !done; j++){
+          if(p.w[i] !== item.w[j]) continue;
+          const across = !p.across, r = p.across ? p.r - j : p.r + i, c = p.across ? p.c + i : p.c - j;
+          if(fits(item.w, r, c, across)){ put(item, r, c, across); done = true; }
+        }
+        if(done) break;
+      }
+    }
+    if(placed.length >= Math.min(3, words.length)){
+      const minR = Math.min(...placed.map(p=>p.r)), minC = Math.min(...placed.map(p=>p.c));
+      placed.forEach(p => { p.r -= minR; p.c -= minC; });
+      const rows = Math.max(...placed.map(p => p.across ? p.r+1 : p.r+p.w.length)), cols = Math.max(...placed.map(p => p.across ? p.c+p.w.length : p.c+1));
+      const starts = [...new Set(placed.map(p=>p.r+","+p.c))].sort((a,b)=>{ const [ar,ac]=a.split(",").map(Number), [br,bc]=b.split(",").map(Number); return ar-br || ac-bc; });
+      placed.forEach(p => p.num = starts.indexOf(p.r+","+p.c) + 1);
+      return {placed, rows, cols};
+    }
+  }
+  return null;
+}
+
+const ORSO_SLOTS = {"🧢":"head","🎩":"head","👑":"head","🕶️":"eyes","🧣":"neck","👕":"body","👗":"body","🧥":"body","👖":"legs","🩳":"legs","👟":"feet","👢":"feet","🧦":"feet","🧤":"hands"};
+
+Object.assign(GAMES, {
+  kpalloncini:{kids:true, age:"3-5", name:"Scoppia i palloncini", icon:"🎈", desc:"Ascolta la parola e scoppia il palloncino giusto prima che voli via", stages:10,
+    async load(n){ return kidsStage(n, {count:8}); },
+    play(box, n, d){ return new Promise(resolve=>{
+      const h = makeHud(box, {title:"Scoppia i palloncini", n, kids:true}), rounds = d.words.slice(0, 6);
+      const count = ageOpts([3,3,4,4,4,5,5,5,6,6][n-1]), dur = [11,10,9.5,9,8.5,8,7.5,7,6.5,6][n-1];
+      let i = 0;
+      const show = () => {
+        if(!h.area.isConnected) return;
+        if(i >= rounds.length) return kidsEnd(h, resolve, rounds.length, `${h.hits} palloncini giusti su ${rounds.length}!`);
+        const w = rounds[i], opts = shuffle([w, ...sameTheme(d.all, w, count-1)]); let done = false, missed = false;
+        h.area.innerHTML = `<div class="panel kids sky" id="sky"><button class="mic" id="krep" aria-label="Riascolta" style="position:absolute;top:10px;left:10px;width:56px;height:56px;z-index:3">${icon("play")}</button>
+          <p class="skytxt">${kidAge()==="6-8" && n>=5 ? `Scoppia: <b>${esc(w.word)}</b>` : "Ascolta e scoppia il palloncino giusto!"}</p></div>`;
+        const sky = $("#sky", h.area);
+        const next = ms => setTimeout(()=>{ if(!$("#sky")) return; i++; show(); }, ms);
+        opts.forEach((o,k) => {
+          const b = document.createElement("button"); b.className = "balloon-b"; b.setAttribute("aria-label", o.word);
+          b.style.left = `${4 + k*(88/opts.length) + Math.random()*4}%`; b.style.setProperty("--dur", dur+"s"); b.style.setProperty("--delay", (Math.random()*1.5).toFixed(2)+"s"); b.style.setProperty("--hue", (k*67 + i*31) % 360);
+          b.innerHTML = `<span>${o.emoji}</span>`;
+          b.onclick = () => {
+            if(done) return;
+            if(o.id === w.id){ done = true; b.classList.add("popped"); b.innerHTML = "<span>💥</span>"; if(!missed) h.add(); else SFX.ok(1); kidSay(w.word); cheer(sky); next(1200); }
+            else { b.classList.add("shake"); setTimeout(()=>b.classList.remove("shake"), 400); if(!missed){ missed = true; h.miss(); } }
+          };
+          b.addEventListener("animationend", e => { if(e.animationName !== "rise" || o.id !== w.id || done) return; done = true; if(!missed) h.miss();
+            $(".skytxt", sky).innerHTML = `Era questo: ${w.emoji} <b>${esc(w.word)}</b>`; kidSay(w.word); next(1800); });
+          sky.appendChild(b);
+        });
+        const say = () => kidSay(w.word); setTimeout(say, 300); $("#krep", h.area).onclick = say;
+      };
+      show();
+    }); }},
+  ktombola:{kids:true, age:"3-5", duo:true, name:"Tombola delle parole", icon:"🎱", desc:"Ascolta le parole estratte e segna le immagini della tua cartella", stages:10,
+    async load(n){ const size = [4,4,6,6,6,9,9,9,9,9][n-1]; const d = await kidsStage(n, {count: size + Math.ceil(size*0.6)}); return {...d, size: Math.min(size, d.words.length)}; },
+    play(box, n, d){ return new Promise(resolve=>{
+      const h = makeHud(box, {title:"Tombola", n, kids:true}), card = d.words.slice(0, d.size), calls = shuffle(d.words);
+      const marked = new Set(); let cur = null, decisions = 0, busy = false;
+      h.area.innerHTML = `<div class="panel kids stage-panel" style="text-align:center">
+        <div class="caller"><button class="mic" id="krep" aria-label="Riascolta">${icon("play")}</button><span id="calltxt" class="kword"></span></div>
+        <div class="bingo cols${d.size===4?2:3}">${card.map(w=>`<button class="bcell" data-id="${esc(w.id)}"><span class="kemoji sm">${w.emoji}</span></button>`).join("")}</div>
+        <button class="btn ghost" id="nothave" style="margin-top:14px;font-size:1.1rem">🙅 Non ce l'ho!</button></div>`;
+      const next = () => {
+        if(!h.area.isConnected) return;
+        busy = false;
+        if(marked.size === card.length){ $("#calltxt", h.area).textContent = "TOMBOLA! 🎉"; SFX.win(); confetti($(".stage-panel", h.area)); h.stop(); return setTimeout(()=>resolve({pct: Math.round(h.hits/Math.max(1,decisions)*100), score:h.score, line:`Tombola! ${h.hits} risposte giuste su ${decisions}.`}), 1500); }
+        if(!calls.length){ card.filter(w=>!marked.has(w.id)).forEach(w=>calls.push(w)); }
+        cur = calls.shift();
+        $("#calltxt", h.area).textContent = kidAge()==="6-8" ? cur.word : "🔊";
+        kidSay(cur.word);
+      };
+      $("#krep", h.area).onclick = () => cur && kidSay(cur.word);
+      $$(".bcell", h.area).forEach(b => b.onclick = () => {
+        if(busy || !cur || marked.has(b.dataset.id)) return;
+        decisions++;
+        if(b.dataset.id === cur.id){ busy = true; marked.add(cur.id); b.classList.add("marked"); h.add(); cheer($(".stage-panel", h.area)); setTimeout(next, 900); }
+        else { h.miss(); b.classList.add("shake"); setTimeout(()=>b.classList.remove("shake"), 400); }
+      });
+      $("#nothave", h.area).onclick = () => {
+        if(busy || !cur) return; decisions++; busy = true;
+        const has = card.some(w => w.id === cur.id);
+        if(has){ h.miss(); const cell = $(`.bcell[data-id="${CSS.escape(cur.id)}"]`, h.area); cell.classList.add("hint"); setTimeout(()=>cell.classList.remove("hint"), 1400); calls.push(cur); setTimeout(next, 1500); }
+        else { h.add(5); setTimeout(next, 700); }
+      };
+      setTimeout(next, 400);
+    }); }},
+  kcolora:{kids:true, age:"3-5", name:"Colora!", icon:"🎨", desc:"Ascolta e colora: scegli il colore giusto e poi il disegno giusto", stages:10,
+    async load(){ const all = await kidsWords(); return {all, colors: all.filter(w=>w.theme==="colori"), objs: all.filter(w=>["animali","cibo","natura","trasporti","casa","vestiti"].includes(w.theme) && w.id !== "⚽")}; },
+    play(box, n, d){ return new Promise(resolve=>{
+      const h = makeHud(box, {title:"Colora!", n, kids:true}), R = 6;
+      const nObj = ageOpts([2,3,3,3,4,4,4,5,6,6][n-1]), nCol = ageOpts([2,3,3,4,4,5,5,6,7,9][n-1]);
+      let i = 0;
+      const show = () => {
+        if(!h.area.isConnected) return;
+        if(i >= R) return kidsEnd(h, resolve, R, `${h.hits} disegni colorati bene su ${R}!`);
+        const objs = shuffle(d.objs).slice(0, nObj), cols = shuffle(d.colors).slice(0, nCol), to = objs[0], tc = cols[0];
+        const objsS = shuffle(objs), colsS = shuffle(cols); let sel = null, done = false, missed = false;
+        const phrase = isEN() ? `Color the ${to.word} ${tc.word}.` : `${to.word}… ${tc.word}!`;
+        const hint = n <= 2 && kidAge()==="3-5" ? `<span class="small">${to.emoji} + ${tc.emoji}</span>` : kidAge()==="6-8" ? esc(phrase) : "🔊";
+        h.area.innerHTML = `<div class="panel kids stage-panel" style="text-align:center"><div class="small muted" style="text-align:right">${i+1}/${R}</div>
+          <div class="caller"><button class="mic" id="krep" aria-label="Riascolta">${icon("play")}</button><span class="kword" style="font-size:1.2rem">${hint}</span></div>
+          <div class="palette">${colsS.map(c=>`<button class="swatch" data-c="${esc(c.id)}" style="background:${COLOR_CSS[c.emoji]}" aria-label="${esc(c.word)}"></button>`).join("")}</div>
+          <div class="colgrid">${objsS.map(o=>`<button class="coltile" data-o="${esc(o.id)}"><span class="kemoji sm">${o.emoji}</span></button>`).join("")}</div>
+          <p class="small muted">Tocca prima un colore, poi il disegno.</p></div>`;
+        const say = () => kidSay(phrase); setTimeout(say, 300); $("#krep", h.area).onclick = say;
+        $$(".swatch", h.area).forEach(b => b.onclick = () => { if(done) return; sel = b.dataset.c; $$(".swatch", h.area).forEach(x=>x.classList.toggle("on", x===b)); kidSay(byId(d.colors, sel).word); });
+        $$(".coltile", h.area).forEach(b => b.onclick = () => {
+          if(done) return; if(!sel){ toast("Prima scegli un colore 🎨"); return; }
+          const c = byId(d.colors, sel); b.style.background = COLOR_CSS[c.emoji]; b.classList.add("painted");
+          if(b.dataset.o === to.id && sel === tc.id){ done = true; if(!missed) h.add(); else SFX.ok(1); cheer($(".stage-panel", h.area)); kidSay(phrase); setTimeout(()=>{ i++; show(); }, 1500); }
+          else { if(!missed){ missed = true; h.miss(); } b.classList.add("shake"); setTimeout(()=>{ b.classList.remove("shake","painted"); b.style.background = ""; }, 700); }
+        });
+      };
+      show();
+    }); }},
+  korsetto:{kids:true, age:"3-5", name:"Vesti l'orsetto", icon:"🧸", desc:"Ascolta cosa mettere all'orsetto e scegli il vestito giusto", stages:10,
+    async load(){ const all = await kidsWords(); return {all, items: all.filter(w => ORSO_SLOTS[w.id])}; },
+    play(box, n, d){ return new Promise(resolve=>{
+      const h = makeHud(box, {title:"Vesti l'orsetto", n, kids:true});
+      const steps = [3,4,4,5,5,6,6,7,7,8][n-1], wardrobe = Math.min(d.items.length, ageOpts([4,5,6,7,8,9,10,11,12,14][n-1]) + (kidAge()==="3-5" ? 0 : 0));
+      const items = shuffle(d.items).slice(0, wardrobe), order = shuffle(items).slice(0, Math.min(steps, items.length)), worn = {};
+      let i = 0, missed = false;
+      const draw = () => {
+        if(!h.area.isConnected) return;
+        h.area.innerHTML = `<div class="panel kids stage-panel orso-wrap"><div class="orso"><span class="teddy">🧸</span>${Object.entries(worn).map(([slot, e])=>`<span class="worn s-${slot}">${e}</span>`).join("")}</div>
+          <div><div class="caller"><button class="mic" id="krep" aria-label="Riascolta">${icon("play")}</button><span class="kword" id="otxt"></span></div>
+          <div class="wardrobe">${items.map(o=>`<button class="witem ${Object.values(worn).includes(o.emoji)?"used":""}" data-id="${esc(o.id)}"><span class="kemoji sm">${o.emoji}</span></button>`).join("")}</div>
+          <p class="small muted">${i < order.length ? `Vestito ${i+1} di ${order.length}` : ""}</p></div></div>`;
+        if(i >= order.length){ $("#otxt", h.area).textContent = "Che bello! 🎉"; SFX.win(); confetti($(".stage-panel", h.area)); return setTimeout(()=>kidsEnd(h, resolve, order.length, `Orsetto vestito: ${h.hits} su ${order.length} al primo colpo!`), 1600); }
+        const t = order[i], phrase = isEN() ? `Put on the ${t.word}.` : `${t.word}!`;
+        $("#otxt", h.area).textContent = kidAge()==="6-8" ? phrase : "🔊";
+        const say = () => kidSay(phrase); setTimeout(say, 300); $("#krep", h.area).onclick = say;
+        $$(".witem", h.area).forEach(b => b.onclick = () => {
+          if(b.dataset.id === t.id){ worn[ORSO_SLOTS[t.id]] = t.emoji; if(!missed) h.add(); else SFX.ok(1); missed = false; kidSay(t.word); i++; setTimeout(draw, 500); }
+          else { if(!missed){ missed = true; h.miss(); } b.classList.add("shake"); setTimeout(()=>b.classList.remove("shake"), 400); }
+        });
+      };
+      draw();
+    }); }},
+  kposto:{kids:true, age:"6-8", name:"Metti a posto", icon:"🗂️", desc:"Metti ogni cosa nel gruppo giusto: animali, cibo, vestiti…", stages:10,
+    async load(n){ const all = await kidsWords(); return {all, cats: await kidsCats()}; },
+    play(box, n, d){ return new Promise(resolve=>{
+      const h = makeHud(box, {title:"Metti a posto", n, kids:true});
+      const themes = shuffle(["animali","cibo","casa","corpo","vestiti","trasporti","natura"]).slice(0, ageOpts([2,2,2,3,3,3,4,4,4,4][n-1]) || 2);
+      const per = Math.ceil([6,6,8,8,9,9,10,12,12,12][n-1] / themes.length);
+      const items = shuffle(themes.flatMap(t => shuffle(d.all.filter(w=>w.theme===t)).slice(0, per)));
+      const showEmoji = n < 7; let sel = null, left = items.length;
+      h.area.innerHTML = `<div class="panel kids stage-panel"><p class="small muted" style="margin:0 0 10px">Tocca una parola, poi tocca il gruppo giusto.${showEmoji?"":" Ora solo parole: leggi bene!"}</p>
+        <div class="sortitems">${items.map(w=>`<button class="sitem" data-id="${esc(w.id)}">${showEmoji?`<span>${w.emoji}</span> `:""}<b>${esc(w.word)}</b></button>`).join("")}</div>
+        <div class="sortboxes cols${themes.length}">${themes.map(t=>`<button class="sbox" data-t="${t}"><span class="sbe">${d.cats[t].emoji}</span><b>${esc(d.cats[t].word)}</b><span class="sbin" id="bin-${t}"></span></button>`).join("")}</div></div>`;
+      $$(".sitem", h.area).forEach(b => b.onclick = () => { sel = b; $$(".sitem", h.area).forEach(x=>x.classList.toggle("sel", x===b)); kidSay(byId(d.all, b.dataset.id).word); });
+      $$(".sbox", h.area).forEach(bx => bx.onclick = () => {
+        if(!sel) { toast("Prima tocca una parola"); return; }
+        const w = byId(d.all, sel.dataset.id);
+        if(w.theme === bx.dataset.t){ h.add(); $(`#bin-${bx.dataset.t}`, h.area).insertAdjacentHTML("beforeend", `<i>${w.emoji}</i>`); sel.remove(); sel = null; kidSay(d.cats[bx.dataset.t].word);
+          if(--left === 0){ cheer($(".stage-panel", h.area)); setTimeout(()=>{ h.stop(); resolve({pct: Math.round(h.hits/(h.hits+h.misses)*100), score:h.score, line:`Tutto a posto! ${h.misses} errori.`}); }, 1000); } }
+        else { h.miss(); bx.classList.add("shake"); setTimeout(()=>bx.classList.remove("shake"), 400); }
+      });
+    }); }},
+  kdove:{kids:true, age:"6-8", name:"Dov'è il gatto?", icon:"🐱", desc:"Sopra, sotto, dentro, accanto: ascolta e scegli la scena giusta", stages:10,
+    async load(){ const all = await kidsWords(); return {all, phr: await scenePhrases(all)}; },
+    play(box, n, d){ return new Promise(resolve=>{
+      const h = makeHud(box, {title:"Dov'è il gatto?", n, kids:true}), R = 6, preps = PREP_STAGE[n-1], nOpt = Math.min(preps.length, ageOpts([2,2,3,3,3,4,4,4,4,4][n-1]));
+      let i = 0;
+      const show = () => {
+        if(!h.area.isConnected) return;
+        if(i >= R) return kidsEnd(h, resolve, R, `${h.hits} scene giuste su ${R}!`);
+        const ani = shuffle(SCENE_ANIMALS)[0];
+        const target = (() => { for(;;){ const p = shuffle(preps)[0], o = shuffle(SCENE_OBJECTS)[0]; if(sceneOk(p,o)) return {p, o}; } })();
+        const others = shuffle(preps.filter(p => p !== target.p)).slice(0, nOpt-1).map(p => ({p, o: sceneOk(p, target.o) ? target.o : "📦"}));
+        const opts = shuffle([target, ...others]), phrase = d.phr[`${ani}|${target.p}|${target.o}`] || "";
+        let done = false, missed = false;
+        h.area.innerHTML = `<div class="panel kids stage-panel" style="text-align:center"><div class="small muted" style="text-align:right">${i+1}/${R}</div>
+          <div class="caller"><button class="mic" id="krep" aria-label="Riascolta">${icon("play")}</button><span class="kword" style="font-size:1.2rem">${n<=5 ? esc(phrase) : "🔊"}</span></div>
+          <div class="scenes cols${opts.length}">${opts.map((s,k)=>`<button class="scenebtn" data-k="${k}">${sceneHTML(ani, s.p, s.o)}</button>`).join("")}</div></div>`;
+        const say = () => kidSay(phrase); setTimeout(say, 300); $("#krep", h.area).onclick = say;
+        $$(".scenebtn", h.area).forEach(b => b.onclick = () => {
+          if(done) return;
+          if(opts[+b.dataset.k] === target){ done = true; b.classList.add("right"); if(!missed) h.add(); else SFX.ok(1); cheer($(".stage-panel", h.area)); setTimeout(()=>{ i++; show(); }, 1300); }
+          else { if(!missed){ missed = true; h.miss(); } b.classList.add("wrong","shake"); setTimeout(()=>b.classList.remove("shake"), 400); }
+        });
+      };
+      show();
+    }); }},
+  kiniziale:{kids:true, age:"6-8", name:"Con che lettera inizia?", icon:"🔠", desc:"Ascolta la parola e trova la lettera: prima l'iniziale, poi quella che manca", stages:10,
+    async load(n){ if(!hasABC()) throw new Error("Questo gioco funziona con le lingue che usano l'alfabeto latino."); return kidsStage(n, {count:8, exclude:["numeri"]}); },
+    play(box, n, d){ return new Promise(resolve=>{
+      const h = makeHud(box, {title:"Con che lettera inizia?", n, kids:true}), abc = [...ABC[S().lang]];
+      const mode = n <= 4 ? "first" : n <= 7 ? "listen" : "missing", nOpt = ageOpts(n <= 2 ? 3 : 4);
+      const rounds = d.words.filter(w => /^\p{L}+$/u.test(w.word) && w.word.length >= 3).slice(0, 6);
+      let i = 0;
+      const show = () => {
+        if(!h.area.isConnected) return;
+        if(i >= rounds.length) return kidsEnd(h, resolve, rounds.length, `${h.hits} lettere giuste su ${rounds.length}!`);
+        const w = rounds[i], chars = [...w.word.toUpperCase()];
+        const pos = mode === "missing" ? 1 + Math.floor(Math.random()*(chars.length-1)) : 0, ans = chars[pos];
+        const opts = shuffle([ans, ...shuffle(abc.filter(c => bare(c) !== bare(ans))).slice(0, nOpt-1)]);
+        const shown = mode === "missing" ? chars.map((c,k)=>k===pos?"_":c).join("") : "";
+        let done = false, missed = false;
+        h.area.innerHTML = `<div class="panel kids stage-panel" style="text-align:center"><div class="small muted" style="text-align:right">${i+1}/${rounds.length}</div>
+          <div class="kemoji" id="ke">${mode === "listen" ? "❓" : w.emoji}</div>
+          ${mode === "missing" ? `<div class="hang" style="font-size:2.2rem">${[...shown].map(c=>`<span>${esc(c)}</span>`).join("")}</div><p class="muted">Quale lettera manca?</p>` : `<p class="muted">${mode==="listen" ? "Ascolta bene: con che lettera inizia?" : "Con che lettera inizia?"}</p>`}
+          <button class="btn ghost sm" id="krep">${icon("play")} Ascolta</button>
+          <div class="kopts cols${opts.length}" style="margin-top:14px">${opts.map(c=>`<button class="kopt" data-c="${esc(c)}"><span class="kword" style="font-size:2rem">${esc(c)}</span></button>`).join("")}</div></div>`;
+        const say = () => kidSay(w.word); setTimeout(say, 300); $("#krep", h.area).onclick = say;
+        $$(".kopt", h.area).forEach(b => b.onclick = async () => {
+          if(done) return;
+          if(b.dataset.c === ans){ done = true; b.classList.add("right"); if(!missed) h.add(); else SFX.ok(1); $("#ke", h.area).textContent = w.emoji; cheer($(".stage-panel", h.area)); await Voice.speak(ans, {rate:0.7}); kidSay(w.word); setTimeout(()=>{ i++; show(); }, 1500); }
+          else { if(!missed){ missed = true; h.miss(); } b.classList.add("wrong","shake"); setTimeout(()=>b.classList.remove("shake"), 400); }
+        });
+      };
+      show();
+    }); }},
+  kcruci:{kids:true, age:"6-8", name:"Cruciverba con le immagini", icon:"✏️", desc:"Un cruciverba dove gli indizi sono immagini da trasformare in parole", stages:10,
+    async load(n){
+      if(!hasABC()) throw new Error("Il cruciverba funziona con le lingue che usano l'alfabeto latino.");
+      const all = await kidsWords(), maxLen = [4,5,5,5,6,6,7,7,8,8][n-1];
+      const pool = all.filter(w => /^\p{L}+$/u.test(w.word) && w.word.length >= 3 && w.word.length <= maxLen && w.theme !== "numeri");
+      const seen = new Set(), uniq = pool.filter(w => { const k = bare(w.word); if(seen.has(k)) return false; seen.add(k); return true; });
+      const want = [3,3,4,4,5,5,6,6,7,7][n-1];
+      for(let t = 0; t < 10; t++){
+        const cw = makeCrossword(pickFresh(uniq, Math.min(uniq.length, want + 4)).map(w => ({w:[...bare(w.word).toUpperCase()], ref:w})), want);
+        if(cw && cw.placed.length >= Math.min(want, 3)) return cw;
+      }
+      throw new Error("Non sono riuscito a creare il cruciverba. Riprova.");
+    },
+    play(box, n, cw){ return new Promise(resolve=>{
+      const h = makeHud(box, {title:"Cruciverba", n, kids:true});
+      // ricostruisce la griglia solo con le parole tenute
+      const cells = new Map();
+      cw.placed.forEach((p, wi) => p.w.forEach((ch, k) => { const r = p.across ? p.r : p.r+k, c = p.across ? p.c+k : p.c, key = r+","+c;
+        const cell = cells.get(key) || {r, c, ch, words:[]}; cell.words.push(wi); cells.set(key, cell); }));
+      const rows = Math.max(...[...cells.values()].map(x=>x.r)) + 1, cols = Math.max(...[...cells.values()].map(x=>x.c)) + 1;
+      const nums = {}; cw.placed.forEach(p => { nums[p.r+","+p.c] = p.num; });
+      let dir = null, hints = 0, wrongChecks = 0;
+      h.area.innerHTML = `<div class="panel kids stage-panel"><div class="cwrap"><div class="cgrid" style="grid-template-columns:repeat(${cols}, minmax(30px, 46px))">
+        ${Array.from({length:rows*cols}, (_,idx) => { const r = Math.floor(idx/cols), c = idx%cols, cell = cells.get(r+","+c);
+          return cell ? `<span class="ccell">${nums[r+","+c] ? `<i>${nums[r+","+c]}</i>` : ""}<input maxlength="1" data-k="${r},${c}" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Riga ${r+1} colonna ${c+1}"></span>` : `<span class="cblank"></span>`; }).join("")}
+      </div><div class="clues">${["across","down"].map(a => { const list = cw.placed.filter(p => (a==="across") === p.across).sort((x,y)=>x.num-y.num); return list.length ? `<p class="small muted" style="margin:6px 0 4px"><b>${a==="across"?"➡️ Orizzontali":"⬇️ Verticali"}</b></p>${list.map(p=>`<button class="clue" data-w="${cw.placed.indexOf(p)}"><b>${p.num}</b> <span class="kemoji sm" style="font-size:1.8rem">${p.ref.emoji}</span> ${icon("play")} <span class="small muted">${p.w.length} lettere</span></button>`).join("")}` : ""; }).join("")}</div></div>
+        <div class="row" style="justify-content:center;margin-top:12px"><button class="btn sun" id="check">Controlla</button><button class="btn ghost" id="hint">💡 Una lettera</button></div><p id="cmsg" class="small" style="text-align:center"></p></div>`;
+      const inp = k => $(`input[data-k="${k}"]`, h.area);
+      const focusWord = wi => { const p = cw.placed[wi]; dir = p.across; const first = p.w.findIndex((ch,k)=>{ const key = p.across ? `${p.r},${p.c+k}` : `${p.r+k},${p.c}`; return !inp(key).value; }); const k = first < 0 ? 0 : first; inp(p.across ? `${p.r},${p.c+k}` : `${p.r+k},${p.c}`).focus(); };
+      $$(".clue", h.area).forEach(b => b.onclick = () => { const p = cw.placed[+b.dataset.w]; kidSay(p.ref.word); focusWord(+b.dataset.w); });
+      $$(".cgrid input", h.area).forEach(el => {
+        el.addEventListener("focus", () => { const cell = cells.get(el.dataset.k); if(dir === null || !cell.words.some(wi => cw.placed[wi].across === dir)) dir = cw.placed[cell.words[0]].across; });
+        el.addEventListener("input", () => { el.value = el.value.slice(-1).toUpperCase(); el.parentElement.classList.remove("bad","good");
+          if(el.value){ const [r,c] = el.dataset.k.split(",").map(Number); const nx = inp(dir ? `${r},${c+1}` : `${r+1},${c}`); if(nx) nx.focus(); } });
+        el.addEventListener("keydown", e => { if(e.key === "Backspace" && !el.value){ const [r,c] = el.dataset.k.split(",").map(Number); const pv = inp(dir ? `${r},${c-1}` : `${r-1},${c}`); if(pv){ pv.focus(); pv.value = ""; e.preventDefault(); } } });
+      });
+      const solved = () => [...cells.entries()].every(([k, cell]) => bare(inp(k).value).toUpperCase() === cell.ch);
+      $("#check", h.area).onclick = () => {
+        let wrong = 0, empty = 0;
+        cells.forEach((cell, k) => { const el = inp(k), v = bare(el.value).toUpperCase(); el.parentElement.classList.remove("bad","good"); if(!v){ empty++; return; } if(v === cell.ch) el.parentElement.classList.add("good"); else { wrong++; el.parentElement.classList.add("bad"); } });
+        if(solved()){
+          cw.placed.forEach(p => h.add(10)); cheer($(".stage-panel", h.area)); SFX.win(); $("#cmsg", h.area).innerHTML = "<b>Cruciverba completato! 🎉</b>";
+          setTimeout(()=>{ h.stop(); resolve({pct: Math.max(0, 100 - hints*12 - wrongChecks*8), score:h.score, line:`Cruciverba completato con ${hints} aiuti.`}); }, 1400);
+        } else { if(wrong){ wrongChecks++; SFX.bad(); } $("#cmsg", h.area).textContent = wrong ? `Ci sono ${wrong} lettere da correggere (in rosso).` : `Mancano ancora ${empty} lettere.`; }
+      };
+      $("#hint", h.area).onclick = () => {
+        const todo = [...cells.entries()].filter(([k, cell]) => bare(inp(k).value).toUpperCase() !== cell.ch);
+        if(!todo.length) return; const [k, cell] = todo[Math.floor(Math.random()*todo.length)];
+        hints++; const el = inp(k); el.value = cell.ch; el.parentElement.classList.add("good"); SFX.flip();
+      };
+    }); }}
+});
+GAME_ORDER.bambini = ["kpalloncini","ktombola","kcolora","korsetto","kfoto","kascolta","kmemory","kconta","kdillo","kposto","kdove","kiniziale","kcruci","klettere","kpalloncino","kstoria"];
+Object.assign(GAMES.kfoto, {age:"3-8"}); Object.assign(GAMES.kascolta, {age:"3-8"}); Object.assign(GAMES.kmemory, {age:"3-8"}); Object.assign(GAMES.kconta, {age:"3-8"});
+Object.assign(GAMES.kdillo, {age:"3-8"}); Object.assign(GAMES.kstoria, {age:"3-8"}); Object.assign(GAMES.klettere, {age:"6-8"}); Object.assign(GAMES.kpalloncino, {age:"6-8"});
+
+/* Tombola in due: due cartelle, si estrae a turno con "Prossima parola" */
+async function runTombolaDuo(main){
+  main.innerHTML = `<a class="btn ghost sm" href="#giochi-ktombola">${icon("back")} Tombola</a><div id="game" style="margin-top:14px;position:relative">${loadingHTML("Preparo le cartelle…")}</div>`;
+  let all; try{ all = await kidsWords(); }catch(e){ $("#game").innerHTML = errorHTML(e); return; }
+  const seen = new Set(), pool = shuffle(all.filter(w => w.theme !== "numeri")).filter(w => { const k = bare(w.word); if(seen.has(k)) return false; seen.add(k); return true; });
+  const cards = [pool.slice(0, 6), pool.slice(6, 12)], calls = shuffle([...pool.slice(0, 12), ...pool.slice(12, 16)]);
+  const names = ["🐻 Squadra Orso", "🐰 Squadra Coniglio"], marked = [new Set(), new Set()]; let cur = null, over = false;
+  const box = $("#game");
+  box.innerHTML = `<div class="panel kids" style="text-align:center;position:relative;overflow:hidden">
+    <div class="caller"><button class="mic" id="krep" aria-label="Riascolta">${icon("play")}</button><span id="calltxt" class="kword">Pronti?</span></div>
+    <button class="btn sun" id="draw" style="font-size:1.15rem">🎱 Prossima parola</button>
+    <div class="duo">${cards.map((card, pi) => `<div class="duocard"><h3>${names[pi]}</h3><div class="bingo cols3">${card.map(w=>`<button class="bcell" data-p="${pi}" data-id="${esc(w.id)}"><span class="kemoji sm">${w.emoji}</span></button>`).join("")}</div></div>`).join("")}</div>
+    <p class="small muted">Un adulto preme “Prossima parola”. Chi ha l'immagine la tocca sulla sua cartella. Vince chi completa per primo!</p></div>`;
+  $("#draw").onclick = () => { if(over) return; if(!calls.length){ $("#calltxt").textContent = "Parole finite!"; return; } cur = calls.shift(); $("#calltxt").textContent = cur.word; kidSay(cur.word); };
+  $("#krep").onclick = () => cur && kidSay(cur.word);
+  $$(".bcell", box).forEach(b => b.onclick = () => {
+    if(over || !cur) return; const pi = +b.dataset.p;
+    if(b.dataset.id === cur.id && !marked[pi].has(cur.id)){ marked[pi].add(cur.id); b.classList.add("marked"); SFX.ok(2);
+      if(marked[pi].size === cards[pi].length){ over = true; $("#calltxt").textContent = `TOMBOLA! Vince ${names[pi]} 🎉`; SFX.win(); confetti(box.firstElementChild); addXP(8); } }
+    else { b.classList.add("shake"); SFX.bad(); setTimeout(()=>b.classList.remove("shake"), 400); }
+  });
+}
+
 RENDER.giochi = main => {
   const parts = location.hash.slice(1).split("-");
   if(parts[1]==="album") return renderAlbum(main);
   const g = GAMES[parts[1]];
-  if(g){ if(g.free) return runFree(main, parts[1]); if(parts[2]) return runStage(main, parts[1], Math.max(1, Math.min(g.stages, +parts[2]||1))); return renderStageMap(main, parts[1]); }
+  if(g){ if(g.free) return runFree(main, parts[1]); if(parts[2] === "duo" && g.duo) return runTombolaDuo(main); if(parts[2]) return runStage(main, parts[1], Math.max(1, Math.min(g.stages, +parts[2]||1))); return renderStageMap(main, parts[1]); }
   const tab = kidsModeOn() ? "bambini" : (sessionStorage.getItem("parlami.gtab") || "adulti");
   if(tab === "adulti") warmPacks();
   main.innerHTML = `
@@ -2343,9 +2787,9 @@ RENDER.giochi = main => {
   <p class="muted">${tab==="adulti" ? `Ogni gioco ha 12 livelli: le parole salgono dall'A1 al C2, il tempo stringe e le regole si complicano. A ogni partita arrivano parole nuove su argomenti diversi. Ogni livello vale fino a 3 stelle: con almeno 1 sblocchi il successivo.` : `Ogni gioco ha 10 livelli con un argomento diverso (animali, cibo, colori, numeri…) e sempre più scelte. Ogni livello superato regala un adesivo per l'album!`}</p>
   ${tab==="bambini" ? `<a class="action kid" href="#giochi-album" style="margin-top:12px;text-decoration:none"><span class="ic"><span style="font-size:1.7rem">📒</span></span><span><h3>Album degli adesivi</h3><span class="muted small">${(kidStore().stickers||[]).length} adesivi su ${STICKERS.length}</span></span></a>` : ""}
   <div class="grid2" style="margin-top:16px">
-    ${GAME_ORDER[tab].map(id=>{ const g = GAMES[id], st = g.free ? null : totalStars(id), max = g.free ? 0 : g.stages*3;
+    ${(tab==="bambini" && currentKid() ? [...GAME_ORDER[tab]].sort((a,b)=>(GAMES[b].age===currentKid().age||GAMES[b].age==="3-8") - (GAMES[a].age===currentKid().age||GAMES[a].age==="3-8")) : GAME_ORDER[tab]).map(id=>{ const g = GAMES[id], st = g.free ? null : totalStars(id), max = g.free ? 0 : g.stages*3;
       return `<button class="action ${g.kids?"kid":""}" data-g="${id}"><span class="ic">${ICON[g.icon] ? icon(g.icon) : `<span style="font-size:1.7rem">${g.icon}</span>`}</span>
-        <span style="flex:1"><h3>${esc(g.name)}${AI_GAMES.includes(id)?" ✦":""}</h3><span class="muted small">${esc(g.desc)}</span>
+        <span style="flex:1"><h3>${esc(g.name)}${AI_GAMES.includes(id)?" ✦":""}${g.age ? ` <span class="chip agechip">${g.age==="3-8"?"3–8":g.age.replace("-","–")} anni</span>` : ""}</h3><span class="muted small">${esc(g.desc)}</span>
         ${g.free ? `<span class="small muted" style="display:block;margin-top:4px">Sempre diversa</span>` : `<span class="gprog"><span class="progress" style="flex:1"><i style="width:${st/max*100}%;background:var(--sun)"></i></span><span class="small">★ ${st}/${max}</span></span>`}</span></button>`; }).join("")}
   </div>
   <p class="small muted" style="margin-top:14px">✦ crea sempre contenuti nuovi con l'IA. Gli altri giochi usano l'IA solo per preparare nuovi pacchetti di parole${tab==="bambini" ? "; per i bambini in inglese non serve proprio" : ""}.</p>`;
@@ -2361,7 +2805,7 @@ function renderStageMap(main, id){
     <div class="stagemap ${g.kids?"kids":""}">${Array.from({length:g.stages}, (_,i)=>{ const n = i+1, open = unlocked(id,n), s = p.stars[n]||0;
       return `<button class="stage ${open?"":"locked"} ${n===nextN?"next":""} ${s===3?"perfect":""}" data-n="${n}" ${open?"":"disabled"} aria-label="Livello ${n}${open?"":" bloccato"}">
         <b>${open ? n : "🔒"}</b><span class="sst">${[1,2,3].map(k=>`<i class="${k<=s?"on":""}">★</i>`).join("")}</span>${g.kids ? `<span class="small">${esc(kidsTheme(n))}</span>` : `<span class="small">${STAGE_LEVEL[n-1]}</span>`}</button>`; }).join("")}</div>
-    <div style="margin-top:16px"><a class="btn sun" href="#giochi-${id}-${nextN}">Gioca il livello ${nextN}</a></div>`;
+    <div class="row" style="margin-top:16px"><a class="btn sun" href="#giochi-${id}-${nextN}">Gioca il livello ${nextN}</a>${g.duo ? `<a class="btn ghost" href="#giochi-${id}-duo">👫 Gioca in due</a>` : ""}</div>`;
   $$(".stage:not(.locked)", main).forEach(b=>b.onclick=()=>location.hash=`giochi-${id}-${b.dataset.n}`);
 }
 async function runStage(main, id, n){
