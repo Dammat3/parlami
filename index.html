@@ -66,7 +66,8 @@ a{color:var(--primary)}
   .rail{position:fixed;bottom:0;left:0;right:0;top:auto;height:auto;flex-direction:row;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));border-right:0;border-top:1px solid var(--line);background:var(--surface);z-index:20}
   .brand,.rail-foot{display:none}
   .nav{display:flex;width:100%;justify-content:space-around}
-  .nav a{flex-direction:column;gap:2px;font-size:.68rem;padding:6px 4px}
+  .nav a{flex-direction:column;gap:2px;font-size:.62rem;padding:6px 2px;min-width:0}
+  .nav a svg{width:20px;height:20px}
   .main{padding:22px 16px calc(96px + env(safe-area-inset-bottom,0px))}
 }
 
@@ -139,6 +140,56 @@ a{color:var(--primary)}
 .lvl i{position:absolute;top:2px;right:6px;font-style:normal;color:var(--sun);font-size:.85rem}
 .lvl.on{border-color:var(--primary);background:var(--primary-soft)}
 .lvl:hover{border-color:var(--primary)}
+
+/* Exams */
+.reading{background:var(--surface-2);border-radius:var(--r);padding:16px 18px;max-height:60vh;overflow-y:auto;line-height:1.65}
+.reading p{max-width:70ch}
+.mcq{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:0}
+.mcq legend{padding:0 4px}
+.mopt{display:flex;gap:10px;align-items:flex-start;padding:6px 8px;border-radius:8px;cursor:pointer}
+.mopt input{margin-top:4px}
+.mopt.right{background:var(--ok-bg)}
+.mopt.wrong{background:var(--bad-bg)}
+.taskbox{background:var(--surface-2);border-left:4px solid var(--primary);border-radius:8px;padding:12px 16px}
+.verdict.great,.verdict.pass{border-color:var(--ok)}
+.verdict.close{border-color:var(--sun)}
+.verdict.fail{border-color:var(--bad)}
+.verdict{border-width:2px}
+.story{font-size:1.25rem;line-height:1.55}
+/* Kids */
+.kids{background:linear-gradient(180deg,var(--surface),var(--surface-2));position:relative;overflow:hidden}
+.kq{text-align:center;margin-bottom:14px}
+.kemoji{font-size:clamp(5rem,18vw,8rem);line-height:1.1;text-align:center}
+.kemoji.sm{font-size:clamp(2.6rem,9vw,3.6rem)}
+.kcount{font-size:clamp(2rem,7vw,3rem);line-height:1.4;max-width:520px;margin:0 auto}
+.kopts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kopt{min-height:84px;border:3px solid var(--line);border-bottom-width:6px;border-radius:20px;background:var(--surface);font-weight:700}
+.kopt:hover{border-color:var(--primary)}
+.kopt.right{border-color:var(--ok);background:var(--ok-bg)}
+.kopt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.kword{font-family:var(--display);font-size:1.4rem}
+.tok.big{font-size:1.5rem;padding:10px 16px;min-width:48px}
+.cheer{position:absolute;inset:0;pointer-events:none}
+.cheer span{position:absolute;left:50%;top:45%;font-size:2rem;animation:pop 1s ease-out forwards;--a:calc(var(--d) * 51deg)}
+@keyframes pop{0%{transform:translate(-50%,-50%) rotate(var(--a)) translateY(0) scale(.4);opacity:1}100%{transform:translate(-50%,-50%) rotate(var(--a)) translateY(-130px) scale(1.2);opacity:0}}
+.kstars{font-size:3rem;letter-spacing:6px;color:var(--sun)}
+.memory{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:520px){.memory{grid-template-columns:repeat(3,1fr)}}
+.mcard{aspect-ratio:3/4;border:3px solid var(--line);border-radius:16px;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;padding:4px}
+.mcard .front{display:none}
+.mcard.up{background:var(--surface);color:var(--ink)}
+.mcard.up .front{display:block}.mcard.up .back{display:none}
+.mcard .back{font-family:var(--display);font-size:2rem;font-weight:800}
+.mcard.done{border-color:var(--ok);background:var(--ok-bg)}
+.mcard .kword{font-size:1.05rem;word-break:break-word}
+.hang{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:16px 0;font-family:var(--display);font-size:2rem;font-weight:800}
+.hang span{min-width:1.1em;border-bottom:3px solid var(--ink);text-align:center}
+.keys{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.key{min-width:46px;height:46px;border-radius:12px;border:2px solid var(--line);border-bottom-width:4px;background:var(--surface);font-weight:800;font-size:1.15rem}
+.key.hit{background:var(--ok-bg);border-color:var(--ok)}
+.key.miss{background:var(--bad-bg);border-color:var(--bad)}
+.balloon{font-size:4.5rem;transform:scale(var(--s));transition:transform .3s;line-height:1}
+.action.kid .ic{background:var(--sun);color:var(--sun-ink)}
 
 /* Exercise */
 .progress{height:12px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
@@ -236,7 +287,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.6";
+const APP_VERSION = "0.7";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -442,6 +493,7 @@ const ICON = {
   chat:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
   wave:'<path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 10v4M21 12h0"/>',
   game:'<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3M15 12h.01M18 13h.01"/>',
+  exam:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11l2 2 4-4M9 17h6"/>',
   cards:'<rect x="3" y="6" width="13" height="15" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v12"/>',
   gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.6 14H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.7 3.6V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5.9z"/>',
   mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
@@ -696,6 +748,7 @@ const Recorder = {
 const VIEWS = [
   {id:"home", label:"Oggi", icon:"home"},
   {id:"lezioni", label:"Lezioni", icon:"book"},
+  {id:"esami", label:"Esami", icon:"exam"},
   {id:"tutor", label:"Tutor", icon:"chat"},
   {id:"pronuncia", label:"Pronuncia", icon:"wave"},
   {id:"giochi", label:"Giochi", icon:"game"},
@@ -779,7 +832,7 @@ RENDER.impostazioni = main => {
         <label class="field">Il tuo livello<select id="s-level">${AREAS.map(ar=>`<optgroup label="${ar.name}">${ar.levels.map(l=>`<option value="${l}" ${l===s.level?"selected":""}>${levelLabel(l)}</option>`).join("")}</optgroup>`).join("")}</select></label>
         <label class="field">Obiettivo giornaliero (XP)<select id="s-goal">${[20,50,100,150].map(g=>`<option ${g===state.dailyGoal?"selected":""}>${g}</option>`).join("")}</select></label>
       </div>
-      <p class="muted small">Livelli del Quadro Comune Europeo (QCER): Base (A1, A2), Autonomo (B1, B2), Padronanza (C1, C2). Non sai qual è il tuo? Fai il <a href="#lezioni-test">test di livello</a>.</p>
+      <p class="muted small">Livelli del Quadro Comune Europeo (QCER): Base (A1, A2), Autonomo (B1, B2), Padronanza (C1, C2). Non sai qual è il tuo? Fai il <a href="#esami-test">test di livello</a>.</p>
     </section>
     <section class="panel stack">
       <h2>Il tuo tutor</h2>
@@ -930,7 +983,7 @@ RENDER.lezioni = main => {
       ${viewLv===S().level ? `<span class="chip on">★ Il tuo livello</span>` : `<button class="btn ghost sm" id="setlv">Imposta come mio livello</button>`}
     </div>
     <p style="margin:0">${esc(info.can)}</p>
-    <p class="small muted" style="margin:0">Non sai qual è il tuo livello? <a href="#lezioni-test">Fai il test di livello</a> (18 domande, circa 5 minuti).</p>
+    <p class="small muted" style="margin:0">Non sai qual è il tuo livello? <a href="#esami-test">Fai il test di livello</a> (18 domande, circa 5 minuti).</p>
   </section>
   <div class="path" style="margin-top:16px">
     ${units.map((u,i)=>{ const pr = state.progress[unitKey(u)]; const cls = pr?.done ? "done" : u===nu ? "next" : "";
@@ -942,11 +995,11 @@ RENDER.lezioni = main => {
 
 /* ============ TEST DI LIVELLO ============ */
 async function runPlacement(main){
-  main.innerHTML = `<button class="btn ghost sm" id="back">${icon("back")} Lezioni</button>
+  main.innerHTML = `<button class="btn ghost sm" id="back">${icon("back")} Esami</button>
     <h1 style="margin-top:18px">Test di livello</h1>
     <p class="muted">18 domande di ${L().name.toLowerCase()}, 3 per ogni livello dall'A1 al C2, sempre più difficili. Rispondi senza aiuti: se non sai, scegli “Non lo so”. Alla fine ti dico il livello da cui conviene partire.</p>
     ${needsSetup()}<div id="pt">${loadingHTML("Preparo le domande…")}</div>`;
-  $("#back").onclick = () => location.hash = "lezioni";
+  $("#back").onclick = () => location.hash = "esami";
   let qs;
   try{
     const r = await ask(`Sei un esaminatore esperto di certificazioni di ${L().name} secondo il QCER. ${JSON_ONLY}`,
@@ -979,11 +1032,13 @@ JSON: {"questions":[{"level":"A1","question":"consegna in italiano con la frase 
       <h2 style="margin:0">Il tuo livello stimato: ${level} · ${esc(info.name)}</h2>
       <p style="margin:0">${esc(info.can)}</p>
       <div class="row">${LEVELS.map(lv=>{ const p = per[lv]||{ok:0,n:0}; return `<span class="chip ${lv===level?"on":""}">${lv}: ${p.ok}/${p.n}</span>`; }).join("")}</div>
+      <p style="margin:0"><b>Ti consiglio di partire da:</b> ${level} · lezione “${esc(nextUnit(level).title)}”. ${level!=="C2" ? `Quando le lezioni del ${level} ti sembrano facili, prova l'<a href="#esami-${level}">esame simulato ${level}</a> per vedere se lo passeresti.` : `Puoi verificare la tua preparazione con l'<a href="#esami-C2">esame simulato C2</a>.`}</p>
       <p class="small muted" style="margin:0">È una stima veloce: se le lezioni ti sembrano troppo facili o troppo difficili, puoi cambiare livello quando vuoi.</p>
-      <div class="row"><button class="btn" id="use">Imposta ${level} come mio livello</button><button class="btn ghost" id="redo">Rifai il test</button></div>
+      <div class="row"><button class="btn" id="use">Imposta ${level} e inizia</button><button class="btn ghost" id="redo">Rifai il test</button></div>
     </section>`;
+    state.placement = {...(state.placement||{}), [S().lang]:{level, date:today()}}; save();
     addXP(10);
-    $("#use").onclick = () => { state.settings.level = level; save(); toast(`Livello impostato: ${levelLabel(level)}`); location.hash = "lezioni-"+level; };
+    $("#use").onclick = () => { state.settings.level = level; save(); toast(`Livello impostato: ${levelLabel(level)}`); location.hash = unitHash(nextUnit(level)); };
     $("#redo").onclick = () => runPlacement(main);
   };
   show();
@@ -1477,30 +1532,6 @@ async function wordPool(n){
   return shuffle(pool).slice(0, n);
 }
 
-RENDER.giochi = main => {
-  const parts = location.hash.slice(1).split("-");
-  if(parts[1] && GAMES[parts[1]]) return startGame(main, parts[1]);
-  main.innerHTML = `
-  <h1>Giochi</h1>
-  <p class="muted">Usano le parole che hai imparato nelle lezioni. Se sono poche, ne aggiungo io di nuove al tuo ripasso.</p>
-  ${needsSetup()}
-  <div class="grid2" style="margin-top:16px">
-    <button class="action" data-g="coppie"><span class="ic">${icon("cards")}</span><span><h3>Coppie</h3><span class="muted small">Abbina ogni parola alla sua traduzione, più veloce che puoi</span></span></button>
-    <button class="action" data-g="sprint"><span class="ic">${icon("fire")}</span><span><h3>Sprint da 60 secondi</h3><span class="muted small">Vero o falso: la traduzione è giusta?</span></span></button>
-    <button class="action" data-g="ascolto"><span class="ic">${icon("play")}</span><span><h3>Ascolto lampo</h3><span class="muted small">Senti una parola e scegli quella giusta</span></span></button>
-    <button class="action" data-g="dettato"><span class="ic">${icon("mic")}</span><span><h3>Di' la parola</h3><span class="muted small">Vedi la traduzione e pronunciala in ${L().name.toLowerCase()}</span></span></button>
-  </div>`;
-  $$("[data-g]", main).forEach(b=>b.onclick=()=>location.hash="giochi-"+b.dataset.g);
-};
-function startGame(main, id){
-  main.innerHTML = `<button class="btn ghost sm" id="back">${icon("back")} Giochi</button><div id="game" style="margin-top:16px">${loadingHTML("Preparo il gioco…")}</div>`;
-  $("#back").onclick = () => location.hash = "giochi";
-  wordPool(GAMES[id].need).then(pool=>{
-    if(!$("#game")) return;
-    if(pool.length < 4) throw new Error("Servono almeno 4 parole: completa una lezione.");
-    GAMES[id].run($("#game"), pool);
-  }).catch(e=>{ if($("#game")) $("#game").innerHTML = errorHTML(e); });
-}
 function gameOver(box, title, line, xp, id){
   addXP(xp);
   box.innerHTML = `<div class="panel stack" style="text-align:center;align-items:center">${avatarSVG(S().persona,110)}<h2>${esc(title)}</h2><p class="muted">${esc(line)}</p>
@@ -1606,6 +1637,692 @@ const GAMES = {
     show();
   }}
 };
+
+/* ============ VOCE: più voci e ascolto lungo (per esami) ============ */
+Voice.speakAs = function(text, idx=0, rate){
+  return new Promise(resolve=>{
+    if(!("speechSynthesis" in window) || !text){ resolve(); return; }
+    const u = new SpeechSynthesisUtterance(text); u.lang = L().code;
+    const list = this.forLang();
+    const v = list.length > 1 ? list[idx % list.length] : this.pick(); if(v) u.voice = v;
+    if(list.length < 2) u.pitch = idx % 2 ? 0.75 : 1.15;
+    u.rate = rate ?? S().rate;
+    u.onstart = () => setAvatar("talk");
+    u.onend = u.onerror = () => { setAvatar(null); resolve(); };
+    speechSynthesis.speak(u);
+  });
+};
+/* Ascolto continuo finché non premi Stop: ritorna {stop(), finished} con {text, conf, error} */
+Voice.listenLong = function({onText}={}){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let resolveDone; const finished = new Promise(r=>resolveDone=r);
+  if(!SR){ resolveDone({text:"", conf:0, error: IS_IOS ? "Su iPhone il microfono funziona solo aprendo Parlami da Safari, con Siri e Dettatura attivi." : "Il riconoscimento vocale funziona in Chrome o Edge."}); return {stop:()=>finished, finished}; }
+  this.stop();
+  let active = true, finals = [], confs = [], interim = "", error = "", r, ended = false;
+  const done = () => { if(ended) return; ended = true; setAvatar(null); resolveDone({text:(finals.join(" ")+" "+interim).trim(), conf: confs.length ? confs.reduce((a,b)=>a+b,0)/confs.length : 0, error}); };
+  const start = () => {
+    r = new SR(); r.lang = L().code; r.continuous = true; r.interimResults = true;
+    r.onresult = e => {
+      interim = "";
+      for(let i=e.resultIndex;i<e.results.length;i++){ const res = e.results[i];
+        if(res.isFinal){ finals.push(res[0].transcript.trim()); if(res[0].confidence) confs.push(res[0].confidence); }
+        else interim += res[0].transcript; }
+      onText && onText((finals.join(" ")+" "+interim).trim());
+    };
+    r.onerror = e => {
+      if(["not-allowed","service-not-allowed","audio-capture"].includes(e.error)){
+        active = false;
+        error = e.error==="audio-capture" ? "Nessun microfono trovato." : IS_IOS ? "Su iPhone attiva Siri e la Dettatura, poi riprova." : "Il microfono è bloccato: consenti l'accesso al microfono nelle impostazioni del browser.";
+      }
+    };
+    r.onend = () => { if(interim){ finals.push(interim.trim()); interim = ""; } if(active){ try{ start(); }catch(e){ done(); } } else done(); };
+    try{ r.start(); }catch(e){}
+  };
+  start(); setAvatar("listen");
+  return { stop(){ active = false; try{ r.stop(); }catch(e){} setTimeout(done, 1500); return finished; }, finished };
+};
+
+/* ============ GIOCHI PER BAMBINI: parole con immagini ============ */
+const KIDS_WORDS = [
+  ["🐶","cane","dog","animali"],["🐱","gatto","cat","animali"],["🐭","topo","mouse","animali"],["🐰","coniglio","rabbit","animali"],["🐻","orso","bear","animali"],
+  ["🦁","leone","lion","animali"],["🐯","tigre","tiger","animali"],["🐮","mucca","cow","animali"],["🐷","maiale","pig","animali"],["🐸","rana","frog","animali"],
+  ["🐵","scimmia","monkey","animali"],["🐔","gallina","chicken","animali"],["🐧","pinguino","penguin","animali"],["🐦","uccello","bird","animali"],["🐟","pesce","fish","animali"],
+  ["🐘","elefante","elephant","animali"],["🦒","giraffa","giraffe","animali"],["🐴","cavallo","horse","animali"],["🐑","pecora","sheep","animali"],["🦋","farfalla","butterfly","animali"],
+  ["🍎","mela","apple","cibo"],["🍌","banana","banana","cibo"],["🍇","uva","grapes","cibo"],["🍓","fragola","strawberry","cibo"],["🍊","arancia","orange","cibo"],
+  ["🍉","anguria","watermelon","cibo"],["🥕","carota","carrot","cibo"],["🍞","pane","bread","cibo"],["🧀","formaggio","cheese","cibo"],["🥛","latte","milk","cibo"],
+  ["🍕","pizza","pizza","cibo"],["🍦","gelato","ice cream","cibo"],["🍰","torta","cake","cibo"],["🥚","uovo","egg","cibo"],["🍪","biscotto","cookie","cibo"],
+  ["🏠","casa","house","casa"],["🚪","porta","door","casa"],["🪑","sedia","chair","casa"],["🛏️","letto","bed","casa"],["📖","libro","book","casa"],
+  ["✏️","matita","pencil","casa"],["⚽","palla","ball","casa"],["🧸","orsacchiotto","teddy bear","casa"],["☂️","ombrello","umbrella","casa"],["⏰","sveglia","clock","casa"],
+  ["👀","occhi","eyes","corpo"],["👂","orecchio","ear","corpo"],["👃","naso","nose","corpo"],["👄","bocca","mouth","corpo"],["✋","mano","hand","corpo"],["🦶","piede","foot","corpo"],
+  ["👕","maglietta","T-shirt","vestiti"],["👖","pantaloni","trousers","vestiti"],["👗","vestito","dress","vestiti"],["👟","scarpe","shoes","vestiti"],["🧢","cappello","cap","vestiti"],["🧦","calzini","socks","vestiti"],
+  ["🚗","macchina","car","trasporti"],["🚌","autobus","bus","trasporti"],["🚲","bicicletta","bike","trasporti"],["✈️","aereo","plane","trasporti"],["🚂","treno","train","trasporti"],["🚢","nave","ship","trasporti"],
+  ["☀️","sole","sun","natura"],["🌙","luna","moon","natura"],["⭐","stella","star","natura"],["🌧️","pioggia","rain","natura"],["❄️","neve","snow","natura"],["🌳","albero","tree","natura"],["🌸","fiore","flower","natura"],
+  ["🔴","rosso","red","colori"],["🔵","blu","blue","colori"],["🟢","verde","green","colori"],["🟡","giallo","yellow","colori"],["🟠","arancione","orange","colori"],["🟣","viola","purple","colori"],["⚫","nero","black","colori"],["⚪","bianco","white","colori"],["🟤","marrone","brown","colori"],
+  ["1️⃣","uno","one","numeri"],["2️⃣","due","two","numeri"],["3️⃣","tre","three","numeri"],["4️⃣","quattro","four","numeri"],["5️⃣","cinque","five","numeri"],["6️⃣","sei","six","numeri"],["7️⃣","sette","seven","numeri"],["8️⃣","otto","eight","numeri"],["9️⃣","nove","nine","numeri"],["🔟","dieci","ten","numeri"]
+];
+async function kidsWords(){
+  const lang = S().lang;
+  let tr;
+  if(lang === "en") tr = KIDS_WORDS.map(w=>w[2]);
+  else {
+    tr = state.kidsVocab?.[lang];
+    if(!tr){
+      const r = await ask(`Sei un insegnante di ${L().name} per bambini. ${JSON_ONLY}`,
+        `Traduci in ${L().name} queste parole italiane per bambini, una per una e nello stesso ordine. Usa la forma più semplice e comune, senza articolo.\nJSON: {"words":["..."]}\n${JSON.stringify(KIDS_WORDS.map(w=>w[1]))}`,
+        {temperature:0.2, maxTokens:2000}, r=>Array.isArray(r.words) && r.words.length===KIDS_WORDS.length);
+      tr = r.words.map(String); state.kidsVocab = {...(state.kidsVocab||{}), [lang]:tr}; save();
+    }
+  }
+  return KIDS_WORDS.map(([emoji,it,,theme],i)=>({id:emoji, emoji, it, word:tr[i], translation:it, theme}));
+}
+function sameTheme(all, w, n){ const pool = shuffle(all.filter(x=>x.id!==w.id && x.theme===w.theme)); const rest = shuffle(all.filter(x=>x.id!==w.id && x.theme!==w.theme)); return [...pool, ...rest].slice(0, n); }
+function cheer(box){
+  const c = document.createElement("div"); c.className = "cheer"; c.setAttribute("aria-hidden","true");
+  c.innerHTML = Array.from({length:7}, (_,i)=>`<span style="--d:${i}">⭐</span>`).join("");
+  box.appendChild(c); setTimeout(()=>c.remove(), 1100);
+}
+function kidsOver(box, ok, total, id){
+  const stars = ok >= total ? 3 : ok >= total*0.6 ? 2 : ok > 0 ? 1 : 0;
+  addXP(3 + ok);
+  box.innerHTML = `<div class="panel stack kids-end" style="text-align:center;align-items:center">
+    <div class="kstars">${"⭐".repeat(stars)}${"☆".repeat(3-stars)}</div>
+    <h2>${stars===3?"Bravissimo!":stars===2?"Molto bene!":stars===1?"Bel lavoro!":"Riproviamo insieme!"}</h2>
+    <p class="muted">${ok} su ${total}</p>
+    <div class="row"><button class="btn sun" id="again">Gioca ancora</button><button class="btn ghost" id="out">Altri giochi</button></div></div>`;
+  $("#again").onclick = () => { location.hash = "giochi"; setTimeout(()=>location.hash = "giochi-"+id, 0); };
+  $("#out").onclick = () => location.hash = "giochi";
+}
+/* Gioco a turni con domanda e 4 risposte (motore comune a più giochi per bambini) */
+function kidsQuiz(box, rounds, {title, id, ask: drawQ, options, isRight, label, speakOn}){
+  let i = 0, ok = 0;
+  const show = () => {
+    if(i >= rounds.length) return kidsOver(box, ok, rounds.length, id);
+    const w = rounds[i], opts = options(w);
+    box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">${title}</h2><span class="timer">${i+1}/${rounds.length}</span></div>
+      <div class="panel kids" style="margin-top:14px"><div class="kq">${drawQ(w)}</div>
+      <div class="kopts">${opts.map(o=>`<button class="kopt" data-id="${esc(o.id)}">${label(o)}</button>`).join("")}</div></div>`;
+    if(speakOn) setTimeout(()=>Voice.speak(w.word), 250);
+    const rep = $("#krep", box); if(rep) rep.onclick = () => Voice.speak(w.word, {rate:0.8});
+    let done = false;
+    $$(".kopt", box).forEach(b=>b.onclick=()=>{
+      if(done) return;
+      const good = isRight(w, b.dataset.id);
+      if(good){
+        done = true; if(!w.missed) ok++; b.classList.add("right"); cheer($(".kids", box)); Voice.speak(w.word);
+        setTimeout(()=>{ i++; show(); }, 1300);
+      } else { b.classList.add("wrong","shake"); setTimeout(()=>b.classList.remove("shake"), 400); w.missed = true; }
+    });
+  };
+  show();
+}
+
+/* ============ Motori di gioco condivisi ============ */
+function lettersGame(box, items, {kids, id, title}){
+  let i = 0, ok = 0;
+  const show = () => {
+    if(i >= items.length) return kids ? kidsOver(box, ok, items.length, id) : gameOver(box, `${ok} su ${items.length}`, "Ricomporre le parole aiuta a ricordarne l'ortografia.", 4+ok*2, id);
+    const w = items[i], target = [...w.word];
+    const letters = shuffle(target.map((ch,k)=>({ch,k}))); let picked = [];
+    const draw = () => {
+      box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">${title}</h2><span class="timer">${i+1}/${items.length}</span></div>
+        <div class="panel ${kids?"kids":""}" style="margin-top:14px;text-align:center">
+          ${kids ? `<div class="kemoji">${w.emoji}</div>` : `<p class="muted">Ricomponi la parola che vuol dire</p><div class="sprint-card" style="padding:0 0 10px"><div class="w" style="font-size:1.6rem">${esc(w.translation)}</div></div>`}
+          <div class="tokens" style="justify-content:center;min-height:58px">${picked.map((t,k)=>`<button class="tok ${kids?"big":""}" data-k="${k}">${esc(t.ch===" "?"␣":t.ch)}</button>`).join("")}</div>
+          <div class="tokens bank" style="justify-content:center">${letters.map((t,k)=>`<button class="tok ${kids?"big":""} ${picked.includes(t)?"used":""}" data-b="${k}">${esc(t.ch===" "?"␣":t.ch)}</button>`).join("")}</div>
+          <div class="row" style="justify-content:center;margin-top:10px"><button class="btn ghost sm" id="hear">${icon("play")} Ascolta</button><button class="btn ghost sm" id="skip">Salta</button></div>
+        </div>`;
+      $$("[data-k]", box).forEach(b=>b.onclick=()=>{ picked.splice(+b.dataset.k,1); draw(); });
+      $$("[data-b]", box).forEach(b=>b.onclick=()=>{ const t = letters[+b.dataset.b]; if(picked.includes(t)) return; picked.push(t);
+        if(picked.length === target.length){
+          const mine = picked.map(x=>x.ch).join("");
+          if(bare(mine) === bare(w.word)){ ok++; draw(); cheer($(".panel", box)); Voice.speak(w.word); setTimeout(()=>{ i++; show(); }, 1300); return; }
+          draw(); const z = $(".tokens", box); z.classList.add("shake"); setTimeout(()=>{ picked = []; draw(); }, 600); return;
+        }
+        draw(); });
+      $("#hear", box).onclick = () => Voice.speak(w.word, {rate:0.8});
+      $("#skip", box).onclick = () => { Voice.speak(w.word); i++; show(); };
+    };
+    draw();
+  };
+  show();
+}
+function hangmanGame(box, items, {kids, id, title}){
+  let i = 0, ok = 0;
+  const MAX = 6;
+  const show = () => {
+    if(i >= items.length) return kids ? kidsOver(box, ok, items.length, id) : gameOver(box, `${ok} su ${items.length}`, "Indovinare lettera per lettera allena l'ortografia.", 4+ok*3, id);
+    const w = items[i], word = w.word, letters = [...new Set([...word.toLowerCase()].filter(ch=>ch.trim() && !/[-'’.]/.test(ch)))];
+    const others = shuffle([...new Set(items.flatMap(x=>[...x.word.toLowerCase()]).filter(ch=>ch.trim() && !letters.includes(ch) && !/[-'’.]/.test(ch)))]).slice(0, Math.max(6, 14-letters.length));
+    const keys = shuffle([...letters, ...others]);
+    const guessed = new Set(); let wrong = 0, over = false;
+    const draw = () => {
+      const shown = [...word].map(ch => (!ch.trim() || /[-'’.]/.test(ch)) ? ch : guessed.has(ch.toLowerCase()) ? ch : "_");
+      const win = !shown.includes("_"), lose = wrong >= MAX;
+      const lives = kids ? `<div class="balloon" style="--s:${1 - wrong/MAX*0.7}">🎈</div><p class="small muted">Il palloncino si sgonfia a ogni errore: ne puoi fare ${MAX - wrong}.</p>`
+                         : `<p class="small muted">Errori: ${wrong} di ${MAX}</p><div class="progress" style="max-width:260px;margin:0 auto"><i style="width:${(MAX-wrong)/MAX*100}%;background:${wrong>=4?"var(--bad)":"var(--ok)"}"></i></div>`;
+      box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">${title}</h2><span class="timer">${i+1}/${items.length}</span></div>
+        <div class="panel ${kids?"kids":""}" style="margin-top:14px;text-align:center">
+          ${kids ? `<div class="kemoji">${w.emoji}</div>` : `<p class="muted">Indizio: <b>${esc(w.translation)}</b></p>`}
+          <div class="hang">${shown.map(ch=>`<span>${esc(ch===" "?" ":ch)}</span>`).join("")}</div>
+          ${lives}
+          <div class="keys">${keys.map(k=>`<button class="key ${guessed.has(k)?(letters.includes(k)?"hit":"miss"):""}" data-k="${esc(k)}" ${guessed.has(k)||win||lose?"disabled":""}>${esc(k)}</button>`).join("")}</div>
+          <div id="hfb" style="margin-top:12px"></div>
+        </div>`;
+      $$(".key", box).forEach(b=>b.onclick=()=>{ const k = b.dataset.k; guessed.add(k); if(!letters.includes(k)) wrong++; draw(); });
+      if((win || lose) && !over){
+        over = true; if(win){ ok++; cheer($(".panel", box)); }
+        $("#hfb", box).innerHTML = `<p><b>${win?"Indovinato!":"La parola era:"}</b> ${esc(word)} ${kids?"":`= ${esc(w.translation)}`}</p><button class="btn" id="nx">Continua</button>`;
+        Voice.speak(word); $("#nx", box).onclick = () => { i++; show(); };
+      }
+    };
+    draw();
+  };
+  show();
+}
+async function storyGame(box, {kids, id}){
+  const steps = kids ? 5 : 6; let step = 0, history = [];
+  const lv = kids ? "A1" : S().level;
+  const sys = kids
+    ? `Racconti storie interattive per bambini di 5-9 anni che imparano il ${L().name.toLowerCase()}. Storie allegre, gentili e adatte ai bambini, con frasi brevissime e parole facili, livello A1, con molte emoji. ${JSON_ONLY}`
+    : `Racconti storie interattive in ${L().name} per un adulto italiano che studia la lingua (livello ${lv}). Trame avvincenti e adatte a tutti. ${JSON_ONLY}`;
+  const turn = async (choice) => {
+    box.innerHTML = loadingHTML(step ? "La storia continua…" : "Sto inventando una storia…");
+    const user = `${step===0 ? "Inizia una storia nuova con un protagonista e un luogo." : `Storia finora: ${JSON.stringify(history.slice(-6))}\nLa scelta del lettore: "${choice}". Continua.`}
+${step >= steps-1 ? "Questa è l'ultima parte: chiudi la storia con un finale felice e soddisfacente, senza scelte." : "Termina con 3 scelte su cosa fare dopo."}
+Scrivi ${kids?"2-3 frasi brevissime":"4-6 frasi"} in ${L().name}.
+JSON: {"text":"parte della storia in ${L().name}","it":"traduzione italiana","choices":[${kids?'{"emoji":"🔑","text":"scelta brevissima in '+L().name+'","it":"traduzione"}':'{"text":"scelta in '+L().name+'","it":"traduzione"}'}]}`;
+    let r;
+    try{ r = await ask(sys, user, {temperature:0.9, maxTokens:900}, r=>typeof r.text==="string"); }
+    catch(e){ box.innerHTML = errorHTML(e, "retry"); $("#retry", box).onclick = () => turn(choice); return; }
+    history.push(r.text); step++;
+    const end = step >= steps || !Array.isArray(r.choices) || !r.choices.length;
+    box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">${kids?"Storia magica":"Storia a bivi"}</h2><span class="timer">${Math.min(step,steps)}/${steps}</span></div>
+      <div class="panel ${kids?"kids":""}" style="margin-top:14px">
+        <p class="story">${esc(r.text)}</p>
+        <details><summary class="small" style="cursor:pointer">Traduzione</summary><p class="muted">${esc(r.it||"")}</p></details>
+        <div class="row" style="margin:10px 0"><button class="btn ghost sm" id="read">${icon("play")} Leggimela</button></div>
+        ${end ? `<p><b>Fine!</b></p><div class="row"><button class="btn ${kids?"sun":""}" id="again">Un'altra storia</button><button class="btn ghost" id="out">Altri giochi</button></div>`
+              : `<p class="small muted">Cosa succede adesso?</p><div class="stack" style="gap:8px">${r.choices.slice(0,3).map((c,k)=>`<button class="opt" data-c="${k}">${kids&&c.emoji?`<span style="font-size:1.6rem;margin-right:8px">${esc(c.emoji)}</span>`:""}${esc(c.text)} <span class="small muted">· ${esc(c.it||"")}</span></button>`).join("")}</div>`}
+      </div>`;
+    $("#read", box).onclick = () => Voice.speak(r.text, {rate: kids ? 0.8 : undefined});
+    Voice.speak(r.text, {rate: kids ? 0.8 : undefined});
+    if(end){ addXP(kids ? 8 : 10); $("#again", box).onclick = () => { step = 0; history = []; turn(); }; $("#out", box).onclick = () => location.hash = "giochi"; }
+    else $$("[data-c]", box).forEach(b=>b.onclick=()=>turn(r.choices[+b.dataset.c].text));
+  };
+  turn();
+}
+
+/* ============ NUOVI GIOCHI ============ */
+Object.assign(GAMES, {
+  // --- per adulti ---
+  impiccato:{need:8, run(box, pool){ hangmanGame(box, pool.filter(w=>[...w.word].length<=16).slice(0,6), {id:"impiccato", title:"Impiccato"}); }},
+  anagramma:{need:8, run(box, pool){ lettersGame(box, pool.filter(w=>[...w.word].length<=12).slice(0,6), {id:"anagramma", title:"Anagramma"}); }},
+  chisono:{need:0, async run(box){
+    let r;
+    try{ r = await ask(`Sei un autore di indovinelli in ${L().name} per studenti. ${who()} ${JSON_ONLY}`,
+      `Crea 5 indovinelli "Chi sono? / Cosa sono?" adatti al livello ${S().level}. Ognuno ha 3 indizi in ${L().name}, dal più difficile al più facile, e la soluzione è una sola parola o espressione comune.\nJSON: {"riddles":[{"clues":["indizio difficile","indizio medio","indizio facile"],"answer":"soluzione in ${L().name}","alt":["altre forme accettabili"],"it":"soluzione in italiano"}]}`,
+      {temperature:0.9, maxTokens:1200}, r=>Array.isArray(r.riddles) && r.riddles.length>=3); }
+    catch(e){ box.innerHTML = errorHTML(e); return; }
+    const list = r.riddles.filter(x=>x.answer && Array.isArray(x.clues)); let i = 0, pts = 0;
+    const show = () => {
+      if(i >= list.length) return gameOver(box, `${pts} punti`, "3 punti se indovini al primo indizio, 2 al secondo, 1 al terzo.", 4+pts, "chisono");
+      const q = list[i]; let shown = 1, done = false;
+      const draw = (msg="") => {
+        box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Chi sono?</h2><span class="timer">${i+1}/${list.length} · ${pts} punti</span></div>
+          <div class="panel stack" style="margin-top:14px">
+            ${q.clues.slice(0, shown).map((c,k)=>`<div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="chip">${k+1}</span><span style="font-size:1.15rem">${esc(c)}</span></div>`).join("")}
+            ${done ? `<div class="feedback ${msg==="ok"?"good":"bad"}"><h3>${msg==="ok"?"Giusto!":"La soluzione era:"} ${esc(q.answer)}</h3><p>${esc(q.it||"")}</p><button class="btn" id="nx">Continua</button></div>`
+              : `<div class="row"><input class="input" id="ans" style="flex:1;min-width:180px" placeholder="La tua risposta in ${L().name.toLowerCase()}" autocomplete="off"><button class="btn" id="go">Rispondi</button></div>
+                 <div class="row">${shown<q.clues.length?`<button class="btn ghost sm" id="more">Un altro indizio</button>`:""}<button class="btn ghost sm" id="give">Mi arrendo</button></div>${msg==="no"?`<p class="status-bad" style="margin:0">Non è questa, riprova.</p>`:""}`}
+          </div>`;
+        if(done){ $("#nx", box).onclick = () => { i++; show(); }; Voice.speak(q.answer); return; }
+        const go = () => {
+          const v = $("#ans", box).value.trim(); if(!v) return;
+          const good = [q.answer, ...(q.alt||[])].some(a => bare(a) === bare(v) || bare(a).replace(/^(the|a|an|el|la|le|il|lo|der|die|das|un|une|uno|una) /,"") === bare(v));
+          if(good){ pts += 4 - shown; done = true; draw("ok"); } else draw("no");
+        };
+        $("#go", box).onclick = go; $("#ans", box).onkeydown = e => { if(e.key==="Enter") go(); }; $("#ans", box).focus();
+        const m = $("#more", box); if(m) m.onclick = () => { shown++; draw(); };
+        $("#give", box).onclick = () => { done = true; draw("give"); };
+      };
+      draw();
+    };
+    show();
+  }},
+  completa:{need:0, async run(box){
+    let r;
+    try{ r = await ask(`Sei un insegnante di ${L().name}. ${who()} ${JSON_ONLY}`,
+      `Crea 15 frasi brevi in ${L().name} di livello ${S().level}, ognuna con UNA parola mancante sostituita da ___ e una sola risposta possibile.\nJSON: {"items":[{"sentence":"frase con ___","answer":"parola","it":"traduzione italiana della frase completa"}]}`,
+      {temperature:0.8, maxTokens:1500}, r=>Array.isArray(r.items) && r.items.length>=8); }
+    catch(e){ box.innerHTML = errorHTML(e); return; }
+    const items = r.items.filter(x=>x.sentence?.includes("___") && x.answer); let i = 0, score = 0, end = Date.now() + 90000;
+    box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Completa al volo</h2><span class="timer" id="tm">90</span></div>
+      <div class="panel sprint-card" style="margin-top:14px"><p class="muted" id="hint"></p><div class="w" id="sent" style="font-size:1.5rem;line-height:1.3"></div>
+      <div class="row" style="justify-content:center;margin-top:18px"><input class="input" id="ans" style="max-width:260px" autocomplete="off" placeholder="Parola mancante"><button class="btn" id="go">Invio</button></div>
+      <p class="small muted" id="last" style="margin-top:12px"></p><p class="timer" id="sc">0 punti</p></div>`;
+    const draw = () => { const q = items[i % items.length]; $("#sent").textContent = q.sentence; $("#hint").textContent = q.it || ""; $("#ans").value = ""; $("#ans").focus(); };
+    const go = () => {
+      const q = items[i % items.length], v = $("#ans").value.trim(); if(!v) return;
+      if(bare(v) === bare(q.answer)){ score++; $("#last").innerHTML = `<span class="status-ok">✓ ${esc(q.answer)}</span>`; }
+      else { $("#last").innerHTML = `<span class="status-bad">✗ era “${esc(q.answer)}”</span>`; recordMistake(q.sentence.replace("___", v), q.sentence.replace("___", q.answer), ""); }
+      $("#sc").textContent = score + " punti"; i++; draw();
+    };
+    $("#go").onclick = go; $("#ans").onkeydown = e => { if(e.key==="Enter") go(); };
+    const tick = setInterval(()=>{ const el = $("#tm"); if(!el){ clearInterval(tick); return; } const left = Math.max(0, Math.ceil((end-Date.now())/1000)); el.textContent = left;
+      if(left===0){ clearInterval(tick); gameOver(box, `${score} punti`, `Hai completato ${score} frasi in 90 secondi.`, Math.min(25, 3+score*2), "completa"); } }, 250);
+    cleanup = () => clearInterval(tick);
+    draw();
+  }},
+  storia:{need:0, run(box){ storyGame(box, {kids:false, id:"storia"}); }},
+
+  // --- per bambini ---
+  kfoto:{kids:true, need:8, run(box, pool, all){ kidsQuiz(box, pool, {title:"Che cos'è?", id:"kfoto",
+    ask: w => `<div class="kemoji">${w.emoji}</div>`, options: w => shuffle([w, ...sameTheme(all, w, 3)]),
+    isRight: (w, id) => id === w.id, label: o => `<span class="kword">${esc(o.word)}</span>`}); }},
+  kascolta:{kids:true, need:8, run(box, pool, all){ kidsQuiz(box, pool, {title:"Ascolta e tocca", id:"kascolta", speakOn:true,
+    ask: () => `<button class="mic" id="krep" style="margin:6px auto" aria-label="Ascolta di nuovo">${icon("play")}</button><p class="muted">Tocca l'immagine giusta</p>`,
+    options: w => shuffle([w, ...sameTheme(all, w, 3)]), isRight: (w, id) => id === w.id, label: o => `<span class="kemoji sm">${o.emoji}</span>`}); }},
+  kconta:{kids:true, need:0, run(box, pool, all){
+    const nums = all.filter(w=>w.theme==="numeri"), things = all.filter(w=>["animali","cibo"].includes(w.theme));
+    const rounds = shuffle(nums).slice(0,6).map(n => ({...n, thing: things[Math.floor(Math.random()*things.length)], n: nums.indexOf(n)+1}));
+    kidsQuiz(box, rounds, {title:"Conta!", id:"kconta",
+      ask: w => `<div class="kcount">${Array.from({length:w.n}, ()=>w.thing.emoji).join(" ")}</div><p class="muted">Quanti sono?</p>`,
+      options: w => shuffle([w, ...shuffle(nums.filter(x=>x.id!==w.id)).slice(0,3)]), isRight: (w, id) => id === w.id,
+      label: o => `<span class="kword">${esc(o.word)}</span>`});
+  }},
+  kmemory:{kids:true, need:6, run(box, pool){
+    const cards = shuffle(pool.flatMap(w => [{w, face:"emoji"}, {w, face:"word"}])); let open = [], found = 0, moves = 0, lock = false;
+    box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Memory</h2><span class="timer" id="mv">0 mosse</span></div>
+      <div class="memory" style="margin-top:14px">${cards.map((c,k)=>`<button class="mcard" data-k="${k}" aria-label="Carta coperta"><span class="back">?</span><span class="front">${c.face==="emoji"?`<span class="kemoji sm">${c.w.emoji}</span>`:`<span class="kword">${esc(c.w.word)}</span>`}</span></button>`).join("")}</div>`;
+    $$(".mcard", box).forEach(b=>b.onclick=()=>{
+      if(lock || b.classList.contains("up")) return;
+      const c = cards[+b.dataset.k]; b.classList.add("up"); if(c.face==="word") Voice.speak(c.w.word);
+      open.push(b);
+      if(open.length === 2){
+        moves++; $("#mv").textContent = moves + " mosse";
+        const [a, z] = open.map(x=>cards[+x.dataset.k]);
+        if(a.w.id === z.w.id){ open.forEach(x=>x.classList.add("done")); open = []; found++; Voice.speak(a.w.word); cheer($(".memory", box));
+          if(found === pool.length) setTimeout(()=>kidsOver(box, moves <= pool.length+3 ? pool.length : moves <= pool.length*2 ? Math.ceil(pool.length*0.7) : 1, pool.length, "kmemory"), 900); }
+        else { lock = true; setTimeout(()=>{ open.forEach(x=>x.classList.remove("up")); open = []; lock = false; }, 900); }
+      }
+    });
+  }},
+  klettere:{kids:true, need:0, run(box, pool, all){ lettersGame(box, shuffle(all.filter(w=>!["colori","numeri"].includes(w.theme) && [...w.word].length<=7 && !w.word.includes(" "))).slice(0,5), {kids:true, id:"klettere", title:"Lettere in ordine"}); }},
+  kpalloncino:{kids:true, need:0, run(box, pool, all){ hangmanGame(box, shuffle(all.filter(w=>[...w.word].length<=8 && w.theme!=="numeri")).slice(0,5), {kids:true, id:"kpalloncino", title:"Il palloncino"}); }},
+  kdillo:{kids:true, need:6, run(box, pool){
+    let i = 0, ok = 0, session = null;
+    cleanup = () => { if(session) session.stop(); };
+    const show = () => {
+      if(i >= pool.length) return kidsOver(box, ok, pool.length, "kdillo");
+      const w = pool[i]; let tries = 0;
+      box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Dillo tu!</h2><span class="timer">${i+1}/${pool.length}</span></div>
+        <div class="panel kids" style="margin-top:14px;text-align:center"><div class="kemoji">${w.emoji}</div><p class="muted">Come si dice? Tocca il microfono e dillo!</p>
+        <button class="mic" id="mic" style="margin:6px auto" aria-label="Parla">${icon("mic")}</button><p id="heard" class="muted"></p>
+        <div class="row" style="justify-content:center"><button class="btn ghost sm" id="help">${icon("play")} Aiutami</button><button class="btn ghost sm" id="skip">Avanti</button></div></div>`;
+      $("#help").onclick = () => Voice.speak(w.word, {rate:0.75});
+      $("#skip").onclick = () => { i++; show(); };
+      $("#mic").onclick = async () => {
+        if(session){ session.stop(); return; }
+        const mic = $("#mic"); mic.classList.add("on"); mic.innerHTML = icon("stop");
+        session = Voice.listen({onInterim: t => $("#heard").textContent = t});
+        let r = null; try{ r = await session; }catch(e){ $("#heard").textContent = e.message; }
+        session = null; if(!$("#mic")) return; mic.classList.remove("on"); mic.innerHTML = icon("mic");
+        if(!r) return;
+        const best = Math.max(...r.alts.map(a=>align(w.word, a.text).score)); tries++;
+        if(best >= 70){ ok++; $("#heard").innerHTML = `<b class="status-ok">Bravissimo! “${esc(w.word)}”</b>`; cheer($(".kids", box)); setTimeout(()=>{ i++; show(); }, 1400); }
+        else { $("#heard").innerHTML = `Ho sentito “${esc(r.text)}”. Ascolta e riprova!`; Voice.speak(w.word, {rate:0.75}); if(tries >= 3) setTimeout(()=>{ i++; show(); }, 2000); }
+      };
+    };
+    show();
+  }},
+  kstoria:{kids:true, need:0, run(box){ storyGame(box, {kids:true, id:"kstoria"}); }}
+});
+const GAME_LIST = {
+  adulti:[
+    ["coppie","cards","Coppie","Abbina ogni parola alla sua traduzione, più veloce che puoi",false],
+    ["sprint","fire","Sprint da 60 secondi","Vero o falso: la traduzione è giusta?",false],
+    ["ascolto","play","Ascolto lampo","Senti una parola e scegli quella giusta",false],
+    ["dettato","mic","Di' la parola","Vedi la traduzione e pronunciala",false],
+    ["impiccato","star","Impiccato","Indovina la parola lettera per lettera",false],
+    ["anagramma","cards","Anagramma","Rimetti in ordine le lettere della parola",false],
+    ["completa","book","Completa al volo","90 secondi per completare più frasi possibile",true],
+    ["chisono","chat","Chi sono?","Indovinelli con tre indizi sempre più facili",true],
+    ["storia","book","Storia a bivi","Una storia in cui scegli tu cosa succede",true]
+  ],
+  bambini:[
+    ["kfoto","🖼️","Che cos'è?","Guarda l'immagine e scegli la parola giusta",false],
+    ["kascolta","👂","Ascolta e tocca","Senti la parola e tocca l'immagine giusta",false],
+    ["kmemory","🃏","Memory","Gira le carte e trova le coppie immagine e parola",false],
+    ["kconta","🔢","Conta!","Conta gli oggetti e scegli il numero",false],
+    ["klettere","🔤","Lettere in ordine","Metti in fila le lettere per scrivere la parola",false],
+    ["kpalloncino","🎈","Il palloncino","Indovina le lettere prima che il palloncino si sgonfi",false],
+    ["kdillo","🎤","Dillo tu!","Guarda l'immagine e di' la parola al microfono",false],
+    ["kstoria","🪄","Storia magica","Una fiaba in cui scegli tu cosa fare",true]
+  ]
+};
+RENDER.giochi = main => {
+  const parts = location.hash.slice(1).split("-");
+  if(parts[1] && GAMES[parts[1]]) return startGame(main, parts[1]);
+  const tab = sessionStorage.getItem("parlami.gtab") || "adulti";
+  const list = GAME_LIST[tab];
+  main.innerHTML = `
+  <h1>Giochi</h1>
+  <div class="row" role="tablist" style="margin-bottom:14px">
+    <button class="chip ${tab==="adulti"?"on":""}" data-t="adulti" role="tab" aria-selected="${tab==="adulti"}">Per adulti</button>
+    <button class="chip ${tab==="bambini"?"on":""}" data-t="bambini" role="tab" aria-selected="${tab==="bambini"}">🧒 Per bambini</button>
+  </div>
+  <p class="muted">${tab==="adulti" ? "Usano le parole che hai imparato nelle lezioni; se sono poche, ne aggiungo io di nuove al ripasso. I giochi segnati con ✦ creano contenuti nuovi con l'IA." : `Giochi con immagini, voce e tante stelle, per imparare le prime parole di ${L().name.toLowerCase()}: animali, cibo, colori, numeri, corpo e altro. ${S().lang==="en" ? "Funzionano anche senza IA." : "La prima volta l'IA traduce le parole, poi funzionano anche senza."}`}</p>
+  <div class="grid2" style="margin-top:16px">
+    ${list.map(([id, ic, name, desc, ai])=>`<button class="action ${tab==="bambini"?"kid":""}" data-g="${id}"><span class="ic">${ICON[ic] ? icon(ic) : `<span style="font-size:1.7rem">${ic}</span>`}</span><span><h3>${esc(name)}${ai?" ✦":""}</h3><span class="muted small">${esc(desc)}</span></span></button>`).join("")}
+  </div>`;
+  $$("[data-t]", main).forEach(b=>b.onclick=()=>{ sessionStorage.setItem("parlami.gtab", b.dataset.t); route(); });
+  $$("[data-g]", main).forEach(b=>b.onclick=()=>location.hash="giochi-"+b.dataset.g);
+};
+function startGame(main, id){
+  const g = GAMES[id];
+  main.innerHTML = `<button class="btn ghost sm" id="back">${icon("back")} Giochi</button><div id="game" style="margin-top:16px">${loadingHTML("Preparo il gioco…")}</div>`;
+  $("#back").onclick = () => location.hash = "giochi";
+  const load = g.kids ? kidsWords().then(all => [g.need ? shuffle(all.filter(w=>w.theme!=="numeri")).slice(0, g.need) : [], all])
+                      : (g.need ? wordPool(g.need) : Promise.resolve([])).then(p => [p, null]);
+  load.then(([pool, all])=>{
+    if(!$("#game")) return;
+    if(!g.kids && g.need && pool.length < 4) throw new Error("Servono almeno 4 parole: completa una lezione.");
+    g.run($("#game"), pool, all);
+  }).catch(e=>{ if($("#game")) $("#game").innerHTML = errorHTML(e); });
+}
+
+/* ============ ESAMI SIMULATI ============ */
+const EXAM_SPEC = {
+  A1:{read:90,  listen:70,  gram:8,  write:[25,35],   task:"un breve messaggio, una cartolina o un modulo", part1:3, part3:0, prep:15, long:30,  mins:35},
+  A2:{read:140, listen:100, gram:8,  write:[35,50],   task:"un breve messaggio o un'email informale", part1:3, part3:0, prep:15, long:45,  mins:45},
+  B1:{read:260, listen:160, gram:10, write:[90,110],  task:"un'email informale o un breve articolo o racconto", part1:3, part3:2, prep:30, long:60, mins:70},
+  B2:{read:380, listen:220, gram:10, write:[140,190], task:"un saggio argomentativo, una recensione o un articolo", part1:3, part3:2, prep:30, long:60, mins:90},
+  C1:{read:480, listen:280, gram:12, write:[220,260], task:"un saggio, una relazione o una proposta", part1:3, part3:3, prep:30, long:90, mins:110},
+  C2:{read:560, listen:330, gram:12, write:[280,320], task:"un saggio di sintesi da due punti di vista o un articolo", part1:3, part3:3, prep:30, long:120, mins:120}
+};
+const EXAM_SECTIONS = [
+  {id:"read", name:"Lettura", en:"Reading", share:.25},
+  {id:"listen", name:"Ascolto", en:"Listening", share:.2},
+  {id:"gram", name:"Grammatica e lessico", en:"Use of language", share:.15},
+  {id:"write", name:"Scrittura", en:"Writing", share:.25},
+  {id:"speak", name:"Orale", en:"Speaking", share:.15}
+];
+const examKey = lv => `${S().lang}:${lv}`;
+function examHistory(lv){ return (state.exams || {})[examKey(lv)] || []; }
+function verdictOf(overall, per){
+  const minSec = Math.min(...Object.values(per));
+  if(overall >= 85 && minSec >= 60) return {k:"great", t:"Promosso con ottimo risultato", d:"Saresti pronto per l'esame di questo livello e potresti provare quello successivo."};
+  if(overall >= 60 && minSec >= 40) return {k:"pass", t:"Probabilmente promosso", d:"Con questo risultato, in un esame vero avresti buone possibilità di passare."};
+  if(overall >= 50) return {k:"close", t:"Al limite", d:"Sei vicino alla sufficienza: con un po' di allenamento sulle parti più deboli ce la puoi fare."};
+  return {k:"fail", t:"Non ancora", d:"Per ora un esame vero di questo livello sarebbe difficile: ti conviene allenarti ancora, o provare il livello precedente."};
+}
+
+RENDER.esami = main => {
+  const parts = location.hash.slice(1).split("-");
+  if(parts[1]==="test") return runPlacement(main);
+  if(LEVELS.includes(parts[1])) return runExam(main, parts[1]);
+  const pl = state.placement?.[S().lang];
+  main.innerHTML = `
+  <h1>Esami</h1>
+  <p class="muted">Esami simulati di ${L().name.toLowerCase()} sul modello delle certificazioni ufficiali (Cambridge, IELTS, Trinity e altre), che valutano le quattro abilità: lettura, ascolto, scrittura e parlato. Non sono esami ufficiali e non danno un certificato: servono a capire se riusciresti a passarli.</p>
+  ${needsSetup()}
+  <section class="panel stack" style="margin-top:16px">
+    <div class="row" style="justify-content:space-between;align-items:flex-start">
+      <div><h2 style="margin:0">Test di livello</h2><span class="muted small">18 domande · circa 5 minuti</span></div>
+      <a class="btn" href="#esami-test">${pl ? "Rifai il test" : "Inizia il test"}</a>
+    </div>
+    <p style="margin:0">Una prova veloce per capire il tuo livello attuale e da dove ti conviene partire.</p>
+    ${pl ? `<p class="small" style="margin:0">Ultimo risultato: <b>${pl.level} · ${esc(LEVEL_INFO[pl.level].name)}</b> (${pl.date})</p>` : ""}
+  </section>
+  ${AREAS.map(ar=>`<h2 style="margin:24px 0 10px">Area ${ar.name}</h2><div class="grid2">${ar.levels.map(lv=>{ const sp = EXAM_SPEC[lv], h = examHistory(lv)[0];
+    return `<div class="panel stack exam-card">
+      <div class="row" style="justify-content:space-between;align-items:flex-start"><div><h3 style="margin:0;font-size:1.25rem">${lv} · ${esc(LEVEL_INFO[lv].name)}</h3><span class="small muted">5 prove · circa ${sp.mins} minuti</span></div>${lv===S().level?`<span class="chip">★ Il tuo livello</span>`:""}</div>
+      <p class="small" style="margin:0">Lettura, Ascolto, Grammatica e lessico, Scrittura (${sp.write[0]}–${sp.write[1]} parole), Orale</p>
+      ${h ? `<p class="small" style="margin:0">Ultimo tentativo: <b>${h.overall}%</b> · ${esc(h.verdict)} (${h.date})</p>` : ""}
+      <a class="btn ${h?"ghost":""}" href="#esami-${lv}">${h ? "Rifai l'esame" : "Inizia l'esame"}</a>
+    </div>`; }).join("")}</div>`).join("")}`;
+};
+
+async function runExam(main, lv){
+  const sp = EXAM_SPEC[lv];
+  const E = {lv, per:{}, detail:{}, t0:0};
+  const back = `<button class="btn ghost sm" id="back">${icon("back")} Esami</button>`;
+  const bindBack = () => { const b = $("#back"); if(b) b.onclick = () => { if(!E.t0 || confirm("Vuoi uscire? L'esame in corso andrà perso.")) location.hash = "esami"; }; };
+  main.innerHTML = `${back}
+    <h1 style="margin-top:18px">Esame simulato ${lv} · ${esc(LEVEL_INFO[lv].name)}</h1>
+    ${needsSetup()}
+    <section class="panel stack">
+      <p style="margin:0">L'esame ha 5 prove, come una certificazione vera. Durata totale consigliata: <b>circa ${sp.mins} minuti</b>.</p>
+      <ol class="stack" style="margin:0;padding-left:20px;gap:6px">
+        <li><b>Lettura</b>: un testo di circa ${sp.read} parole e 5 domande.</li>
+        <li><b>Ascolto</b>: una registrazione da ascoltare al massimo due volte, e 5 domande.</li>
+        <li><b>Grammatica e lessico</b>: ${sp.gram} domande.</li>
+        <li><b>Scrittura</b>: ${esc(sp.task)}, di ${sp.write[0]}–${sp.write[1]} parole, valutato come da un esaminatore.</li>
+        <li><b>Orale</b>: domande personali, poi ${sp.long} secondi di discorso su un argomento${sp.part3?", poi una breve discussione":""}. Serve il microfono.</li>
+      </ol>
+      <p class="small muted" style="margin:0">Regole: niente dizionari né traduttori, come in un esame vero. Le istruzioni sono in ${L().name.toLowerCase()} con la traduzione accanto. Se esci a metà, l'esame va perso.</p>
+      <div><button class="btn sun" id="go">Inizia l'esame</button></div>
+    </section>`;
+  bindBack();
+  $("#go").onclick = () => { E.t0 = Date.now(); next(0); };
+
+  const header = (k) => `${back}<div class="row" style="flex-wrap:nowrap;margin:16px 0 6px"><div class="progress" style="flex:1"><i style="width:${k/EXAM_SECTIONS.length*100}%"></i></div><span class="small muted">Prova ${k+1} di ${EXAM_SECTIONS.length}</span></div>
+    <div class="row" style="justify-content:space-between"><h1 style="margin:0">${EXAM_SECTIONS[k].name} <span class="muted" style="font-size:1rem">· ${EXAM_SECTIONS[k].en}</span></h1><span class="small muted">Tempo consigliato: ${Math.round(sp.mins*EXAM_SECTIONS[k].share)} min · <span id="clock">0:00</span></span></div>`;
+  let clockT;
+  const startClock = () => { const t = Date.now(); clearInterval(clockT); clockT = setInterval(()=>{ const c = $("#clock"); if(!c){ clearInterval(clockT); return; } const s = Math.floor((Date.now()-t)/1000); c.textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`; }, 1000); };
+  let micSession = null;
+  cleanup = () => { clearInterval(clockT); if(micSession) micSession.stop(); };
+  const gen = async (k, prompt, validate, maxTokens=2500) => {
+    main.innerHTML = header(k) + loadingHTML("Preparo la prova…"); bindBack();
+    try{ return await ask(`Sei un autore di esami di certificazione di ${L().name} secondo il QCER, livello ${lv}. Crei materiale originale, realistico e del livello giusto. ${JSON_ONLY}`, prompt, {temperature:0.7, maxTokens}, validate); }
+    catch(e){ main.innerHTML = header(k) + errorHTML(e, "retry"); bindBack(); return new Promise(res => { $("#retry").onclick = () => res(gen(k, prompt, validate, maxTokens)); }); }
+  };
+  const mcqHTML = (qs, name) => qs.map((q,n)=>`<fieldset class="mcq"><legend><b>${n+1}.</b> ${esc(q.q)}</legend>${q.options.map((o,j)=>`<label class="mopt"><input type="radio" name="${name}${n}" value="${j}"> <span>${esc(o)}</span></label>`).join("")}</fieldset>`).join("");
+  const scoreMcq = (qs, name) => { let ok = 0; qs.forEach((q,n)=>{ const c = document.querySelector(`input[name="${name}${n}"]:checked`); const right = c && +c.value === +q.answer; if(right) ok++;
+    $$(`input[name="${name}${n}"]`).forEach(inp=>{ const lab = inp.closest(".mopt"); inp.disabled = true; if(+inp.value === +q.answer) lab.classList.add("right"); else if(inp.checked) lab.classList.add("wrong"); }); }); return Math.round(ok/qs.length*100); };
+  const validMcq = q => q && q.q && Array.isArray(q.options) && q.options.length>=3 && Number.isInteger(+q.answer);
+  const afterMcq = (k, pct, extra="") => {
+    $("#submit").outerHTML = `<div class="feedback ${pct>=60?"good":"bad"}"><h3>Risultato della prova: ${pct}%</h3>${extra}<button class="btn" id="cont">${k+1<EXAM_SECTIONS.length?"Prova successiva":"Vedi il risultato"}</button></div>`;
+    $("#cont").onclick = () => next(k+1); $("#cont").scrollIntoView({behavior:"smooth", block:"center"});
+  };
+
+  async function next(k){
+    if(k >= EXAM_SECTIONS.length) return report();
+    const sec = EXAM_SECTIONS[k].id;
+    if(sec === "read"){
+      const r = await gen(k, `Crea la prova di LETTURA del livello ${lv}: un testo originale in ${L().name} di circa ${sp.read} parole (${["A1","A2"].includes(lv)?"per esempio un avviso, un'email o un annuncio":["B1","B2"].includes(lv)?"per esempio un articolo di rivista o un blog":"per esempio un articolo d'opinione o un saggio"}), poi 5 domande di comprensione in ${L().name}, a scelta multipla con 4 opzioni e una sola risposta giusta. Almeno una domanda deve verificare un significato implicito se il livello è B2 o superiore.
+JSON: {"title":"titolo del testo","instructions":"consegna in ${L().name}","instructions_it":"consegna in italiano","text":"il testo, con paragrafi separati da \\n\\n","questions":[{"q":"domanda","options":["...","...","...","..."],"answer":0}]}`, r=>r.text && Array.isArray(r.questions) && r.questions.filter(validMcq).length>=4);
+      const qs = r.questions.filter(validMcq);
+      main.innerHTML = header(k) + `<section class="panel stack" style="margin-top:12px"><p style="margin:0"><b>${esc(r.instructions||"")}</b><br><span class="small muted">${esc(r.instructions_it||"")}</span></p>
+        <article class="reading"><h3>${esc(r.title||"")}</h3>${String(r.text).split(/\n\s*\n/).map(p=>`<p>${esc(p)}</p>`).join("")}</article>
+        ${mcqHTML(qs, "r")}<button class="btn" id="submit">Consegna la prova</button></section>`;
+      bindBack(); startClock();
+      $("#submit").onclick = () => { E.per.read = scoreMcq(qs, "r"); afterMcq(k, E.per.read); };
+    }
+    else if(sec === "listen"){
+      const r = await gen(k, `Crea la prova di ASCOLTO del livello ${lv}: il copione di ${["A1","A2"].includes(lv)?"un dialogo breve tra due persone in una situazione quotidiana":"un dialogo o un'intervista tra due persone"} in ${L().name}, di circa ${sp.listen} parole, naturale e adatto al livello. Poi 5 domande in ${L().name} a scelta multipla con 4 opzioni, a cui si può rispondere solo ascoltando.
+JSON: {"context":"descrizione breve della situazione in ${L().name}","context_it":"in italiano","lines":[{"speaker":"A","text":"battuta"},{"speaker":"B","text":"battuta"}],"questions":[{"q":"domanda","options":["...","...","...","..."],"answer":0}]}`, r=>Array.isArray(r.lines) && r.lines.length>=3 && Array.isArray(r.questions) && r.questions.filter(validMcq).length>=4);
+      const qs = r.questions.filter(validMcq); let plays = 0, playing = false;
+      main.innerHTML = header(k) + `<section class="panel stack" style="margin-top:12px">
+        <p style="margin:0"><b>${esc(r.context||"")}</b><br><span class="small muted">${esc(r.context_it||"")}</span></p>
+        <p class="small muted" style="margin:0">Leggi prima le domande. Poi premi Ascolta: puoi sentire la registrazione al massimo due volte, come in un esame vero.</p>
+        <div class="row"><button class="btn" id="play">${icon("play")} Ascolta (2 rimasti)</button><span class="small muted" id="pstat"></span></div>
+        ${mcqHTML(qs, "l")}<button class="btn" id="submit">Consegna la prova</button>
+        <div id="script"></div></section>`;
+      bindBack(); startClock();
+      const speakers = [...new Set(r.lines.map(x=>x.speaker))];
+      $("#play").onclick = async () => {
+        if(playing || plays >= 2) return; playing = true; plays++;
+        $("#play").disabled = true; $("#pstat").textContent = "In riproduzione…";
+        speechSynthesis.cancel();
+        for(const line of r.lines){ if(!$("#play")) return; await Voice.speakAs(line.text, speakers.indexOf(line.speaker)); await new Promise(res=>setTimeout(res, 350)); }
+        playing = false; if(!$("#play")) return;
+        $("#pstat").textContent = ""; $("#play").innerHTML = `${icon("play")} Ascolta (${2-plays} rimast${2-plays===1?"o":"i"})`; $("#play").disabled = plays >= 2;
+      };
+      $("#submit").onclick = () => { speechSynthesis.cancel(); E.per.listen = scoreMcq(qs, "l"); $("#play").disabled = true;
+        $("#script").innerHTML = `<details><summary class="small" style="cursor:pointer">Leggi il testo della registrazione</summary>${r.lines.map(x=>`<p><b>${esc(x.speaker)}:</b> ${esc(x.text)}</p>`).join("")}</details>`;
+        afterMcq(k, E.per.listen); };
+    }
+    else if(sec === "gram"){
+      const r = await gen(k, `Crea la prova di GRAMMATICA E LESSICO del livello ${lv}: ${sp.gram} domande a scelta multipla in ${L().name} con 4 opzioni, ciascuna con una frase che contiene ___ al posto della parte mancante. Copri gli argomenti grammaticali e il lessico tipici del livello ${lv}, dal più facile al più difficile.
+JSON: {"questions":[{"q":"frase con ___","options":["...","...","...","..."],"answer":0,"why":"spiegazione breve in italiano"}]}`, r=>Array.isArray(r.questions) && r.questions.filter(validMcq).length>=6);
+      const qs = r.questions.filter(validMcq);
+      main.innerHTML = header(k) + `<section class="panel stack" style="margin-top:12px"><p style="margin:0"><b>Scegli la risposta giusta per completare ogni frase.</b></p>${mcqHTML(qs, "g")}<button class="btn" id="submit">Consegna la prova</button></section>`;
+      bindBack(); startClock();
+      $("#submit").onclick = () => { E.per.gram = scoreMcq(qs, "g");
+        const wrongs = qs.map((q,n)=>({q,n})).filter(({q,n})=>{ const c = document.querySelector(`input[name="g${n}"]:checked`); return !c || +c.value !== +q.answer; });
+        wrongs.forEach(({q})=>recordMistake(q.q, q.q.replace("___", q.options[q.answer]), q.why||""));
+        afterMcq(k, E.per.gram, wrongs.length ? `<div class="stack" style="gap:6px;margin-bottom:10px">${wrongs.map(({q})=>`<p class="small" style="margin:0">${esc(q.q.replace("___", "“"+q.options[q.answer]+"”"))}${q.why?` · ${esc(q.why)}`:""}</p>`).join("")}</div>` : ""); };
+    }
+    else if(sec === "write"){
+      const r = await gen(k, `Crea la prova di SCRITTURA del livello ${lv}: il candidato deve scrivere ${sp.task} di ${sp.write[0]}-${sp.write[1]} parole. Scrivi una consegna realistica in ${L().name} come in un esame ufficiale, con la situazione e i punti da includere.
+JSON: {"task":"consegna completa in ${L().name}","task_it":"traduzione italiana della consegna","points":["punto da includere 1","punto 2","punto 3"]}`, r=>r.task, 900);
+      main.innerHTML = header(k) + `<section class="panel stack" style="margin-top:12px">
+        <div class="taskbox"><p style="margin:0">${esc(r.task)}</p>${Array.isArray(r.points)&&r.points.length?`<ul style="margin:8px 0 0">${r.points.map(p=>`<li>${esc(p)}</li>`).join("")}</ul>`:""}</div>
+        <details><summary class="small" style="cursor:pointer">Traduzione della consegna</summary><p class="muted">${esc(r.task_it||"")}</p></details>
+        <textarea class="input" id="essay" rows="12" placeholder="Scrivi qui in ${L().name.toLowerCase()}…" spellcheck="false" autocapitalize="sentences"></textarea>
+        <div class="row" style="justify-content:space-between"><span class="small" id="wc">0 parole · richieste ${sp.write[0]}–${sp.write[1]}</span><button class="btn" id="submit">Consegna e fai correggere</button></div>
+        <div id="wres"></div></section>`;
+      bindBack(); startClock();
+      const count = () => (NOSPACE.includes(S().lang) ? Math.round([...$("#essay").value.replace(/\s/g,"")].length/2) : $("#essay").value.trim().split(/\s+/).filter(Boolean).length);
+      $("#essay").oninput = () => { const n = count(); $("#wc").innerHTML = `<span class="${n<sp.write[0]?"":n>sp.write[1]*1.15?"status-bad":"status-ok"}">${n} parole</span> · richieste ${sp.write[0]}–${sp.write[1]}`; };
+      $("#submit").onclick = async () => {
+        const txt = $("#essay").value.trim(), n = count();
+        if(n < Math.max(5, sp.write[0]*0.3) && !confirm("Il testo è molto più corto del richiesto e verrà valutato così. Consegnare lo stesso?")) return;
+        $("#submit").disabled = true; $("#essay").readOnly = true; $("#wres").innerHTML = loadingHTML("L'esaminatore sta correggendo…");
+        try{
+          const g = await ask(`Sei un esaminatore certificato di ${L().name} per gli esami QCER di livello ${lv}. Valuti in modo severo ma giusto, come in un esame vero. ${JSON_ONLY}`,
+            `Consegna: ${r.task}\nPunti richiesti: ${JSON.stringify(r.points||[])}\nLunghezza richiesta: ${sp.write[0]}-${sp.write[1]} parole. Lunghezza del testo: ${n} parole.\nTesto del candidato:\n"""${txt || "(vuoto)"}"""\n`+
+            `Valuta con 4 criteri da 0 a 5 per il livello ${lv}: content (ha svolto tutti i punti? un testo troppo corto perde punti), communicative (scopo e registro adatti), organisation (struttura, coerenza, connettivi), language (correttezza e varietà di grammatica e lessico per il livello).\n`+
+            `JSON: {"scores":{"content":0,"communicative":0,"organisation":0,"language":0},"feedback":"giudizio in italiano di 2-4 frasi","corrections":[{"wrong":"...","right":"...","why":"spiegazione breve in italiano"}],"better":"come si potrebbero riscrivere 2-3 frasi del testo per un punteggio più alto"}`,
+            {temperature:0.2, maxTokens:1500}, g=>g.scores && typeof g.scores.content==="number");
+          const sc = g.scores, tot = ["content","communicative","organisation","language"].reduce((a,c)=>a+Math.max(0,Math.min(5,+sc[c]||0)),0);
+          E.per.write = Math.round(tot/20*100); E.detail.write = g;
+          (g.corrections||[]).slice(0,6).forEach(c=>recordMistake(c.wrong, c.right, c.why));
+          $("#wres").innerHTML = `<div class="feedback ${E.per.write>=60?"good":"bad"}"><h3>Risultato della prova: ${E.per.write}%</h3>
+            <div class="row" style="margin-bottom:8px">${[["content","Contenuto"],["communicative","Efficacia"],["organisation","Organizzazione"],["language","Lingua"]].map(([c,nm])=>`<span class="chip">${nm}: ${sc[c]}/5</span>`).join("")}</div>
+            <p>${esc(g.feedback||"")}</p>
+            ${(g.corrections||[]).length?`<div class="stack" style="gap:4px;margin-bottom:8px">${g.corrections.slice(0,6).map(c=>`<p class="small" style="margin:0"><s>${esc(c.wrong)}</s> → <b>${esc(c.right)}</b>${c.why?` · ${esc(c.why)}`:""}</p>`).join("")}</div>`:""}
+            ${g.better?`<p class="small"><b>Per migliorare:</b> ${esc(g.better)}</p>`:""}
+            <button class="btn" id="cont">Prova successiva</button></div>`;
+          $("#cont").onclick = () => next(k+1);
+        }catch(e){ $("#submit").disabled = false; $("#essay").readOnly = false; $("#wres").innerHTML = errorHTML(e); }
+      };
+    }
+    else if(sec === "speak"){
+      const r = await gen(k, `Crea la prova ORALE del livello ${lv}, come in un esame ufficiale, in ${L().name}.
+Parte 1: ${sp.part1} domande personali dell'esaminatore, adatte al livello.
+Parte 2: un argomento su cui il candidato parla da solo per ${sp.long} secondi, con 3 spunti.
+${sp.part3 ? `Parte 3: ${sp.part3} domande di discussione più ampie legate all'argomento della parte 2.` : "Nessuna parte 3."}
+JSON: {"part1":["domanda"],"part2":{"topic":"argomento in ${L().name}","topic_it":"in italiano","prompts":["spunto 1","spunto 2","spunto 3"]},"part3":["domanda"]}`, r=>Array.isArray(r.part1) && r.part1.length && r.part2?.topic, 1200);
+      const steps = [
+        ...r.part1.slice(0, sp.part1).map(q=>({part:1, q, max:45})),
+        {part:2, q:r.part2.topic, it:r.part2.topic_it, prompts:r.part2.prompts||[], max:sp.long, prep:sp.prep},
+        ...(sp.part3 ? (r.part3||[]).slice(0, sp.part3).map(q=>({part:3, q, max:60})) : [])
+      ];
+      const answers = []; let s = 0;
+      const step = () => {
+        if(s >= steps.length) return grade();
+        const st = steps[s];
+        main.innerHTML = header(k) + `<section class="panel stack" style="margin-top:12px">
+          <div class="row" style="flex-wrap:nowrap;align-items:center">${avatarSVG(S().persona, 90)}<div><span class="small muted">Parte ${st.part} · domanda ${s+1} di ${steps.length}</span>
+          <p class="bigsent" style="font-size:1.3rem;margin:4px 0">${esc(st.q)}</p>${st.it?`<p class="small muted" style="margin:0">${esc(st.it)}</p>`:""}</div></div>
+          ${st.prompts?.length ? `<div class="taskbox"><p class="small" style="margin:0 0 4px"><b>Puoi parlare di:</b></p><ul style="margin:0">${st.prompts.map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>` : ""}
+          <div class="row"><button class="btn ghost sm" id="rep">${icon("play")} Riascolta la domanda</button></div>
+          <div id="stage"></div></section>`;
+        bindBack();
+        $("#rep").onclick = () => Voice.speak(st.q);
+        const stage = $("#stage");
+        const speakNow = () => {
+          let left = st.max, text = "";
+          stage.innerHTML = `<div class="row"><button class="mic on" id="mic" aria-label="Ho finito">${icon("stop")}</button><div><span class="timer" id="cd">${left}</span><span class="small muted"> secondi · parla adesso, poi premi Stop</span></div></div>
+            <p class="muted" id="live" style="min-height:3em"></p><button class="btn ghost sm" id="type2">Non posso parlare ora</button>`;
+          micSession = Voice.listenLong({onText: t => { text = t; const lv = $("#live"); if(lv) lv.textContent = t; }});
+          const t0 = Date.now();
+          const tick = setInterval(()=>{ const cd = $("#cd"); if(!cd){ clearInterval(tick); return; } left = st.max - Math.floor((Date.now()-t0)/1000); cd.textContent = Math.max(0,left); if(left <= -10) finish(); }, 250);
+          let finishing = false;
+          const finish = async () => {
+            if(finishing) return; finishing = true; clearInterval(tick);
+            const res = await micSession.stop(); micSession = null;
+            if(res.error){ stage.innerHTML = `<div class="err">${esc(res.error)}</div><p><button class="btn ghost" id="type">Scrivi la risposta invece di parlare</button></p>`; $("#type").onclick = typeIt; return; }
+            answers[s] = {part:st.part, q:st.q, a:res.text || text, secs:Math.round((Date.now()-t0)/1000), conf:res.conf, typed:false};
+            s++; step();
+          };
+          $("#mic").onclick = finish;
+          $("#type2").onclick = () => { clearInterval(tick); finishing = true; if(micSession){ micSession.stop(); micSession = null; } typeIt(); };
+        };
+        const typeIt = () => {
+          stage.innerHTML = `<textarea class="input" id="ta" rows="4" placeholder="Scrivi la risposta in ${L().name.toLowerCase()}"></textarea><p class="small muted">Le risposte scritte non permettono di valutare scioltezza e pronuncia.</p><button class="btn" id="ok">Conferma</button>`;
+          $("#ok").onclick = () => { answers[s] = {part:st.part, q:st.q, a:$("#ta").value.trim(), secs:0, conf:0, typed:true}; s++; step(); };
+        };
+        const ready = () => {
+          stage.innerHTML = `<div class="row"><button class="btn" id="start">${icon("mic")} Rispondi</button><button class="btn ghost sm" id="type">Non posso parlare ora</button></div>`;
+          $("#start").onclick = speakNow; $("#type").onclick = typeIt;
+        };
+        Voice.speak(st.q).then(()=>{
+          if(!$("#stage")) return;
+          if(st.prep){
+            let p = st.prep; stage.innerHTML = `<p><span class="timer" id="pp">${p}</span> secondi per prepararti. Pensa a cosa dire sugli spunti.</p><button class="btn ghost sm" id="skipprep">Sono pronto</button>`;
+            const pt = setInterval(()=>{ const el = $("#pp"); if(!el){ clearInterval(pt); return; } p--; el.textContent = p; if(p<=0){ clearInterval(pt); speakNow(); } }, 1000);
+            $("#skipprep").onclick = () => { clearInterval(pt); speakNow(); };
+          } else ready();
+        });
+      };
+      const grade = async () => {
+        main.innerHTML = header(k) + loadingHTML("L'esaminatore sta valutando l'orale…"); bindBack();
+        const spoken = answers.filter(a=>!a.typed && a.a);
+        const confAvg = spoken.filter(a=>a.conf>0).length ? spoken.filter(a=>a.conf>0).reduce((x,a)=>x+a.conf,0)/spoken.filter(a=>a.conf>0).length : 0;
+        const pron = confAvg ? Math.max(0, Math.min(5, Math.round((confAvg-0.5)/0.45*5))) : null;
+        try{
+          const g = await ask(`Sei un esaminatore certificato di ${L().name} per gli esami orali QCER di livello ${lv}. Valuti in modo severo ma giusto, come in un esame vero. Ricevi la trascrizione automatica delle risposte: ignora punteggiatura e maiuscole. ${JSON_ONLY}`,
+            `Risposte del candidato:\n${answers.map((a,n)=>`${n+1}. [parte ${a.part}] Domanda: ${a.q}\nRisposta${a.typed?" (scritta, non parlata)":` (parlata per ${a.secs} secondi)`}: ${a.a || "(nessuna risposta)"}`).join("\n")}\n`+
+            `Il discorso della parte 2 doveva durare circa ${sp.long} secondi.\nValuta con 4 criteri da 0 a 5 per il livello ${lv}: grammar_vocab (correttezza e varietà), discourse (sviluppo e collegamento delle idee, risposte abbastanza lunghe), relevance (risposte pertinenti alle domande), fluency (quantità di discorso rispetto al tempo; se le risposte sono scritte, giudica solo la lunghezza).\n`+
+            `JSON: {"scores":{"grammar_vocab":0,"discourse":0,"relevance":0,"fluency":0},"feedback":"giudizio in italiano di 2-4 frasi","corrections":[{"wrong":"...","right":"...","why":"..."}],"tips":["consiglio pratico in italiano"]}`,
+            {temperature:0.2, maxTokens:1500}, g=>g.scores && typeof g.scores.grammar_vocab==="number");
+          const sc = g.scores, keys = ["grammar_vocab","discourse","relevance","fluency"];
+          let tot = keys.reduce((a,c)=>a+Math.max(0,Math.min(5,+sc[c]||0)),0), max = 20;
+          if(pron !== null){ tot += pron; max += 5; }
+          E.per.speak = Math.round(tot/max*100); E.detail.speak = {...g, pron, answers};
+          (g.corrections||[]).slice(0,6).forEach(c=>recordMistake(c.wrong, c.right, c.why));
+          main.innerHTML = header(k) + `<section class="panel stack" style="margin-top:12px"><div class="feedback ${E.per.speak>=60?"good":"bad"}" style="margin:0"><h3>Risultato della prova: ${E.per.speak}%</h3>
+            <div class="row" style="margin-bottom:8px">${[["grammar_vocab","Grammatica e lessico"],["discourse","Sviluppo del discorso"],["relevance","Pertinenza"],["fluency","Scioltezza"]].map(([c,nm])=>`<span class="chip">${nm}: ${sc[c]}/5</span>`).join("")}${pron!==null?`<span class="chip">Comprensibilità: ${pron}/5</span>`:""}</div>
+            <p>${esc(g.feedback||"")}</p>
+            ${(g.corrections||[]).length?`<div class="stack" style="gap:4px;margin-bottom:8px">${g.corrections.slice(0,6).map(c=>`<p class="small" style="margin:0"><s>${esc(c.wrong)}</s> → <b>${esc(c.right)}</b>${c.why?` · ${esc(c.why)}`:""}</p>`).join("")}</div>`:""}
+            ${(g.tips||[]).length?`<ul class="small">${g.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}
+            <p class="small muted">La comprensibilità è stimata da quanto bene il riconoscimento vocale ha capito le tue parole: è un'indicazione, non un giudizio sulla pronuncia come quello di un esaminatore umano.</p>
+            <button class="btn" id="cont">Vedi il risultato</button></div></section>`;
+          bindBack(); $("#cont").onclick = () => next(k+1);
+        }catch(e){ main.innerHTML = header(k) + errorHTML(e, "retry"); bindBack(); $("#retry").onclick = grade; }
+      };
+      step();
+    }
+  }
+
+  function report(){
+    clearInterval(clockT);
+    const per = E.per, overall = Math.round(EXAM_SECTIONS.reduce((a,s)=>a+(per[s.id]||0),0)/EXAM_SECTIONS.length);
+    const v = verdictOf(overall, per);
+    const weak = EXAM_SECTIONS.filter(s=>(per[s.id]||0) < 60);
+    const advice = {read:["Lettura","fai le lezioni del livello e leggi i testi della Storia a bivi","#lezioni-"+lv], listen:["Ascolto","gioca ad Ascolto lampo e parla con il tutor a voce","#giochi-ascolto"],
+      gram:["Grammatica e lessico","ripassa gli errori e fai gli esercizi mirati","#ripasso-errori"], write:["Scrittura","scrivi al tutor invece di parlare, così ti corregge ogni frase","#tutor"],
+      speak:["Orale","conversa con il tutor ogni giorno e allena la pronuncia","#tutor"]};
+    const rec = {date:today(), overall, verdict:v.t, per};
+    state.exams = state.exams || {}; state.exams[examKey(lv)] = [rec, ...examHistory(lv)].slice(0,5); save();
+    addXP(30);
+    const mins = Math.round((Date.now()-E.t0)/60000);
+    main.innerHTML = `<button class="btn ghost sm" id="back2">${icon("back")} Esami</button>
+      <h1 style="margin-top:18px">Risultato dell'esame ${lv}</h1>
+      <section class="panel stack verdict ${v.k}">
+        <div class="row" style="align-items:center;gap:20px"><div class="score">${overall}%</div><div><h2 style="margin:0">${v.t}</h2><p style="margin:4px 0 0">${v.d}</p></div></div>
+        <div class="stack" style="gap:10px">${EXAM_SECTIONS.map(s=>`<div><div class="row" style="justify-content:space-between"><span><b>${s.name}</b> <span class="small muted">${s.en}</span></span><b>${per[s.id]??0}%</b></div>
+          <div class="progress"><i style="width:${per[s.id]||0}%;background:${(per[s.id]||0)>=60?"var(--ok)":(per[s.id]||0)>=40?"var(--sun)":"var(--bad)"}"></i></div></div>`).join("")}</div>
+        <p class="small muted" style="margin:0">Durata: ${mins} minuti. Per passare un esame vero di solito serve circa il 60% complessivo, senza nessuna prova troppo bassa. È una stima: gli esami ufficiali hanno criteri e punteggi propri.</p>
+      </section>
+      ${weak.length ? `<section class="panel stack" style="margin-top:16px"><h2 style="margin:0">Su cosa allenarti</h2>${weak.map(s=>{ const [nm, txt, href] = advice[s.id]; return `<p style="margin:0"><b>${nm}</b>: ${txt}. <a href="${href}">Vai</a></p>`; }).join("")}</section>` : ""}
+      <div class="row" style="margin-top:16px"><a class="btn" href="#esami">Torna agli esami</a>${v.k==="great" && LEVELS.indexOf(lv)<LEVELS.length-1 ? `<a class="btn sun" href="#esami-${LEVELS[LEVELS.indexOf(lv)+1]}">Prova l'esame ${LEVELS[LEVELS.indexOf(lv)+1]}</a>` : ""}</div>`;
+    $("#back2").onclick = () => location.hash = "esami";
+  }
+}
 
 /* ============ RIPASSO ============ */
 function review(w, knew){
