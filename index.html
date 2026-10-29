@@ -221,7 +221,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 "use strict";
-const APP_VERSION = "0.3";
+const APP_VERSION = "0.4";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -268,7 +268,9 @@ const UNITS = [
   {id:"u15", title:"Ipotesi e condizioni", focus:"periodi ipotetici, desideri, consigli"}
 ];
 const BOX_DAYS = [0,0,1,3,7,14,30];
-const SKIP_MODELS = /whisper|embed|guard|tts|audio|image|vision|moderation|rerank|transcri|speech|ocr/i;
+const SKIP_MODELS = /whisper|embed|guard|tts|audio|image|vision|moderation|rerank|transcri|speech|ocr|orpheus|playai|voice|sound|music|video/i;
+/* Famiglie di modelli conosciute e adatte alla conversazione */
+const GOOD_MODELS = /llama|gemma|mistral|qwen|deepseek|glm|kimi|gpt-oss|nemotron|phi|command|hermes/i;
 /* Modelli che "ragionano" prima di rispondere: lenti e a volte rispondono vuoto se hanno pochi token */
 const REASONING = /gpt-oss|qwen3|qwq|deepseek-r1|-r1|reason|think|magistral|o1-|o3-|o4-/i;
 const PRESETS = {
@@ -305,7 +307,7 @@ function migrate(s){
     set.providers = [{id:uid(), preset:"freellmapi", name:PRESETS.freellmapi.name, base:set.apiBase || PRESETS.freellmapi.base, key:set.apiKey || "", model:set.model || "auto", on:true}];
   }
   delete set.apiBase; delete set.apiKey; delete set.model;
-  for(const p of set.providers){ if(!p.manual && p.preset!=="freellmapi" && p.preset!=="custom" && REASONING.test(p.model||"")) p.model = ""; }
+  for(const p of set.providers){ if(!p.manual && p.preset!=="freellmapi" && p.preset!=="custom" && (REASONING.test(p.model||"") || SKIP_MODELS.test(p.model||""))) p.model = ""; }
   return st;
 }
 function save(){
@@ -439,22 +441,39 @@ async function listModels(p){
   const ids = (data.data || data.models || []).map(m => (m.id || m.name || "").replace(/^models\//,"")).filter(Boolean);
   return ids.filter(id => !SKIP_MODELS.test(id));
 }
-async function autoModel(p){
+/* Ordina i modelli dal più adatto al meno adatto */
+function rankModels(p, ids){
   const pre = PRESETS[p.preset] || {};
-  const ids = await listModels(p);
   const pool = pre.onlyPref && pre.pref ? ids.filter(id => pre.pref.test(id)) : ids;
-  const fast = pool.filter(id => !REASONING.test(id));
-  const pick = (pre.pref && fast.find(id => pre.pref.test(id))) || fast[0] || pool[0];
-  if(!pick) throw new Error("nessun modello adatto trovato");
-  p.model = pick; save();
-  return pick;
+  const score = id => (REASONING.test(id) ? 0 : 4) + (GOOD_MODELS.test(id) ? 2 : 0) + (pre.pref && pre.pref.test(id) ? 1 : 0);
+  return pool.map((id,i)=>({id,i,sc:score(id)})).sort((a,b)=>b.sc-a.sc || a.i-b.i).map(x=>x.id);
 }
+function isAuto(p){ return !p.manual && p.preset!=="freellmapi" && p.preset!=="custom"; }
+function modelProblem(e){ return e.empty || [400,404,422].includes(e.status); }
+function markBad(p, id){ p.bad = [...new Set([...(p.bad||[]), id])].slice(-30); }
 function httpError(status, text){
-  const msg = status===401 || status===403 ? "chiave non valida" : status===429 ? "quota gratuita esaurita per ora" : status===404 ? "modello o indirizzo non trovato" : `errore ${status} ${String(text).slice(0,100)}`;
+  let detail = String(text||"");
+  try{ const j = JSON.parse(detail); detail = j?.error?.message || j?.message || detail; }catch(e){}
+  const msg = status===401 || status===403 ? "chiave non valida" : status===429 ? "quota gratuita esaurita per ora" : status===404 ? "modello o indirizzo non trovato" : `errore ${status}: ${detail.slice(0,160)}`;
   const e = new Error(msg); e.status = status; return e;
 }
-async function callProvider(p, messages, {temperature=0.7, maxTokens=1800}={}, retried=false){
-  const model = p.model || await autoModel(p);
+/* Chiama un provider; se il modello scelto in automatico non va, prova i successivi */
+async function callProvider(p, messages, opts={}){
+  if(!isAuto(p)) return callModel(p, p.model || "auto", messages, opts);
+  if(p.model){
+    try{ return await callModel(p, p.model, messages, opts); }
+    catch(e){ if(!modelProblem(e)) throw e; markBad(p, p.model); p.model = ""; save(); }
+  }
+  const cands = rankModels(p, await listModels(p)).filter(id => !(p.bad||[]).includes(id)).slice(0, 5);
+  if(!cands.length) throw new Error("nessun modello adatto trovato: premi “Mostra i modelli” e scegline uno a mano");
+  let last;
+  for(const id of cands){
+    try{ const t = await callModel(p, id, messages, opts); p.model = id; save(); return t; }
+    catch(e){ last = e; if(!modelProblem(e)) throw e; markBad(p, id); save(); }
+  }
+  throw last;
+}
+async function callModel(p, model, messages, {temperature=0.7, maxTokens=1800}={}, retried=false){
   let res;
   try{
     res = await timedFetch(p.base.replace(/\/+$/,"") + "/chat/completions", {method:"POST", headers:provHeaders(p),
@@ -467,7 +486,7 @@ async function callProvider(p, messages, {temperature=0.7, maxTokens=1800}={}, r
   text = String(text).replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
   if(!text){
     const thinking = msg.reasoning || msg.reasoning_content || choice.finish_reason === "length";
-    if(thinking && !retried) return callProvider(p, messages, {temperature, maxTokens: Math.max(1500, maxTokens*6)}, true);
+    if(thinking && !retried) return callModel(p, model, messages, {temperature, maxTokens: Math.max(1500, maxTokens*6)}, true);
     const why = choice.finish_reason ? ` (motivo: ${choice.finish_reason})` : "";
     const e = new Error(`il modello ${model} ha dato una risposta vuota${why}. Prova a scegliere un altro modello con “Mostra i modelli”.`);
     e.empty = true; throw e;
@@ -495,7 +514,6 @@ async function llm(messages, {json=true, temperature=0.7, maxTokens=1800}={}){
       errs.push(`${p.name}: ${e.message}`);
       if(e.status===429) cooldown[p.id] = Date.now() + 60000;
       else if(e.network || e.status) cooldown[p.id] = Date.now() + 30000;
-      if((e.status===404 || e.empty) && p.model && !p.manual && p.preset!=="freellmapi" && p.preset!=="custom"){ p.model = ""; save(); }
     }
   }
   const err = new Error("Nessuna IA ha risposto. " + errs.join(" · ")); err.network = true; throw err;
@@ -802,7 +820,7 @@ function renderProviders(){
     const p = list.find(x=>x.id===el.dataset.id), st = $("[data-status]", el);
     $$("[data-f]", el).forEach(inp => inp.onchange = () => {
       const f = inp.dataset.f; p[f] = inp.type==="checkbox" ? inp.checked : inp.value.trim();
-      if(f==="model") p.manual = !!p.model;
+      if(f==="model"){ p.manual = !!p.model; p.bad = []; }
       if(f==="key" || f==="base") delete cooldown[p.id];
       state.settings.connected = false; save(); if(f==="on") renderProviders();
     });
