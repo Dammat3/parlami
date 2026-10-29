@@ -389,7 +389,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.9";
+const APP_VERSION = "0.9.1";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -480,6 +480,11 @@ function migrate(s){
   }
   delete set.apiBase; delete set.apiKey; delete set.model;
   for(const p of set.providers){ if(!p.manual && p.preset!=="freellmapi" && p.preset!=="custom" && (REASONING.test(p.model||"") || SKIP_MODELS.test(p.model||""))) p.model = ""; }
+  // Toglie i pacchetti di parole salvati con traduzioni sbagliate (uguali alla parola straniera)
+  for(const [k, list] of Object.entries(st.wordBank || {})){
+    const same = (list||[]).filter(w => w && String(w.word).trim().toLowerCase() === String(w.translation).trim().toLowerCase()).length;
+    if(!Array.isArray(list) || list.length < 8 || same / list.length > 0.25) delete st.wordBank[k];
+  }
   return st;
 }
 function save(){
@@ -684,13 +689,13 @@ async function callProvider(p, messages, opts={}){
   throw last;
 }
 async function callModel(p, model, messages, {temperature=0.7, maxTokens=1800}={}, retried=false){
-  let res;
+  let res; const t0 = Date.now();
   try{
     res = await timedFetch(p.base.replace(/\/+$/,"") + "/chat/completions", {method:"POST", headers:provHeaders(p),
       body: JSON.stringify({model, messages, temperature, max_tokens:maxTokens})});
   }catch(e){ const err = new Error(e.name==="AbortError" ? "nessuna risposta entro 45 secondi" : "non raggiungibile da qui (rete o blocco del browser)"); err.network = true; throw err; }
   if(!res.ok){ let t=""; try{ t = await res.text(); }catch(e){} throw httpError(res.status, t); }
-  const data = await res.json();
+  const data = await res.json(); p.lat = Date.now() - t0;
   const choice = data?.choices?.[0] || {}, msg = choice.message || {};
   let text = Array.isArray(msg.content) ? msg.content.map(x => x?.text || "").join("") : (msg.content || "");
   text = String(text).replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
@@ -1079,7 +1084,7 @@ async function testProvider(p){
   try{
     const r = await callProvider(p, [{role:"user", content:"Rispondi solo con la parola: pronto"}], {maxTokens:300, temperature:0});
     delete cooldown[p.id];
-    if(el) el.innerHTML = `<span class="status-ok">Funziona · ${esc(p.model)} · “${esc(r.trim().slice(0,30))}”</span>`;
+    if(el) el.innerHTML = `<span class="status-ok">Funziona · ${esc(p.model)} · risponde in ${((p.lat||0)/1000).toFixed(1).replace(".",",")} s</span>`;
     const m = document.querySelector(`.prov[data-id="${p.id}"] [data-f="model"]`); if(m) m.value = p.model;
     return true;
   }catch(e){
@@ -1799,21 +1804,55 @@ function pctOf(h, total){
 /* ---- Pacchetti di parole sempre nuovi ---- */
 const WB_THEMES = ["vita quotidiana","cibo e cucina","viaggi e vacanze","lavoro e ufficio","casa e arredamento","salute e corpo","natura e meteo","sport e tempo libero","emozioni e carattere","città e servizi","tecnologia e internet","negozi e denaro","scuola e studio","famiglia e relazioni","cultura, musica e cinema","ambiente e società","trasporti","vestiti e moda"];
 const STAGE_LEVEL = ["A1","A1","A2","A2","A2","B1","B1","B1","B2","B2","C1","C2"];
-async function wordPack(level, theme){
-  const key = `${S().lang}:${level}:${theme}`;
-  state.wordBank = state.wordBank || {};
-  if(state.wordBank[key]?.length >= 12) return state.wordBank[key];
-  const r = await ask(`Sei un lessicografo e insegnante di ${L().name}. ${JSON_ONLY}`,
-    `Elenca 24 parole o espressioni utili di ${L().name} sul tema "${theme}", tipiche del livello ${level} del QCER (né più facili né più difficili), tutte diverse tra loro.
-Per ognuna scrivi: la traduzione italiana più comune; una definizione semplice in ${L().name} che NON contenga la parola; una frase d'esempio naturale in ${L().name} che contenga la parola scritta esattamente uguale; la traduzione italiana della frase.
-JSON: {"words":[{"word":"...","translation":"...","def":"...","example":"...","example_it":"..."}]}`,
-    {temperature:0.85, maxTokens:4000}, r=>Array.isArray(r.words) && r.words.length>=12);
-  const seen = new Set();
-  const list = r.words.filter(w=>w && w.word && w.translation && !seen.has(bare(w.word)) && seen.add(bare(w.word)))
-    .map(w=>({id:uid(), word:String(w.word).trim(), translation:String(w.translation).trim(), def:String(w.def||"").trim(), example:String(w.example||"").trim(), example_it:String(w.example_it||"").trim(), level, theme}));
-  state.wordBank[key] = list; save();
-  return list;
+/* Un pacchetto è valido solo se le traduzioni sono davvero in italiano (diverse dalla parola straniera) */
+function goodTranslations(list){
+  if(!list.length) return false;
+  const same = list.filter(w => bare(w.word) === bare(w.translation)).length;
+  return same / list.length <= 0.25;
 }
+function uniqueWords(list){
+  const sw = new Set(), st = new Set();
+  return list.filter(w => { const a = bare(w.word), b = bare(w.translation);
+    if(!a || !b || a === b || sw.has(a) || st.has(b)) return false; sw.add(a); st.add(b); return true; });
+}
+const packKey = (level, theme) => `${S().lang}:${level}:${theme}`;
+const hasPack = (level, theme) => (state.wordBank?.[packKey(level, theme)]?.length || 0) >= 8;
+const cachedThemes = level => WB_THEMES.filter(t => hasPack(level, t));
+const packJobs = {};
+function wordPack(level, theme){
+  const key = packKey(level, theme);
+  state.wordBank = state.wordBank || {};
+  if(hasPack(level, theme)) return Promise.resolve(state.wordBank[key]);
+  if(packJobs[key]) return packJobs[key];
+  const code = S().lang;
+  const job = ask(`Sei un lessicografo e insegnante di ${L().name} per studenti italiani. ${JSON_ONLY}`,
+    `Elenca 12 parole o espressioni utili di ${L().name} sul tema "${theme}", tipiche del livello ${level} del QCER, tutte diverse tra loro.
+Per ognuna scrivi questi campi:
+"${code}": la parola in ${L().name};
+"it": la sua traduzione in ITALIANO (deve essere una parola italiana, non la parola in ${L().name});
+"def": una definizione brevissima in ${L().name} (al massimo 8 parole) che non contenga la parola;
+"ex": una frase d'esempio breve in ${L().name} (al massimo 10 parole) che contenga la parola scritta esattamente uguale;
+"ex_it": la traduzione italiana della frase.
+Esempio di formato per l'inglese: {"en":"apple","it":"mela","def":"a round red or green fruit","ex":"I eat an apple every day.","ex_it":"Mangio una mela ogni giorno."}
+JSON: {"words":[{"${code}":"...","it":"...","def":"...","ex":"...","ex_it":"..."}]}`,
+    {temperature:0.7, maxTokens:1600},
+    r => { if(!Array.isArray(r.words)) return false; const l = r.words.map(w => ({word:w?.[code] ?? w?.word, translation:w?.it ?? w?.translation})).filter(w=>w.word && w.translation); return l.length >= 8 && goodTranslations(l); })
+  .then(r => {
+    const list = uniqueWords(r.words.map(w => ({id:uid(), word:String(w[code] ?? w.word ?? "").trim(), translation:String(w.it ?? w.translation ?? "").trim(),
+      def:String(w.def||"").trim(), example:String(w.ex ?? w.example ?? "").trim(), example_it:String(w.ex_it ?? w.example_it ?? "").trim(), level, theme})));
+    if(list.length < 8) throw new Error("Le parole preparate dall'IA non erano valide. Riprova.");
+    state.wordBank[key] = list; save(); return list;
+  }).finally(() => { delete packJobs[key]; });
+  packJobs[key] = job; return job;
+}
+/* Prepara in sottofondo un pacchetto nuovo, così la prossima partita parte subito */
+function prefetchPack(level){
+  if(!state.settings.connected) return;
+  const missing = WB_THEMES.filter(t => !hasPack(level, t) && !packJobs[packKey(level, t)]);
+  if(!missing.length || Object.keys(packJobs).length >= 2) return;
+  wordPack(level, missing[Math.floor(Math.random()*missing.length)]).catch(()=>{});
+}
+function warmPacks(){ for(const lv of ["A1", STAGE_LEVEL[Math.min(11, LEVELS.indexOf(S().level)*2)] || "A2"]) if(!cachedThemes(lv).length) prefetchPack(lv); }
 function pickFresh(list, n){
   const seen = state.seenW || (state.seenW = {}), k = w => S().lang + ":" + w.word;
   const out = shuffle(list).sort((a,b)=>(seen[k(a)]||0)-(seen[k(b)]||0)).slice(0, n);
@@ -1823,14 +1862,27 @@ function pickFresh(list, n){
 }
 async function stageWords(id, n, count){
   const p = gprog(id), plays = p.plays || 0, lvl = STAGE_LEVEL[n-1] || "B1";
-  const t1 = WB_THEMES[(n*7 + plays*5) % WB_THEMES.length];
-  let all = await wordPack(lvl, t1);
-  if(all.length < count + 6 || n >= 5){
-    const t2 = WB_THEMES[(n*7 + plays*5 + 8) % WB_THEMES.length];
-    const more = await wordPack(lvl, t2); const have = new Set(all.map(w=>bare(w.word)));
-    all = [...all, ...more.filter(w=>!have.has(bare(w.word)))];
+  const have = cachedThemes(lvl);
+  let themes;
+  if(have.length){
+    // Ci sono già pacchetti pronti: si parte subito, girando tra gli argomenti, e se ne prepara uno nuovo in sottofondo
+    const start = (n*7 + plays*5) % have.length;
+    themes = [...have.slice(start), ...have.slice(0, start)];
+    prefetchPack(lvl);
+  } else {
+    const off = (n*7 + plays*5) % WB_THEMES.length;
+    themes = [WB_THEMES[off], WB_THEMES[(off+8) % WB_THEMES.length]];
   }
-  return {lvl, theme:t1, words:pickFresh(all, Math.min(count, all.length)), all};
+  let all = [];
+  if(have.length){
+    for(const t of themes){ all = uniqueWords([...all, ...state.wordBank[packKey(lvl, t)]]); if(all.length >= count + 6 && all.length >= 20) break; }
+  } else {
+    const res = await Promise.allSettled(themes.map(t => wordPack(lvl, t)));
+    res.forEach(r => { if(r.status === "fulfilled") all = uniqueWords([...all, ...r.value]); });
+    if(!all.length) throw (res.find(r=>r.status==="rejected")?.reason || new Error("Non sono riuscito a preparare le parole."));
+  }
+  const nextLv = STAGE_LEVEL[n]; if(nextLv && nextLv !== lvl && !cachedThemes(nextLv).length) setTimeout(()=>prefetchPack(nextLv), 3000);
+  return {lvl, theme:themes[0], words:pickFresh(all, Math.min(count, all.length)), all};
 }
 
 /* ---- Progressi: stelle per livello ---- */
@@ -1853,11 +1905,17 @@ function awardSticker(){
 function kidsTheme(n){ return ["animali","cibo","colori","numeri","casa","corpo","vestiti","trasporti","natura","tutti"][n-1] || "tutti"; }
 async function kidsStage(n, {count=8, exclude=[], maxLen=99}={}){
   const all = await kidsWords(); const th = kidsTheme(n);
-  let pool = all.filter(w => (th==="tutti" || w.theme===th) && !exclude.includes(w.theme) && [...w.word].length <= maxLen);
-  if(pool.length < Math.min(count, 4)) pool = all.filter(w=>!exclude.includes(w.theme) && [...w.word].length <= maxLen);
+  const uniq = list => { const seen = new Set(); return list.filter(w => { const k = bare(w.word); if(seen.has(k)) return false; seen.add(k); return true; }); };
+  let pool = uniq(all.filter(w => (th==="tutti" || w.theme===th) && !exclude.includes(w.theme) && [...w.word].length <= maxLen));
+  if(pool.length < Math.min(count, 4)) pool = uniq(all.filter(w=>!exclude.includes(w.theme) && [...w.word].length <= maxLen));
   return {all, pool, words:pickFresh(pool, Math.min(count, pool.length))};
 }
-function sameTheme(all, w, n){ const a = shuffle(all.filter(x=>x.id!==w.id && x.theme===w.theme && bare(x.word)!==bare(w.word))); const b = shuffle(all.filter(x=>x.id!==w.id && x.theme!==w.theme)); return [...a, ...b].slice(0, n); }
+function sameTheme(all, w, n){
+  const ok = x => x.id !== w.id && bare(x.word) !== bare(w.word);
+  const out = [], seen = new Set([bare(w.word)]);
+  for(const x of [...shuffle(all.filter(x=>ok(x) && x.theme===w.theme)), ...shuffle(all.filter(x=>ok(x) && x.theme!==w.theme))]){ const k = bare(x.word); if(seen.has(k)) continue; seen.add(k); out.push(x); if(out.length >= n) break; }
+  return out;
+}
 
 /* Quiz a scelta (motore per Che cos'è?, Ascolta e tocca, Conta!, Ascolto) */
 function choiceRounds(box, h, rounds, {question, options, isRight, label, speak, rate, kids, replays=99, onRound}){
@@ -1865,7 +1923,9 @@ function choiceRounds(box, h, rounds, {question, options, isRight, label, speak,
     let i = 0;
     const show = () => {
       if(i >= rounds.length || (h.lives != null && h.lives <= 0)) return resolve();
-      const w = rounds[i], opts = options(w); let left = replays, tried = false, done = false;
+      const w = rounds[i], seenL = new Set();
+      const opts = options(w).filter(o => { const k = o === w ? "\u0000" : label(o); if(o !== w && (seenL.has(k) || k === label(w))) return false; seenL.add(k); return true; });
+      let left = replays, tried = false, done = false;
       h.area.innerHTML = `<div class="panel ${kids?"kids":""} stage-panel"><div class="small muted" style="text-align:right">${i+1}/${rounds.length}</div><div class="kq">${question(w)}</div>
         <div class="${kids?"kopts":"options"} cols${Math.min(opts.length,6)}">${opts.map(o=>`<button class="${kids?"kopt":"opt"}" data-id="${esc(o.id)}">${label(o)}</button>`).join("")}</div></div>`;
       onRound && onRound(w);
@@ -2043,7 +2103,8 @@ const GAMES = {
       const finish = () => { if(ended) return; ended = true; h.stop(); resolve({pct:pctOf(h,total), score:h.score, line:`${h.hits} coppie su ${total}, ${h.misses} errori${h.best>=3?`, combo massima ${h.best}`:""}.`}); };
       if(c.time) h.startTimer(c.time, finish);
       const draw = () => {
-        const ws = d.words.slice(board*c.pairs, board*c.pairs + c.pairs).filter(w => c.mode==="tr" || w.def);
+        const seenD = new Set();
+        const ws = d.words.slice(board*c.pairs, board*c.pairs + c.pairs).filter(w => c.mode==="tr" || (w.def && !seenD.has(bare(w.def)) && seenD.add(bare(w.def))));
         if(!ws.length) return finish();
         let left = ws.length, sel = null;
         const A = shuffle(ws), B = shuffle(ws);
@@ -2268,6 +2329,7 @@ RENDER.giochi = main => {
   const g = GAMES[parts[1]];
   if(g){ if(g.free) return runFree(main, parts[1]); if(parts[2]) return runStage(main, parts[1], Math.max(1, Math.min(g.stages, +parts[2]||1))); return renderStageMap(main, parts[1]); }
   const tab = kidsModeOn() ? "bambini" : (sessionStorage.getItem("parlami.gtab") || "adulti");
+  if(tab === "adulti") warmPacks();
   main.innerHTML = `
   <h1>Giochi</h1>
   <div class="row" role="tablist" style="margin-bottom:14px" ${kidsModeOn()?"hidden":""}>
@@ -2301,7 +2363,7 @@ function renderStageMap(main, id){
 async function runStage(main, id, n){
   const g = GAMES[id];
   if(!unlocked(id, n)){ location.hash = "giochi-"+id; return; }
-  main.innerHTML = `<a class="btn ghost sm" href="#giochi-${id}">${icon("back")} Livelli</a><div id="game" style="margin-top:14px;position:relative">${loadingHTML(g.kids ? "Preparo il gioco…" : "Preparo parole nuove…")}</div>`;
+  main.innerHTML = `<a class="btn ghost sm" href="#giochi-${id}">${icon("back")} Livelli</a><div id="game" style="margin-top:14px;position:relative">${loadingHTML(g.kids ? "Preparo il gioco…" : (cachedThemes(STAGE_LEVEL[n-1]).length ? "Preparo il gioco…" : "Preparo le prime parole di questo livello: serve solo la prima volta…"))}</div>`;
   let data;
   try{ data = await g.load(n); }
   catch(e){ const box = $("#game"); if(!box) return; box.innerHTML = errorHTML(e, "retry"); $("#retry").onclick = () => runStage(main, id, n); return; }
