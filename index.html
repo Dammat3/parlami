@@ -221,7 +221,8 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 "use strict";
-const APP_VERSION = "0.2";
+const APP_VERSION = "0.3";
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
 /* ============ Dati di base ============ */
@@ -267,6 +268,9 @@ const UNITS = [
   {id:"u15", title:"Ipotesi e condizioni", focus:"periodi ipotetici, desideri, consigli"}
 ];
 const BOX_DAYS = [0,0,1,3,7,14,30];
+const SKIP_MODELS = /whisper|embed|guard|tts|audio|image|vision|moderation|rerank|transcri|speech|ocr/i;
+/* Modelli che "ragionano" prima di rispondere: lenti e a volte rispondono vuoto se hanno pochi token */
+const REASONING = /gpt-oss|qwen3|qwq|deepseek-r1|-r1|reason|think|magistral|o1-|o3-|o4-/i;
 const PRESETS = {
   freellmapi:{name:"FreeLLMAPI sul PC", base:"http://localhost:3001/v1", keyUrl:"", note:"Funziona solo sul computer dove è avviato FreeLLMAPI. Sul telefono viene saltato in automatico."},
   groq:{name:"Groq", base:"https://api.groq.com/openai/v1", pref:/llama-3\.3-70b|llama|qwen|gpt-oss/i, keyUrl:"https://console.groq.com/keys", note:"Molto veloce: ottimo per la conversazione a voce."},
@@ -301,6 +305,7 @@ function migrate(s){
     set.providers = [{id:uid(), preset:"freellmapi", name:PRESETS.freellmapi.name, base:set.apiBase || PRESETS.freellmapi.base, key:set.apiKey || "", model:set.model || "auto", on:true}];
   }
   delete set.apiBase; delete set.apiKey; delete set.model;
+  for(const p of set.providers){ if(!p.manual && p.preset!=="freellmapi" && p.preset!=="custom" && REASONING.test(p.model||"")) p.model = ""; }
   return st;
 }
 function save(){
@@ -416,7 +421,6 @@ function setAvatar(mode){
 }
 
 /* ============ IA: più provider gratuiti con cambio automatico ============ */
-const SKIP_MODELS = /whisper|embed|guard|tts|audio|image|vision|moderation|rerank|transcri|speech|ocr/i;
 const cooldown = {};
 let lastProvider = "";
 
@@ -438,8 +442,9 @@ async function listModels(p){
 async function autoModel(p){
   const pre = PRESETS[p.preset] || {};
   const ids = await listModels(p);
-  let pick = pre.pref ? ids.find(id => pre.pref.test(id)) : null;
-  if(!pick && !pre.onlyPref) pick = ids[0];
+  const pool = pre.onlyPref && pre.pref ? ids.filter(id => pre.pref.test(id)) : ids;
+  const fast = pool.filter(id => !REASONING.test(id));
+  const pick = (pre.pref && fast.find(id => pre.pref.test(id))) || fast[0] || pool[0];
   if(!pick) throw new Error("nessun modello adatto trovato");
   p.model = pick; save();
   return pick;
@@ -448,7 +453,7 @@ function httpError(status, text){
   const msg = status===401 || status===403 ? "chiave non valida" : status===429 ? "quota gratuita esaurita per ora" : status===404 ? "modello o indirizzo non trovato" : `errore ${status} ${String(text).slice(0,100)}`;
   const e = new Error(msg); e.status = status; return e;
 }
-async function callProvider(p, messages, {temperature=0.7, maxTokens=1800}={}){
+async function callProvider(p, messages, {temperature=0.7, maxTokens=1800}={}, retried=false){
   const model = p.model || await autoModel(p);
   let res;
   try{
@@ -457,8 +462,16 @@ async function callProvider(p, messages, {temperature=0.7, maxTokens=1800}={}){
   }catch(e){ const err = new Error(e.name==="AbortError" ? "nessuna risposta entro 45 secondi" : "non raggiungibile da qui (rete o blocco del browser)"); err.network = true; throw err; }
   if(!res.ok){ let t=""; try{ t = await res.text(); }catch(e){} throw httpError(res.status, t); }
   const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content;
-  if(typeof text !== "string" || !text.trim()) throw new Error("risposta vuota");
+  const choice = data?.choices?.[0] || {}, msg = choice.message || {};
+  let text = Array.isArray(msg.content) ? msg.content.map(x => x?.text || "").join("") : (msg.content || "");
+  text = String(text).replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  if(!text){
+    const thinking = msg.reasoning || msg.reasoning_content || choice.finish_reason === "length";
+    if(thinking && !retried) return callProvider(p, messages, {temperature, maxTokens: Math.max(1500, maxTokens*6)}, true);
+    const why = choice.finish_reason ? ` (motivo: ${choice.finish_reason})` : "";
+    const e = new Error(`il modello ${model} ha dato una risposta vuota${why}. Prova a scegliere un altro modello con “Mostra i modelli”.`);
+    e.empty = true; throw e;
+  }
   return text;
 }
 function usableProviders(){
@@ -482,7 +495,7 @@ async function llm(messages, {json=true, temperature=0.7, maxTokens=1800}={}){
       errs.push(`${p.name}: ${e.message}`);
       if(e.status===429) cooldown[p.id] = Date.now() + 60000;
       else if(e.network || e.status) cooldown[p.id] = Date.now() + 30000;
-      if(e.status===404 && p.model && p.preset!=="freellmapi" && p.preset!=="custom"){ p.model = ""; save(); }
+      if((e.status===404 || e.empty) && p.model && !p.manual && p.preset!=="freellmapi" && p.preset!=="custom"){ p.model = ""; save(); }
     }
   }
   const err = new Error("Nessuna IA ha risposto. " + errs.join(" · ")); err.network = true; throw err;
@@ -540,7 +553,11 @@ const Voice = {
   /* Ritorna una promessa con {text, alts:[{text,conf}]} o null; .stop() per fermare */
   listen({onInterim}={}){
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR){ const p = Promise.reject(new Error("Il riconoscimento vocale funziona in Chrome o Edge. Apri l'app con uno di questi browser.")); p.stop=()=>{}; return p; }
+    if(!SR){
+      const msg = IS_IOS ? (isStandalone() ? "Su iPhone il microfono non funziona dall'icona sulla schermata Home: apri Parlami da Safari." : "Su iPhone serve Safari aggiornato, con Siri e Dettatura attivi.")
+        : "Il riconoscimento vocale funziona in Chrome o Edge. Apri l'app con uno di questi browser.";
+      const p = Promise.reject(new Error(msg)); p.stop=()=>{}; return p;
+    }
     this.stop();
     const r = new SR();
     r.lang = L().code; r.interimResults = true; r.maxAlternatives = 3; r.continuous = false;
@@ -558,7 +575,8 @@ const Voice = {
       r.onerror = e => {
         if(e.error==="no-speech" || e.error==="aborted") return;
         const msg = {"not-allowed":"Il microfono è bloccato. Consenti l'accesso al microfono nelle impostazioni del browser.",
-          "audio-capture":"Nessun microfono trovato.", "network":"Il riconoscimento vocale di Chrome richiede la connessione a internet."}[e.error] || ("Errore del riconoscimento vocale: "+e.error);
+          "audio-capture":"Nessun microfono trovato.", "network":"Il riconoscimento vocale richiede la connessione a internet.",
+          "service-not-allowed": IS_IOS ? "Su iPhone attiva Siri (Impostazioni › Siri) e la Dettatura (Impostazioni › Generali › Tastiera › Abilita Dettatura), poi riprova." : "Il riconoscimento vocale non è disponibile in questo browser."}[e.error] || ("Errore del riconoscimento vocale: "+e.error);
         reject(new Error(msg));
       };
       r.onend = () => {
@@ -708,7 +726,7 @@ RENDER.impostazioni = main => {
     <section class="panel stack">
       <h2>App</h2>
       <p class="muted">Versione ${APP_VERSION}. ${isStandalone() ? "Stai usando l'app installata." : "Puoi installarla come app, sul PC e sul telefono."}</p>
-      <div class="row" id="installrow">${deferredInstall ? `<button class="btn" id="s-install">Installa l'app</button>` : (isStandalone() ? "" : `<span class="small muted">Se il pulsante non compare: nel menu di Chrome scegli “Installa app” o “Aggiungi a schermata Home”. Serve un indirizzo https o localhost.</span>`)}</div>
+      <div class="row" id="installrow">${deferredInstall ? `<button class="btn" id="s-install">Installa l'app</button>` : (isStandalone() ? "" : IS_IOS ? `<span class="small muted">Su iPhone: in Safari tocca il pulsante Condividi e poi “Aggiungi alla schermata Home”. Attenzione: dall'icona il microfono non funziona, per parlare apri Parlami in Safari.</span>` : `<span class="small muted">Se il pulsante non compare: nel menu di Chrome scegli “Installa app” o “Aggiungi a schermata Home”. Serve un indirizzo https o localhost.</span>`)}</div>
     </section>
     <section class="panel stack">
       <h2>I tuoi dati</h2>
@@ -784,6 +802,7 @@ function renderProviders(){
     const p = list.find(x=>x.id===el.dataset.id), st = $("[data-status]", el);
     $$("[data-f]", el).forEach(inp => inp.onchange = () => {
       const f = inp.dataset.f; p[f] = inp.type==="checkbox" ? inp.checked : inp.value.trim();
+      if(f==="model") p.manual = !!p.model;
       if(f==="key" || f==="base") delete cooldown[p.id];
       state.settings.connected = false; save(); if(f==="on") renderProviders();
     });
@@ -804,7 +823,7 @@ async function testProvider(p){
   const el = document.querySelector(`.prov[data-id="${p.id}"] [data-status]`);
   if(el) el.innerHTML = `<span class="spinner"></span>`;
   try{
-    const r = await callProvider(p, [{role:"user", content:"Rispondi solo con la parola: pronto"}], {maxTokens:20, temperature:0});
+    const r = await callProvider(p, [{role:"user", content:"Rispondi solo con la parola: pronto"}], {maxTokens:300, temperature:0});
     delete cooldown[p.id];
     if(el) el.innerHTML = `<span class="status-ok">Funziona · ${esc(p.model)} · “${esc(r.trim().slice(0,30))}”</span>`;
     const m = document.querySelector(`.prov[data-id="${p.id}"] [data-f="model"]`); if(m) m.value = p.model;

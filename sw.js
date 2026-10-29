@@ -1,5 +1,5 @@
 /* Parlami: rende l'app installabile e utilizzabile anche con connessione debole */
-const CACHE = "parlami-0.2";
+const CACHE = "parlami-0.3";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
