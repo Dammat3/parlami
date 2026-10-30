@@ -79,7 +79,7 @@ a.btn,a.chip,a.action,a.lvl{text-decoration:none}
 .nav a svg{width:22px;height:22px;flex:none}
 .nav a:hover{background:var(--surface-2);color:var(--ink)}
 .nav a.active{background:var(--primary-soft);color:var(--primary)}
-.rail-foot{margin-top:auto;padding:12px;display:flex;gap:16px;font-weight:700}
+.rail-foot{margin-top:auto;padding:12px;display:flex;gap:10px 16px;font-weight:700;flex-wrap:wrap}
 .main{padding:36px clamp(16px,4vw,48px) 60px;max-width:1040px;width:100%}
 @media (max-width:820px){
   .app{grid-template-columns:1fr}
@@ -404,6 +404,20 @@ body.kidsmode .brand-dot{background:var(--sun)}
 .ckrow{font-size:.92rem;padding:4px 8px;border-radius:8px;background:var(--surface-2)}
 .ckrow.ok{background:var(--ok-bg)}.ckrow.bad{background:var(--bad-bg);color:var(--bad)}
 
+/* Statistiche e classifica */
+.bars{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;height:170px;align-items:end}
+.bar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
+.bar i{display:block;width:70%;min-height:3px;background:var(--primary);border-radius:8px 8px 3px 3px}
+.bar .bv{font-size:.8rem;font-weight:700}.bar .bl{font-size:.8rem;color:var(--muted)}
+.heat{display:grid;grid-template-rows:repeat(7,14px);grid-auto-flow:column;grid-auto-columns:14px;gap:3px;overflow-x:auto}
+.hc{border-radius:3px;background:var(--surface-2);border:1px solid var(--line)}
+.hc.l1{background:color-mix(in srgb, var(--ok) 30%, var(--surface-2))}.hc.l2{background:color-mix(in srgb, var(--ok) 55%, var(--surface-2))}
+.hc.l3{background:color-mix(in srgb, var(--ok) 80%, var(--surface-2))}.hc.l4{background:var(--ok)}.hc.lx{opacity:.25}
+.rank{display:flex;flex-direction:column;gap:8px}
+.rankrow{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--r);background:var(--surface-2)}
+.rankrow.top{background:color-mix(in srgb, var(--sun) 22%, var(--surface-2))}
+.rk{font-size:1.4rem;width:32px;text-align:center;font-weight:800}.re{font-size:1.7rem}.rn{flex:1}.rx{font-family:var(--display);font-size:1.15rem}
+
 /* Exercise */
 .progress{height:12px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
 .progress > i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
@@ -500,7 +514,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.12.4";
+const APP_VERSION = "0.13";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -603,7 +617,8 @@ function migrate(s){
   }
   return st;
 }
-function save(){
+function save(){ saveRaw(); if(typeof markChanges === "function") markChanges(); }
+function saveRaw(){
   try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
   catch(e){ toast("Non riesco a salvare i progressi: memoria del browser piena o bloccata."); }
 }
@@ -614,12 +629,15 @@ function dayDiff(a,b){ return Math.round((new Date(b) - new Date(a)) / 86400000)
 
 function addXP(n){
   const t = today();
-  if(state.todayDate !== t){ state.todayDate = t; state.todayXp = 0; }
-  if(state.lastDay !== t){
+  const forKid = kidsContext() && typeof currentKid === "function" && currentKid();
+  if(!forKid && state.todayDate !== t){ state.todayDate = t; state.todayXp = 0; }
+  if(!forKid && state.lastDay !== t){
     state.streak = (state.lastDay && dayDiff(state.lastDay, t) === 1) ? state.streak + 1 : 1;
     state.lastDay = t;
   }
-  state.xp += n; state.todayXp += n;
+  if(kidsContext() && typeof currentKid === "function" && currentKid()){
+    const ks = kidStore(); ks.xp = (ks.xp||0) + n; statDay(ks).xp += n;
+  } else { state.xp += n; state.todayXp += n; statDay(state).xp += n; }
   save(); renderRailFoot();
   toast(`+${n} XP`);
 }
@@ -716,6 +734,7 @@ const ICON = {
   chat:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
   wave:'<path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 10v4M21 12h0"/>',
   game:'<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3M15 12h.01M18 13h.01"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   tools:'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2.6-.4-.4-2.6z"/>',
   kid:'<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4 4 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/>',
   exam:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11l2 2 4-4M9 17h6"/>',
@@ -999,6 +1018,7 @@ const VIEWS = [
   {id:"tutor", label:"Tutor", icon:"chat"},
   {id:"pronuncia", label:"Pronuncia", icon:"wave"},
   {id:"strumenti", label:"Strumenti", icon:"tools"},
+  {id:"statistiche", label:"Statistiche", icon:"chart"},
   {id:"giochi", label:"Giochi", icon:"game"},
   {id:"bambini", label:"Bambini", icon:"kid"},
   {id:"ripasso", label:"Ripasso", icon:"cards"},
@@ -1022,7 +1042,8 @@ function renderNav(){
 }
 function renderRailFoot(){
   if(kidsModeOn()){ const k = currentKid(); $("#railfoot").innerHTML = `<span>${k?k.emoji+" "+esc(k.name):"🧒"}</span><a href="#bambini-genitori" class="small">👪 Genitori</a>`; return; }
-  $("#railfoot").innerHTML = `<span title="Giorni di fila">🔥 ${currentStreak()}</span><span title="Punti esperienza">⭐ ${state.xp}</span>`;
+  $("#railfoot").innerHTML = `<button class="chip" id="rfwho" title="Cambia persona" style="margin-bottom:8px">${currentAdult().emoji} ${esc(currentAdult().name)}</button><span title="Giorni di fila">🔥 ${currentStreak()}</span><span title="Punti esperienza">⭐ ${state.xp}</span>${syncCfg()?.on ? `<span id="syncdot" title="Sincronizzazione">☁️${Sync.status}</span>` : ""}`;
+  const rw = $("#rfwho"); if(rw) rw.onclick = pickAdult;
 }
 function route(){
   if(cleanup){ try{ cleanup(); }catch(e){} cleanup = null; }
@@ -1079,7 +1100,9 @@ async function fetchFamily(){
   }catch(e){ famFileCache = null; }
   return famFileCache;
 }
-function applyFamily(list, file){
+function applyFamily(payload, file){
+  const list = Array.isArray(payload) ? payload : (payload.providers || []);
+  if(!Array.isArray(payload) && payload.sync?.token){ state.settings.sync = {...payload.sync, on:true, last:0}; setTimeout(() => syncNow(true), 500); }
   const local = (S().providers || []).filter(p => p.preset === "freellmapi");
   state.settings.providers = [...list.map(p => ({...p, id:uid()})), ...local.map(p => ({...p, on: !IS_IOS && !/Android/i.test(navigator.userAgent) && p.on}))];
   state.settings.familyStamp = file.created; state.settings.connected = true;
@@ -1112,7 +1135,9 @@ async function createFamilyFile(){
     text:"Scegli una password di famiglia lunga, per esempio tre o quattro parole di fila. La userete una sola volta su ogni dispositivo. Non scriverla in nessun file su GitHub."});
   if(!pass) return;
   toast("Cifro le chiavi…");
-  const file = await famEncrypt(list.map(p => ({preset:p.preset, name:p.name, base:p.base, key:p.key, model:p.model||"", manual:!!p.manual, on:p.on !== false})), pass);
+  const sc = syncCfg();
+  const file = await famEncrypt({providers: list.map(p => ({preset:p.preset, name:p.name, base:p.base, key:p.key, model:p.model||"", manual:!!p.manual, on:p.on !== false})),
+    sync: sc?.token ? {token:sc.token, gistId:sc.gistId, key:sc.key, user:sc.user} : null}, pass);
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([JSON.stringify(file)], {type:"application/json"}));
   a.download = "famiglia.json"; a.click();
@@ -1144,6 +1169,237 @@ async function familyBanner(){
   $("#famgo").onclick = async () => { if(await unlockFamily()) route(); };
 }
 
+/* ============ PROFILI DEGLI ADULTI ============ */
+/* I dati di chi sta usando l'app stanno "in primo piano" in state; quelli degli altri in adults.data */
+const PERSON_KEYS = ["xp","streak","lastDay","todayXp","todayDate","dailyGoal","progress","words","mistakes","exams","placement","gameProg","missionBest","tutorMem","studies","dict","radio","favPhr","stats","seenW"];
+const PERSON_SET = ["lang","level","persona","voiceURI","rate","autoSpeak","showTr","tutorMemory"];
+const ADULT_EMOJIS = ["🙂","😎","🧔","👩","👨","👵","👴","🦸","🧑‍🍳","🧑‍💻","🌻","⚽"];
+function adultsState(){
+  if(!state.adults){ const id = uid(); state.adults = {profiles:[{id, name:"Io", emoji:"🙂"}], current:id, data:{}, updatedAt:{}, hash:{}, deleted:[]}; }
+  const a = state.adults; a.data ||= {}; a.updatedAt ||= {}; a.hash ||= {}; a.deleted ||= [];
+  return a;
+}
+function currentAdult(){ const a = adultsState(); return a.profiles.find(p => p.id === a.current) || a.profiles[0]; }
+function packPerson(){ const o = {}; PERSON_KEYS.forEach(k => { if(state[k] !== undefined) o[k] = state[k]; }); o.settings = {}; PERSON_SET.forEach(k => { if(state.settings[k] !== undefined) o.settings[k] = state.settings[k]; }); return o; }
+function unpackPerson(o){
+  PERSON_KEYS.forEach(k => { if(o && k in o) state[k] = o[k]; else if(k in DEFAULT_STATE) state[k] = structuredClone(DEFAULT_STATE[k]); else delete state[k]; });
+  PERSON_SET.forEach(k => { if(o?.settings && k in o.settings) state.settings[k] = o.settings[k]; });
+}
+function switchAdult(id){
+  const a = adultsState(); if(id === a.current) return;
+  a.data[a.current] = packPerson(); a.hash[a.current] = quickHash(JSON.stringify(a.data[a.current]));
+  const target = a.data[id];
+  if(target) unpackPerson(target);
+  else { const keep = {lang:state.settings.lang}; unpackPerson({settings:{...keep, level:"A2"}}); }
+  a.current = id; delete a.data[id]; saveRaw(); Chat.turns = [];
+}
+function isPristine(){ const p = currentAdult(); return p.name === "Io" && !(state.xp > 0) && !Object.keys(state.progress||{}).length && !(state.words||[]).length; }
+function quickHash(str){ let h = 0; for(let i = 0; i < str.length; i++){ h = (h*31 + str.charCodeAt(i)) | 0; } return h + ":" + str.length; }
+function kidsContext(){ const h = location.hash; return h.startsWith("#bambini") || /^#giochi-(k|album|bambini)/.test(h); }
+
+/* Segna "modificato" solo quando i dati di una persona cambiano davvero (serve alla sincronizzazione) */
+let markTimer = null;
+function markChanges(){
+  clearTimeout(markTimer);
+  markTimer = setTimeout(() => {
+    const a = adultsState(), h = quickHash(JSON.stringify(packPerson()));
+    let changed = false;
+    if(a.hash[a.current] !== h){ a.hash[a.current] = h; a.updatedAt[a.current] = Date.now(); changed = true; }
+    const kid = typeof currentKid === "function" ? currentKid() : null;
+    if(kid){ const st = kidStore(), kh = quickHash(JSON.stringify({...st, updated:0})); if(st._h !== kh){ st._h = kh; st.updated = Date.now(); changed = true; } }
+    if(changed){ saveRaw(); Sync.dirty = true; scheduleSync(); }
+  }, 1500);
+}
+
+/* ============ STATISTICHE ============ */
+function statStore(){ return kidsContext() && typeof currentKid === "function" && currentKid() ? kidStore() : state; }
+function statDay(store, d = today()){
+  store.stats ||= {days:{}}; store.stats.days ||= {};
+  const days = store.stats.days, keys = Object.keys(days);
+  if(keys.length > 420) keys.sort().slice(0, keys.length - 400).forEach(k => delete days[k]);
+  return days[d] ||= {xp:0, min:0};
+}
+function addDays(dateStr, n){ const d = new Date(dateStr + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0,10); }
+function weekStart(){ const d = new Date(); const wd = (d.getDay() + 6) % 7; d.setDate(d.getDate() - wd); return d.toISOString().slice(0,10); }
+function weekXP(store){ const days = store?.stats?.days || {}, ws = weekStart(); return Object.entries(days).filter(([k]) => k >= ws).reduce((a,[,v]) => a + (v.xp||0), 0); }
+function streakOf(store){ const days = store?.stats?.days || {}; let n = 0, d = today(); if(!(days[d]?.xp > 0)) d = addDays(d, -1); while(days[d]?.xp > 0){ n++; d = addDays(d, -1); } return n; }
+let lastAct = Date.now();
+["pointerdown","keydown","touchstart"].forEach(ev => addEventListener(ev, () => { lastAct = Date.now(); }, {passive:true}));
+setInterval(() => { if(document.visibilityState === "visible" && Date.now() - lastAct < 120000){ statDay(statStore()).min++; save(); } }, 60000);
+
+function peopleList(){
+  const a = adultsState(), out = a.profiles.map(p => ({kind:"adult", id:p.id, name:p.name, emoji:p.emoji, store: p.id === a.current ? state : (a.data[p.id] || {})}));
+  const k = (typeof kidsState === "function") ? kidsState() : {profiles:[], data:{}};
+  k.profiles.forEach(p => out.push({kind:"kid", id:p.id, name:p.name, emoji:p.emoji, store: k.data[p.id] || {}}));
+  return out;
+}
+RENDER.statistiche = main => {
+  const tab = location.hash.slice(1).split("-")[1] || "io";
+  const people = peopleList();
+  const tabs = `<div class="row" role="tablist" style="margin-bottom:14px"><a class="chip ${tab==="io"?"on":""}" href="#statistiche-io">📈 I miei progressi</a><a class="chip ${tab==="classifica"?"on":""}" href="#statistiche-classifica">🏆 Classifica di famiglia</a></div>`;
+  if(tab === "classifica"){
+    const rows = people.map(p => ({...p, wk: weekXP(p.store), st: streakOf(p.store)})).sort((x,y) => y.wk - x.wk);
+    const medals = ["🥇","🥈","🥉"];
+    main.innerHTML = `<h1>Statistiche</h1>${tabs}
+      <section class="panel stack"><h2 style="margin:0">Questa settimana</h2><p class="small muted" style="margin:0">Punti XP da lunedì a oggi. Ogni lunedì si ricomincia da zero.</p>
+      <div class="rank">${rows.map((r,i) => `<div class="rankrow ${i<3 && r.wk>0?"top":""}"><span class="rk">${i<3 && r.wk>0 ? medals[i] : i+1}</span><span class="re">${r.emoji}</span><b class="rn">${esc(r.name)}${r.kind==="kid"?` <span class="chip agechip">bambino</span>`:""}</b><span class="small muted">🔥 ${r.st}</span><b class="rx">${r.wk} XP</b></div>`).join("")}</div>
+      ${people.length < 2 ? `<p class="small muted" style="margin:0">Aggiungi altri profili (Impostazioni › Profili della famiglia, o i profili dei bambini) per sfidarvi.</p>` : ""}</section>`;
+    return;
+  }
+  const s = state, days = s.stats?.days || {}, t = today();
+  const last7 = Array.from({length:7}, (_,i) => addDays(t, i-6));
+  const maxXP = Math.max(10, ...last7.map(d => days[d]?.xp || 0)), maxMin = Math.max(10, ...last7.map(d => days[d]?.min || 0));
+  const dn = d => ["dom","lun","mar","mer","gio","ven","sab"][new Date(d+"T12:00:00").getDay()];
+  const weeks = 12, start = addDays(weekStart(), -7*(weeks-1));
+  const heat = Array.from({length:weeks*7}, (_,i) => addDays(start, i));
+  const lvlOf = x => x <= 0 ? 0 : x < 15 ? 1 : x < 40 ? 2 : x < 80 ? 3 : 4;
+  const wordsN = (s.words||[]).filter(w => w.lang === S().lang).length, mastered = (s.words||[]).filter(w => w.lang === S().lang && (w.box||1) >= 4).length;
+  const lessonsDone = Object.entries(s.progress||{}).filter(([k,v]) => k.startsWith(S().lang+":") && v.done).length;
+  const starsAll = Object.values((s.gameProg||{})[S().lang] || {}).reduce((a,g) => a + Object.values(g.stars||{}).reduce((x,y)=>x+y,0), 0);
+  const ex = Object.entries(s.exams||{}).filter(([k]) => k.startsWith(S().lang+":")).flatMap(([,v]) => v);
+  const secAvg = EXAM_SECTIONS.map(sec => { const v = ex.map(e => e.per?.[sec.id]).filter(x => typeof x === "number"); return {sec, avg: v.length ? Math.round(v.reduce((a,b)=>a+b,0)/v.length) : null}; }).filter(x => x.avg !== null).sort((a,b)=>b.avg-a.avg);
+  const totMin = Object.values(days).reduce((a,v) => a + (v.min||0), 0);
+  main.innerHTML = `<h1>Statistiche</h1>${tabs}
+    <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+      <div class="stat"><b>${s.xp||0}</b><span class="muted small">XP totali</span></div>
+      <div class="stat"><b>🔥 ${currentStreak()}</b><span class="muted small">giorni di fila</span></div>
+      <div class="stat"><b>${Math.floor(totMin/60)}h ${totMin%60}m</b><span class="muted small">tempo di studio</span></div>
+      <div class="stat"><b>${wordsN}</b><span class="muted small">parole (${mastered} ben imparate)</span></div>
+      <div class="stat"><b>${lessonsDone}</b><span class="muted small">lezioni completate</span></div>
+      <div class="stat"><b>★ ${starsAll}</b><span class="muted small">stelle nei giochi</span></div>
+    </div>
+    <section class="panel stack" style="margin-top:16px"><h2 style="margin:0">Ultimi 7 giorni</h2>
+      <div class="bars">${last7.map(d => `<div class="bar"><span class="bv">${days[d]?.xp||0}</span><i style="height:${(days[d]?.xp||0)/maxXP*100}%"></i><span class="bl">${dn(d)}</span></div>`).join("")}</div>
+      <p class="small muted" style="margin:0">XP al giorno. Minuti di studio: ${last7.map(d => `${dn(d)} ${days[d]?.min||0}`).join(" · ")}</p></section>
+    <section class="panel stack" style="margin-top:16px"><h2 style="margin:0">Calendario</h2>
+      <div class="heat">${heat.map(d => `<span class="hc l${d > t ? "x" : lvlOf(days[d]?.xp||0)}" title="${d}: ${days[d]?.xp||0} XP"></span>`).join("")}</div>
+      <p class="small muted" style="margin:0">Ultime 12 settimane, una colonna per settimana: più il quadratino è scuro, più hai studiato quel giorno.</p></section>
+    <section class="panel stack" style="margin-top:16px"><h2 style="margin:0">Punti forti e deboli</h2>
+      ${secAvg.length ? secAvg.map(x => `<div><div class="row" style="justify-content:space-between"><span>${x.sec.name}</span><b>${x.avg}%</b></div><div class="progress"><i style="width:${x.avg}%;background:${x.avg>=70?"var(--ok)":x.avg>=50?"var(--sun)":"var(--bad)"}"></i></div></div>`).join("")
+        + `<p class="small" style="margin:0">💪 Il tuo punto forte: <b>${secAvg[0].sec.name}</b>. 🎯 Da allenare: <b>${secAvg[secAvg.length-1].sec.name}</b>.</p>`
+        : `<p class="muted" style="margin:0">Fai un esame simulato (sezione Esami) per vedere quali abilità sono più forti e quali più deboli.</p>`}
+      ${(s.mistakes||[]).length ? `<p class="small muted" style="margin:0">Errori registrati: ${(s.mistakes||[]).filter(m=>m.lang===S().lang).length}. Li trovi in Ripasso › I miei errori.</p>` : ""}</section>`;
+};
+
+/* ============ PROMEMORIA NEL CALENDARIO ============ */
+const WEEKDAYS = [["MO","Lun"],["TU","Mar"],["WE","Mer"],["TH","Gio"],["FR","Ven"],["SA","Sab"],["SU","Dom"]];
+function reminderICS(time, days, mins){
+  const [hh, mm] = time.split(":"), d = new Date(); d.setHours(+hh, +mm, 0, 0); if(d < new Date()) d.setDate(d.getDate()+1);
+  const pad = n => String(n).padStart(2,"0"), dt = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(+hh)}${pad(+mm)}00`;
+  const url = location.href.split("#")[0], stamp = new Date().toISOString().replace(/[-:]/g,"").slice(0,15) + "Z";
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Parlami//IT","CALSCALE:GREGORIAN","BEGIN:VEVENT",`UID:parlami-${Date.now()}@parlami`,`DTSTAMP:${stamp}`,`DTSTART:${dt}`,`DURATION:PT${mins}M`,
+    `RRULE:FREQ=WEEKLY;BYDAY=${days.join(",")}`,`SUMMARY:Parlami: ${mins} minuti di ${L().name.toLowerCase()}`,`DESCRIPTION:Apri Parlami e fai la tua pratica di oggi: ${url}`,`URL:${url}`,
+    "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:È ora di Parlami!","TRIGGER:-PT0M","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
+}
+function googleCalLink(time, days, mins){
+  const [hh, mm] = time.split(":"), d = new Date(); d.setHours(+hh, +mm, 0, 0); if(d < new Date()) d.setDate(d.getDate()+1);
+  const e = new Date(d.getTime() + mins*60000), pad = n => String(n).padStart(2,"0"), f = x => `${x.getFullYear()}${pad(x.getMonth()+1)}${pad(x.getDate())}T${pad(x.getHours())}${pad(x.getMinutes())}00`;
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Parlami: ${mins} minuti di ${L().name.toLowerCase()}`)}&details=${encodeURIComponent("Apri Parlami: " + location.href.split("#")[0])}&dates=${f(d)}/${f(e)}&recur=${encodeURIComponent(`RRULE:FREQ=WEEKLY;BYDAY=${days.join(",")}`)}`;
+}
+
+/* ============ SINCRONIZZAZIONE (GitHub Gist, dati cifrati) ============ */
+const Sync = {busy:false, dirty:false, timer:null, status:"", ready:false};
+const GIST_DESC = "Parlami – sincronizzazione (dati cifrati, non modificare)";
+const SYNC_FILES = ["parlami-persone.json", "parlami-contenuti.json"];
+const SHARED_KEYS = ["lessons","wordBank","kidsVocab","kidsPhr","kidsSongs","kidsStories","phrasebook"];
+function syncCfg(){ return state.settings.sync; }
+async function gh(path, opts={}, token = syncCfg()?.token){
+  let r;
+  try{ r = await fetch("https://api.github.com" + path, {...opts, headers:{"Accept":"application/vnd.github+json", "Authorization":"Bearer " + token, ...(opts.body ? {"Content-Type":"application/json"} : {})}}); }
+  catch(e){ throw new Error("GitHub non raggiungibile: controlla la connessione."); }
+  if(r.status === 401) throw new Error("Il token di GitHub non è valido o è scaduto.");
+  if(r.status === 403 || r.status === 404) throw new Error("Il token non ha il permesso “gist”, oppure lo spazio di sincronizzazione è stato cancellato.");
+  if(!r.ok) throw new Error(`GitHub ha risposto con l'errore ${r.status}.`);
+  return r.json();
+}
+async function syncKey(b64){ return crypto.subtle.importKey("raw", b64d(b64), "AES-GCM", false, ["encrypt","decrypt"]); }
+async function sEncrypt(obj, key){ const iv = crypto.getRandomValues(new Uint8Array(12)); const ct = await crypto.subtle.encrypt({name:"AES-GCM", iv}, await syncKey(key), new TextEncoder().encode(JSON.stringify(obj))); return JSON.stringify({app:"parlami", v:1, iv:b64e(iv), data:b64e(ct)}); }
+async function sDecrypt(text, key){ const f = JSON.parse(text); if(!f.data) return null; const pt = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64d(f.iv)}, await syncKey(key), b64d(f.data)); return JSON.parse(new TextDecoder().decode(pt)); }
+async function readGistFile(file){ if(!file) return null; if(file.truncated && file.raw_url){ const r = await fetch(file.raw_url); return r.text(); } return file.content; }
+function localPeople(){
+  const a = adultsState(), k = kidsState();
+  return {adults:{profiles:a.profiles, deleted:a.deleted, updatedAt:a.updatedAt, data:{...a.data, [a.current]: packPerson()}},
+          kids:{profiles:k.profiles, deleted:k.deleted||[], data:k.data}};
+}
+function mergeList(localP, remoteP, deleted){ const out = [...localP]; (remoteP||[]).forEach(p => { if(!out.some(x => x.id === p.id)) out.push(p); }); return out.filter(p => !deleted.includes(p.id)); }
+async function syncNow(manual=false){
+  const cfg = syncCfg(); if(!cfg?.on || !cfg.gistId || !cfg.token || !cfg.key) return;
+  if(Sync.busy) return; Sync.busy = true; setSyncStatus("⏳");
+  try{
+    const g = await gh("/gists/" + cfg.gistId);
+    const rp = await readGistFile(g.files?.[SYNC_FILES[0]]).then(t => t ? sDecrypt(t, cfg.key) : null).catch(() => null);
+    const rc = await readGistFile(g.files?.[SYNC_FILES[1]]).then(t => t ? sDecrypt(t, cfg.key) : null).catch(() => null);
+    const lp = localPeople(), a = adultsState(), k = kidsState();
+    let currentChanged = false;
+    let replaced = false;
+    if(rp && !cfg.last && rp.adults?.profiles?.length && a.profiles.length === 1 && isPristine()){
+      // primo collegamento di un dispositivo nuovo: al posto del profilo vuoto usa quelli della famiglia
+      a.profiles = []; a.data = {}; replaced = true;
+    }
+    if(rp){
+      // adulti: vince la versione modificata più di recente, persona per persona
+      const del = [...new Set([...(a.deleted||[]), ...(rp.adults?.deleted||[])])];
+      a.deleted = del; a.profiles = mergeList(a.profiles, rp.adults?.profiles, del);
+      for(const p of a.profiles){
+        const lt = a.updatedAt[p.id] || 0, rt = rp.adults?.updatedAt?.[p.id] || 0, rd = rp.adults?.data?.[p.id];
+        const rprof = rp.adults?.profiles?.find(x => x.id === p.id); if(rprof && rt > lt) Object.assign(p, {name:rprof.name, emoji:rprof.emoji});
+        if(rd && rt > lt){ a.updatedAt[p.id] = rt; if(p.id === a.current){ unpackPerson(rd); a.hash[p.id] = quickHash(JSON.stringify(packPerson())); currentChanged = true; } else a.data[p.id] = rd; }
+      }
+      if(!a.profiles.some(p => p.id === a.current)){ a.current = a.profiles[0]?.id; if(a.data[a.current]){ unpackPerson(a.data[a.current]); delete a.data[a.current]; currentChanged = true; } }
+      // bambini
+      const kdel = [...new Set([...(k.deleted||[]), ...(rp.kids?.deleted||[])])]; k.deleted = kdel;
+      k.profiles = mergeList(k.profiles, rp.kids?.profiles, kdel);
+      for(const p of k.profiles){ const ld = k.data[p.id], rd = rp.kids?.data?.[p.id]; if(rd && (!ld || (rd.updated||0) > (ld.updated||0))){ k.data[p.id] = rd; if(p.id === k.current) currentChanged = true; } }
+      kdel.forEach(id => delete k.data[id]);
+    }
+    if(rc){
+      state.lessons ||= {}; for(const [key, l] of Object.entries(rc.lessons||{})){ const mine = state.lessons[key]; if(!mine || (!mine.reviewed && l.reviewed)) state.lessons[key] = l; }
+      state.wordBank ||= {}; for(const [key, l] of Object.entries(rc.wordBank||{})) if(!state.wordBank[key]) state.wordBank[key] = l;
+      for(const key of ["kidsSongs","kidsStories"]){ state[key] ||= {}; for(const [lang, list] of Object.entries(rc[key]||{})){ const mine = state[key][lang] || []; state[key][lang] = [...mine, ...list.filter(x => !mine.some(m => m.id === x.id))].slice(0, 30); } }
+      for(const key of ["kidsVocab","kidsPhr","phrasebook"]){ state[key] ||= {}; for(const [lang, v] of Object.entries(rc[key]||{})) if(!state[key][lang]) state[key][lang] = v; }
+    }
+    // carica la versione unita
+    const people = localPeople(), content = {}; SHARED_KEYS.forEach(key => { if(state[key]) content[key] = state[key]; });
+    const pTxt = await sEncrypt(people, cfg.key), cTxt = await sEncrypt(content, cfg.key);
+    await gh("/gists/" + cfg.gistId, {method:"PATCH", body:JSON.stringify({files:{[SYNC_FILES[0]]:{content:pTxt}, [SYNC_FILES[1]]:{content:cTxt}}})});
+    cfg.last = Date.now(); cfg.error = ""; Sync.dirty = false; Sync.ready = true; saveRaw(); setSyncStatus("✓");
+    if(currentChanged){ renderRailFoot(); if(!location.hash.startsWith("#impostazioni")) route(); }
+    if(manual) toast("☁️ Sincronizzato");
+    if(replaced && a.profiles.length > 1) pickAdult();
+  }catch(e){ cfg.error = e.message; saveRaw(); setSyncStatus("⚠️"); if(manual) toast(e.message); }
+  Sync.busy = false;
+}
+function scheduleSync(ms = 20000){ if(!syncCfg()?.on) return; clearTimeout(Sync.timer); Sync.timer = setTimeout(() => syncNow(), ms); }
+function setSyncStatus(s){ Sync.status = s; const el = $("#syncdot"); if(el) el.textContent = "☁️" + s; }
+async function connectSync(token){
+  token = token.trim(); if(!token) throw new Error("Incolla il token di GitHub.");
+  const user = await gh("/user", {}, token);
+  let gistId = null;
+  for(let page = 1; page <= 5 && !gistId; page++){ const list = await gh(`/gists?per_page=100&page=${page}`, {}, token); if(!list.length) break; const f = list.find(x => x.description === GIST_DESC); if(f) gistId = f.id; }
+  const key = syncCfg()?.key || b64e(crypto.getRandomValues(new Uint8Array(32)));
+  if(!gistId){
+    const empty = await sEncrypt({}, key);
+    const g = await gh("/gists", {method:"POST", body:JSON.stringify({description:GIST_DESC, public:false, files:{[SYNC_FILES[0]]:{content:empty}, [SYNC_FILES[1]]:{content:empty}}})}, token);
+    gistId = g.id;
+  }
+  state.settings.sync = {token, gistId, key, on:true, last:0, user:user.login};
+  saveRaw();
+  await syncNow(true);
+}
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") scheduleSync(1500); else if(Sync.dirty) syncNow(); });
+
+/* ============ Finestra "Chi sta usando Parlami?" ============ */
+function pickAdult(){
+  const a = adultsState();
+  const ov = document.createElement("div"); ov.className = "overlay"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true");
+  ov.innerHTML = `<div class="panel stack pinbox" style="width:min(460px,100%)"><h2 style="margin:0">Chi sta usando Parlami?</h2>
+    <div class="kidpick" style="margin:0">${a.profiles.map(p => `<button class="kidcard" data-id="${p.id}" style="width:120px"><span style="font-size:2.6rem">${p.emoji}</span><b>${esc(p.name)}</b>${p.id===a.current?`<span class="small muted">ora</span>`:""}</button>`).join("")}</div>
+    <div class="row" style="justify-content:space-between"><a class="btn ghost sm" href="#impostazioni" id="pm">Gestisci profili</a><button class="btn ghost sm" id="pc">Chiudi</button></div></div>`;
+  document.body.appendChild(ov);
+  $$(".kidcard", ov).forEach(b => b.onclick = () => { switchAdult(b.dataset.id); ov.remove(); toast(`Ciao ${currentAdult().name}!`); route(); });
+  $("#pc", ov).onclick = () => ov.remove(); $("#pm", ov).onclick = () => ov.remove();
+}
+
 RENDER.home = main => {
   const p = PERSONAS[S().persona], goal = state.dailyGoal, done = Math.min(todayXp(), goal);
   const pct = Math.round(done/goal*100), nu = nextUnit(), due = dueWords().length;
@@ -1157,7 +1413,7 @@ RENDER.home = main => {
     ${needsSetup()}
     <section class="hero">
       ${avatarSVG(S().persona, 150)}
-      <div class="bubble"><strong>${hello}!</strong> Sono ${esc(p.name)}. ${esc(line)}</div>
+      <div class="bubble"><button class="chip" id="whoami" style="float:right;margin-left:8px">${currentAdult().emoji} ${esc(currentAdult().name)} ▾</button><strong>${hello}${adultsState().profiles.length > 1 ? " " + esc(currentAdult().name) : ""}!</strong> Sono ${esc(p.name)}. ${esc(line)}</div>
     </section>
     <div class="stats">
       <div class="stat"><b>🔥 ${currentStreak()}</b><span class="muted small">giorni di fila</span></div>
@@ -1170,6 +1426,7 @@ RENDER.home = main => {
       <button class="action" data-go="tutor"><span class="ic">${icon("chat")}</span><span><h3>Parla con ${esc(p.name)}</h3><span class="muted small">Conversazione a voce con correzioni</span></span></button>
       <button class="action" data-go="pronuncia"><span class="ic">${icon("wave")}</span><span><h3>Allena la pronuncia</h3><span class="muted small">Ascolta, ripeti e ricevi un punteggio</span></span></button>
       <button class="action" data-go="ripasso"><span class="ic">${icon("cards")}</span><span><h3>Ripassa ${due} parol${due===1?"a":"e"}</h3><span class="muted small">Schede con ripetizione dilazionata</span></span></button>
+      <button class="action" data-go="statistiche"><span class="ic">${icon("chart")}</span><span><h3>Statistiche e classifica</h3><span class="muted small">I tuoi progressi e la sfida di famiglia</span></span></button>
       <button class="action" data-go="strumenti"><span class="ic">${icon("tools")}</span><span><h3>Strumenti</h3><span class="muted small">Testi, dizionario, ascolto e frasario</span></span></button>
       <button class="action" data-go="giochi"><span class="ic">${icon("game")}</span><span><h3>Gioca</h3><span class="muted small">Coppie, sprint e ascolto lampo</span></span></button>
     </div>
@@ -1177,6 +1434,7 @@ RENDER.home = main => {
   </div>`;
   $$("[data-go]", main).forEach(b=>b.onclick=()=>location.hash=b.dataset.go);
   familyBanner();
+  $("#whoami").onclick = pickAdult;
 };
 
 /* ============ IMPOSTAZIONI ============ */
@@ -1218,6 +1476,30 @@ RENDER.impostazioni = main => {
       <div id="provs" class="stack"></div>
       <div class="row"><select class="input" id="addp" style="max-width:320px">${Object.entries(PRESETS).filter(([k])=>k==="custom" || !s.providers.some(p=>p.preset===k)).map(([k,v])=>`<option value="${k}">${esc(v.name)}</option>`).join("")}</select><button class="btn ghost" id="addbtn">Aggiungi provider</button></div>
       <div class="row"><button class="btn" id="s-test">Prova tutti</button><span id="s-test-out" class="small"></span></div>
+    </section>
+    <section class="panel stack">
+      <h2>Profili della famiglia</h2>
+      <p class="muted" style="margin:0">Ogni adulto ha i suoi progressi, il suo livello, le sue parole e la sua classifica. I bambini hanno i loro profili nell'area Bambini.</p>
+      <div class="stack" style="gap:8px">${adultsState().profiles.map(p=>`<div class="row" style="border:1px solid var(--line);border-radius:var(--r);padding:8px 12px"><span style="font-size:1.6rem">${p.emoji}</span><input class="input" data-ren="${p.id}" value="${esc(p.name)}" maxlength="20" style="flex:1;min-width:120px">${p.id===adultsState().current?`<span class="chip on">In uso</span>`:`<button class="btn ghost sm" data-useadult="${p.id}">Usa</button><button class="btn ghost sm" data-deladult="${p.id}">Elimina</button>`}</div>`).join("")}</div>
+      <div class="row"><input class="input" id="an" maxlength="20" placeholder="Nome di un altro adulto" style="flex:1;min-width:160px"><select class="input" id="ae" style="width:80px">${ADULT_EMOJIS.map(e=>`<option>${e}</option>`).join("")}</select><button class="btn ghost" id="aadd">Aggiungi</button></div>
+    </section>
+    <section class="panel stack">
+      <h2>Sincronizzazione tra dispositivi</h2>
+      ${syncCfg()?.on ? `<p style="margin:0">✅ Attiva con l'account GitHub <b>${esc(syncCfg().user||"")}</b>. Ultima sincronizzazione: <b>${syncCfg().last ? new Date(syncCfg().last).toLocaleString("it-IT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "mai"}</b>.</p>
+        ${syncCfg().error ? `<p class="status-bad" style="margin:0">${esc(syncCfg().error)}</p>` : ""}
+        <p class="small muted" style="margin:0">Progressi, profili, lezioni e parole si copiano da soli tra i dispositivi, cifrati. Per collegare gli altri dispositivi della famiglia: crea di nuovo il file delle chiavi di famiglia (qui sotto) e caricalo su GitHub.</p>
+        <div class="row"><button class="btn" id="snow">☁️ Sincronizza ora</button><button class="btn ghost" id="soff">Scollega questo dispositivo</button></div>`
+      : `<p class="muted" style="margin:0">Copia da sola progressi, profili, lezioni e parole tra PC, iPhone e gli altri dispositivi, usando il tuo account GitHub. I dati sono cifrati prima di partire. Serve un “token” di GitHub con il permesso “gist”.</p>
+        <input class="input" id="stok" type="password" placeholder="Incolla qui il token di GitHub (inizia con ghp_ o github_pat_)" autocomplete="off">
+        <div class="row"><button class="btn" id="scon">Collega</button><span class="small" id="smsg"></span></div>`}
+    </section>
+    <section class="panel stack">
+      <h2>Promemoria</h2>
+      <p class="muted" style="margin:0">Un appuntamento fisso nel calendario del telefono o del computer, che ti avvisa quando è ora di Parlami.</p>
+      <div class="row"><label class="field">Ora<input class="input" type="time" id="rtime" value="${esc(S().remTime||"19:00")}"></label><label class="field">Durata<select class="input" id="rmin">${[5,10,15,20,30].map(m=>`<option value="${m}" ${m===(S().remMin||10)?"selected":""}>${m} minuti</option>`).join("")}</select></label></div>
+      <div class="row" id="rdays">${WEEKDAYS.map(([c,n])=>`<button class="chip ${(S().remDays||WEEKDAYS.map(x=>x[0])).includes(c)?"on":""}" data-rd="${c}">${n}</button>`).join("")}</div>
+      <div class="row"><a class="btn" id="rics" download="parlami-promemoria.ics">📅 Aggiungi al calendario</a><a class="btn ghost" id="rgoo" target="_blank" rel="noopener">Google Calendar</a></div>
+      <p class="small muted" style="margin:0">Su iPhone: tocca “Aggiungi al calendario” da Safari e poi “Aggiungi tutti”. Su PC si apre il calendario di Windows o Outlook; se usi Google Calendar, tocca il secondo pulsante.</p>
     </section>
     <section class="panel stack">
       <h2>Chiavi di famiglia</h2>
@@ -1272,6 +1554,23 @@ RENDER.impostazioni = main => {
   $$("[data-ac]", main).forEach(b=>b.onclick=()=>{ state.settings.accent = b.dataset.ac; save(); applyLook(); route(); });
   $$("[data-sz]", main).forEach(b=>b.onclick=()=>{ state.settings.textSize = b.dataset.sz; save(); applyLook(); route(); });
   $("#famcreate").onclick = createFamilyFile;
+  // profili adulti
+  $$("[data-ren]", main).forEach(i => i.onchange = () => { const p = adultsState().profiles.find(x => x.id === i.dataset.ren); if(p && i.value.trim()){ p.name = i.value.trim(); adultsState().updatedAt[p.id] = Date.now(); save(); renderRailFoot(); } });
+  $$("[data-useadult]", main).forEach(b => b.onclick = () => { switchAdult(b.dataset.useadult); toast(`Ciao ${currentAdult().name}!`); route(); });
+  $$("[data-deladult]", main).forEach(b => b.onclick = () => { const a = adultsState(), p = a.profiles.find(x => x.id === b.dataset.deladult);
+    if(p && confirm(`Eliminare il profilo di ${p.name} con tutti i suoi progressi? Verrà eliminato anche sugli altri dispositivi sincronizzati.`)){ a.profiles = a.profiles.filter(x => x !== p); delete a.data[p.id]; a.deleted.push(p.id); save(); route(); } });
+  $("#aadd").onclick = () => { const name = $("#an").value.trim(); if(!name){ $("#an").focus(); return; } const a = adultsState(); const id = uid(); a.profiles.push({id, name, emoji:$("#ae").value}); a.updatedAt[id] = Date.now(); save(); toast(`Profilo di ${name} aggiunto`); route(); };
+  // sincronizzazione
+  const scon = $("#scon"); if(scon) scon.onclick = async () => { scon.disabled = true; $("#smsg").innerHTML = `<span class="spinner"></span> Collego…`;
+    try{ await connectSync($("#stok").value); toast("☁️ Sincronizzazione attiva"); route(); } catch(e){ scon.disabled = false; $("#smsg").innerHTML = `<span class="status-bad">${esc(e.message)}</span>`; } };
+  const snow = $("#snow"); if(snow) snow.onclick = async () => { snow.disabled = true; await syncNow(true); route(); };
+  const soff = $("#soff"); if(soff) soff.onclick = () => { if(confirm("Scollegare questo dispositivo? I dati restano qui, ma non verranno più copiati sugli altri.")){ delete state.settings.sync; saveRaw(); route(); } };
+  // promemoria
+  const remDays = () => $$("#rdays .chip.on", main).map(b => b.dataset.rd);
+  const remUpd = () => { const t = $("#rtime").value || "19:00", m = +$("#rmin").value, d = remDays(); state.settings.remTime = t; state.settings.remMin = m; state.settings.remDays = d; saveRaw();
+    $("#rics").href = "data:text/calendar;charset=utf-8," + encodeURIComponent(reminderICS(t, d.length ? d : ["MO"], m)); $("#rgoo").href = googleCalLink(t, d.length ? d : ["MO"], m); };
+  $$("#rdays .chip", main).forEach(b => b.onclick = () => { b.classList.toggle("on"); if(!remDays().length) b.classList.add("on"); remUpd(); });
+  $("#rtime").onchange = remUpd; $("#rmin").onchange = remUpd; remUpd();
   $("#famuse").onclick = async () => { if(await unlockFamily()) route(); };
   const inst = $("#s-install");
   if(inst) inst.onclick = async () => { deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; route(); };
@@ -3680,7 +3979,7 @@ async function kidsParents(main){
     k.profiles.push(p); k.current = p.id; save(); toast(`Profilo di ${name} creato`); route(); };
   $$("[data-use]", main).forEach(b=>b.onclick=()=>{ k.current = b.dataset.use; save(); route(); });
   $$("[data-del]", main).forEach(b=>b.onclick=()=>{ const p = k.profiles.find(x=>x.id===b.dataset.del);
-    if(confirm(`Eliminare il profilo di ${p.name}, con i suoi adesivi e progressi?`)){ k.profiles = k.profiles.filter(x=>x!==p); delete k.data[p.id]; if(k.current===p.id) k.current = k.profiles[0]?.id || null; save(); route(); } });
+    if(confirm(`Eliminare il profilo di ${p.name}, con i suoi adesivi e progressi?`)){ k.profiles = k.profiles.filter(x=>x!==p); delete k.data[p.id]; (k.deleted ||= []).push(p.id); if(k.current===p.id) k.current = k.profiles[0]?.id || null; save(); route(); } });
   const kon = $("#kon"); if(kon) kon.onclick = async () => { if(!k.profiles.length){ toast("Crea prima almeno un profilo"); return; } const pin = await choosePin(); if(!pin) return; state.kidsMode = {on:true, pin}; save(); location.hash = "bambini"; route(); };
   const koff = $("#koff"); if(koff) koff.onclick = () => { state.kidsMode.on = false; save(); toast("Modalità bambini disattivata"); location.hash = "home"; };
   const kp = $("#kpin"); if(kp) kp.onclick = async () => { const pin = await choosePin(); if(pin){ state.kidsMode.pin = pin; save(); toast("Codice cambiato"); } };
@@ -4239,6 +4538,11 @@ function runExercisesStandalone(main, lesson){
 
 /* ============ Avvio ============ */
 applyLook();
+adultsState();
+setTimeout(() => {
+  if(syncCfg()?.on) syncNow();
+  if(!kidsModeOn() && adultsState().profiles.length > 1 && !sessionStorage.getItem("parlami.who")){ sessionStorage.setItem("parlami.who", "1"); pickAdult(); }
+}, 800);
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredInstall = e; if(location.hash==="#impostazioni") route(); });
 window.addEventListener("appinstalled", () => { deferredInstall = null; toast("App installata"); });
 if("serviceWorker" in navigator && (location.protocol==="https:" || ["localhost","127.0.0.1"].includes(location.hostname))){
