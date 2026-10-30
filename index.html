@@ -27,13 +27,20 @@
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark){
-  :root{
+  :root:not([data-theme="light"]){
     --bg:#11132A; --surface:#1B1E3C; --surface-2:#242850; --ink:#ECEEFF; --muted:#A4A9D0; --line:#30366A;
     --primary:#8391FF; --primary-ink:#0D0F2E; --primary-soft:#2A3070;
     --sun:#FFD166; --sun-ink:#2B2000;
     --ok:#43D39E; --ok-bg:#103A2D; --bad:#FF7480; --bad-bg:#3F1A23;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"]{
+    --bg:#11132A; --surface:#1B1E3C; --surface-2:#242850; --ink:#ECEEFF; --muted:#A4A9D0; --line:#30366A;
+    --primary:#8391FF; --primary-ink:#0D0F2E; --primary-soft:#2A3070;
+    --sun:#FFD166; --sun-ink:#2B2000;
+    --ok:#43D39E; --ok-bg:#103A2D; --bad:#FF7480; --bad-bg:#3F1A23;
+    color-scheme: dark;
 }
 *{box-sizing:border-box}
 /* Comportamento da app: niente rimbalzo elastico, niente spostamento laterale, niente zoom col doppio tocco */
@@ -45,7 +52,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;-webkit-tap-highlig
 @media (max-width:820px){ input,select,textarea{font-size:16px !important} }
 [hidden]{display:none!important}
 html{height:100%}
-body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5;
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:1.0625rem;line-height:1.5;
   padding-top:env(safe-area-inset-top,0px)}
 h1,h2,h3{font-family:var(--display);line-height:1.1;margin:0 0 .5em;letter-spacing:-.01em}
 h1{font-size:clamp(1.9rem,4vw,2.6rem);font-weight:800}
@@ -379,6 +386,20 @@ body.kidsmode .brand-dot{background:var(--sun)}
 .clue{display:flex;align-items:center;gap:8px;border:2px solid var(--line);border-radius:14px;background:var(--surface);padding:4px 10px;text-align:left}
 .clue svg{width:18px;height:18px;color:var(--primary)}
 
+/* Tutor missions + tools */
+.tutor > section.panel{position:relative;overflow:hidden}
+.goals{width:100%;text-align:left;display:flex;flex-direction:column;gap:4px}
+.goal{font-size:.92rem;padding:4px 8px;border-radius:8px;background:var(--surface-2)}
+.goal.ok{background:var(--ok-bg);font-weight:700}
+.misrep{align-self:stretch;background:var(--surface-2);border:2px solid var(--sun);border-radius:18px;padding:12px 16px}
+.memo summary{list-style:none}
+.studytext p.cur,.rline.cur{background:var(--primary-soft);border-radius:8px}
+.vw{border:0;background:var(--sun);color:var(--sun-ink);border-radius:6px;padding:0 4px;font:inherit;font-weight:700;cursor:pointer}
+.rline{margin:0;padding:6px 10px;border-radius:8px;cursor:pointer}
+.fcat summary{cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none}
+.phr{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.phr .ptxt{font-size:1.1rem}
+
 /* Exercise */
 .progress{height:12px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
 .progress > i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
@@ -475,7 +496,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.11";
+const APP_VERSION = "0.12.1";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -529,6 +550,9 @@ const BOX_DAYS = [0,0,1,3,7,14,30];
 const SKIP_MODELS = /whisper|embed|guard|tts|audio|image|vision|moderation|rerank|transcri|speech|ocr|orpheus|playai|voice|sound|music|video/i;
 /* Famiglie di modelli conosciute e adatte alla conversazione */
 const GOOD_MODELS = /llama|gemma|mistral|qwen|deepseek|glm|kimi|gpt-oss|nemotron|phi|command|hermes/i;
+/* I modelli grandi sbagliano molto meno: lingua, traduzioni e formato */
+const BIG_MODELS = /(70b|72b|90b|110b|120b|235b|253b|405b|480b|scout|maverick|large|versatile)/i;
+const SMALL_MODELS = /(^|[-_/:.])(0\.5b|1b|1\.5b|2b|3b|4b|7b|8b|9b|e2b|e4b|instant|mini|tiny|nano)(\b|$)/i;
 /* Modelli che "ragionano" prima di rispondere: lenti e a volte rispondono vuoto se hanno pochi token */
 const REASONING = /gpt-oss|qwen3|qwq|deepseek-r1|-r1|reason|think|magistral|o1-|o3-|o4-/i;
 const PRESETS = {
@@ -565,7 +589,7 @@ function migrate(s){
     set.providers = [{id:uid(), preset:"freellmapi", name:PRESETS.freellmapi.name, base:set.apiBase || PRESETS.freellmapi.base, key:set.apiKey || "", model:set.model || "auto", on:true}];
   }
   delete set.apiBase; delete set.apiKey; delete set.model;
-  for(const p of set.providers){ if(!p.manual && p.preset!=="freellmapi" && p.preset!=="custom" && (REASONING.test(p.model||"") || SKIP_MODELS.test(p.model||""))) p.model = ""; }
+  for(const p of set.providers){ if(!p.manual && p.preset!=="freellmapi" && p.preset!=="custom" && (REASONING.test(p.model||"") || SKIP_MODELS.test(p.model||"") || SMALL_MODELS.test(p.model||""))) p.model = ""; }
   // Toglie i pacchetti di parole salvati con traduzioni sbagliate (uguali alla parola straniera)
   const latin = t => /^[\p{Script=Latin}\p{N}\s'’\-.,;:!?()«»“”"/…]+$/u.test(String(t||"").trim()) && /\p{L}/u.test(String(t||""));
   for(const [k, list] of Object.entries(st.wordBank || {})){
@@ -688,6 +712,7 @@ const ICON = {
   chat:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
   wave:'<path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 10v4M21 12h0"/>',
   game:'<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3M15 12h.01M18 13h.01"/>',
+  tools:'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2.6-.4-.4-2.6z"/>',
   kid:'<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4 4 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/>',
   exam:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11l2 2 4-4M9 17h6"/>',
   cards:'<rect x="3" y="6" width="13" height="15" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v12"/>',
@@ -748,7 +773,7 @@ async function listModels(p){
 function rankModels(p, ids){
   const pre = PRESETS[p.preset] || {};
   const pool = pre.onlyPref && pre.pref ? ids.filter(id => pre.pref.test(id)) : ids;
-  const score = id => (REASONING.test(id) ? 0 : 4) + (GOOD_MODELS.test(id) ? 2 : 0) + (pre.pref && pre.pref.test(id) ? 1 : 0);
+  const score = id => (REASONING.test(id) ? 0 : 4) + (GOOD_MODELS.test(id) ? 2 : 0) + (pre.pref && pre.pref.test(id) ? 1 : 0) + (BIG_MODELS.test(id) ? 3 : 0) - (SMALL_MODELS.test(id) ? 4 : 0);
   return pool.map((id,i)=>({id,i,sc:score(id)})).sort((a,b)=>b.sc-a.sc || a.i-b.i).map(x=>x.id);
 }
 function isAuto(p){ return !p.manual && p.preset!=="freellmapi" && p.preset!=="custom"; }
@@ -821,11 +846,33 @@ async function llm(messages, {json=true, temperature=0.7, maxTokens=1800}={}){
   }
   const err = new Error("Nessuna IA ha risposto. " + errs.join(" · ")); err.network = true; throw err;
 }
+/* Ripara una risposta JSON interrotta o con piccoli errori (virgole mancanti, a capo dentro le frasi) */
+function repairJSON(t){
+  const src = t.slice(t.indexOf("{")); let out = "", stack = [], inStr = false, escp = false;
+  for(const ch of src){
+    if(inStr){
+      if(escp){ escp = false; out += ch; continue; }
+      if(ch === "\\"){ escp = true; out += ch; continue; }
+      if(ch === '"'){ inStr = false; out += ch; continue; }
+      out += ch === "\n" ? "\\n" : ch === "\t" ? " " : ch; continue;
+    }
+    if(ch === '"'){ inStr = true; out += ch; continue; }
+    if(ch === "{" || ch === "["){ stack.push(ch); out += ch; continue; }
+    if(ch === "}" || ch === "]"){ stack.pop(); out += ch; if(!stack.length) break; continue; }
+    out += ch;
+  }
+  if(inStr) out += '"';
+  out = out.replace(/,\s*"[^"]*"\s*:?\s*$/, "").replace(/:\s*$/, ": null").replace(/,\s*$/, "");
+  while(stack.length){ out = out.replace(/,\s*$/, ""); out += stack.pop() === "{" ? "}" : "]"; }
+  return out.replace(/,\s*([}\]])/g, "$1").replace(/}\s*\n\s*{/g, "},{").replace(/"\s*\n(\s*)"/g, '",\n$1"').replace(/]\s*\n(\s*)"/g, '],\n$1"').replace(/}\s*\n(\s*)"/g, '},\n$1"');
+}
 function parseJSON(text){
   const t = String(text).replace(/```(?:json)?/gi,"").trim();
   const a = t.indexOf("{"), b = t.lastIndexOf("}");
-  if(a < 0 || b <= a) throw new Error("L'IA non ha risposto nel formato previsto.");
-  return JSON.parse(t.slice(a, b+1));
+  if(a < 0) throw new Error("risposta non nel formato previsto");
+  try{ if(b > a) return JSON.parse(t.slice(a, b+1)); }catch(e){}
+  try{ return JSON.parse(repairJSON(t)); }
+  catch(e){ throw new Error("risposta interrotta o non leggibile"); }
 }
 async function ask(system, user, opts={}, validate){
   let lastErr;
@@ -947,6 +994,7 @@ const VIEWS = [
   {id:"esami", label:"Esami", icon:"exam"},
   {id:"tutor", label:"Tutor", icon:"chat"},
   {id:"pronuncia", label:"Pronuncia", icon:"wave"},
+  {id:"strumenti", label:"Strumenti", icon:"tools"},
   {id:"giochi", label:"Giochi", icon:"game"},
   {id:"bambini", label:"Bambini", icon:"kid"},
   {id:"ripasso", label:"Ripasso", icon:"cards"},
@@ -1118,6 +1166,7 @@ RENDER.home = main => {
       <button class="action" data-go="tutor"><span class="ic">${icon("chat")}</span><span><h3>Parla con ${esc(p.name)}</h3><span class="muted small">Conversazione a voce con correzioni</span></span></button>
       <button class="action" data-go="pronuncia"><span class="ic">${icon("wave")}</span><span><h3>Allena la pronuncia</h3><span class="muted small">Ascolta, ripeti e ricevi un punteggio</span></span></button>
       <button class="action" data-go="ripasso"><span class="ic">${icon("cards")}</span><span><h3>Ripassa ${due} parol${due===1?"a":"e"}</h3><span class="muted small">Schede con ripetizione dilazionata</span></span></button>
+      <button class="action" data-go="strumenti"><span class="ic">${icon("tools")}</span><span><h3>Strumenti</h3><span class="muted small">Testi, dizionario, ascolto e frasario</span></span></button>
       <button class="action" data-go="giochi"><span class="ic">${icon("game")}</span><span><h3>Gioca</h3><span class="muted small">Coppie, sprint e ascolto lampo</span></span></button>
     </div>
     <p class="muted small">Stai studiando ${L().name} · livello ${levelLabel(S().level)}. Puoi cambiarli nelle Impostazioni o in Lezioni.</p>
@@ -1141,6 +1190,12 @@ RENDER.impostazioni = main => {
         <label class="field">Obiettivo giornaliero (XP)<select id="s-goal">${[20,50,100,150].map(g=>`<option ${g===state.dailyGoal?"selected":""}>${g}</option>`).join("")}</select></label>
       </div>
       <p class="muted small">Livelli del Quadro Comune Europeo (QCER): Base (A1, A2), Autonomo (B1, B2), Padronanza (C1, C2). Non sai qual è il tuo? Fai il <a href="#esami-test">test di livello</a>.</p>
+    </section>
+    <section class="panel stack">
+      <h2>Aspetto</h2>
+      <div class="field">Tema<div class="row" id="s-theme">${[["auto","Automatico"],["light","☀️ Chiaro"],["dark","🌙 Scuro"]].map(([k,v])=>`<button class="chip ${(s.theme||"auto")===k?"on":""}" data-th="${k}">${v}</button>`).join("")}</div></div>
+      <div class="field">Colore<div class="row" id="s-accent">${Object.entries(ACCENTS).map(([k,v])=>`<button class="swatch ${(s.accent||"blu")===k?"on":""}" data-ac="${k}" style="background:${v[0]};width:44px;height:44px" aria-label="${k}"></button>`).join("")}</div></div>
+      <div class="field">Dimensione del testo<div class="row" id="s-size">${[["normale","Normale"],["grande","Grande"],["enorme","Molto grande"]].map(([k,v])=>`<button class="chip ${(s.textSize||"normale")===k?"on":""}" data-sz="${k}">${v}</button>`).join("")}</div></div>
     </section>
     <section class="panel stack">
       <h2>Il tuo tutor</h2>
@@ -1209,6 +1264,9 @@ RENDER.impostazioni = main => {
     set("connected", ok > 0);
     out.innerHTML = ok ? `<span class="status-ok">${ok} provider su ${list.length} funzionano da questo dispositivo.</span>` : `<span class="status-bad">Nessun provider risponde da questo dispositivo. Guarda il messaggio sotto ciascuno.</span>`;
   };
+  $$("[data-th]", main).forEach(b=>b.onclick=()=>{ state.settings.theme = b.dataset.th; save(); applyLook(); route(); });
+  $$("[data-ac]", main).forEach(b=>b.onclick=()=>{ state.settings.accent = b.dataset.ac; save(); applyLook(); route(); });
+  $$("[data-sz]", main).forEach(b=>b.onclick=()=>{ state.settings.textSize = b.dataset.sz; save(); applyLook(); route(); });
   $("#famcreate").onclick = createFamilyFile;
   $("#famuse").onclick = async () => { if(await unlockFamily()) route(); };
   const inst = $("#s-install");
@@ -1364,44 +1422,73 @@ JSON: {"questions":[{"level":"A1","question":"consegna in italiano con la frase 
   show();
 }
 
-function validLesson(l){
-  return l && Array.isArray(l.vocab) && Array.isArray(l.exercises) && l.exercises.length >= 4;
+/* Riconosce frasi scritte in italiano dove dovrebbero essere nella lingua studiata */
+const IT_MARK = ["il","di","che","è","sono","ho","hai","ha","gli","della","del","dei","delle","nel","nella","questo","questa","anche","molto","sempre","perché","noi","voi","loro","fatto","andato","piace","mio","mia","tuo","tua","suo","sua","fine","settimana","ieri","oggi","domani","cosa","dove","quando","fratelli","sorelle","libri","insieme"];
+const IT_SHARED = ["con","una","uno","al","alla","ai","le","lo","si","mi","ti","ci","vi","io","tu","come","non","per","ma"];
+function soundsItalian(t){
+  if(S().lang === "it") return false;
+  const set = new Set(S().lang === "en" ? [...IT_MARK, ...IT_SHARED] : IT_MARK);
+  const w = String(t||"").toLowerCase().split(/[^a-zàèéìíòóùú']+/).filter(Boolean);
+  if(w.length < 3) return false;
+  const hits = w.filter(x => set.has(x)).length;
+  return hits >= 3 || hits / w.length >= 0.3;
 }
 function cleanExercises(list){
   return (list||[]).filter(x=>{
     switch(x?.type){
-      case "choice": return Array.isArray(x.options) && x.options.length>=2 && Number.isInteger(+x.answer) && x.question;
-      case "fill": return x.sentence && x.sentence.includes("___") && x.answer;
-      case "translate": return x.it && x.answer;
-      case "order": return Array.isArray(x.words) && x.words.length>=3;
-      case "listen": case "speak": return !!x.sentence;
+      case "choice": return Array.isArray(x.options) && x.options.length>=2 && Number.isInteger(+x.answer) && +x.answer < x.options.length && x.question && x.options.filter(soundsItalian).length < x.options.length/2 && !soundsItalian(x.options.join(" "));
+      case "fill": return x.sentence && x.sentence.includes("___") && x.answer && !soundsItalian(x.sentence);
+      case "translate": return x.it && x.answer && !soundsItalian(x.answer);
+      case "order": return Array.isArray(x.words) && x.words.length>=3 && !soundsItalian(x.words.join(" "));
+      case "listen": case "speak": return !!x.sentence && !soundsItalian(x.sentence);
       default: return false;
     }
   });
 }
+function goodVocab(v){ return v && v.word && v.translation && looksItalian(v.translation) && bare(v.word) !== bare(v.translation) && (!v.example || !soundsItalian(v.example)); }
+function lessonOK(l){
+  return l && Array.isArray(l.vocab) && l.vocab.filter(goodVocab).length >= 6 && Array.isArray(l.exercises) && l.exercises.length >= 6
+    && (!l.grammar || (l.grammar.examples||[]).filter(x=>x.target && !soundsItalian(x.target)).length >= 2);
+}
 async function getLesson(u, force=false){
   const key = unitKey(u);
-  if(!force && state.lessons[key]) return state.lessons[key];
-  const lv = u.level || S().level;
-  const sys = `Sei un autore esperto di corsi di lingue secondo il QCER. ${who(lv)} ${JSON_ONLY}`;
-  const user = `Crea una lezione di ${L().name} sul tema "${u.title}" (${u.focus}), adatta al livello ${lv} (${LEVEL_INFO[lv]?.name}): ${LEVEL_INFO[lv]?.can}
-Struttura JSON:
-{"title":"titolo in italiano","intro":"2 frasi in italiano su cosa si impara",
-"vocab":[{"word":"parola o espressione in ${L().name}","translation":"in italiano","example":"breve frase d'esempio in ${L().name}"}],
-"grammar":{"title":"argomento grammaticale","explanation":"spiegazione chiara in italiano, massimo 110 parole, con un confronto con l'italiano quando aiuta","examples":[{"target":"frase in ${L().name}","it":"traduzione"}]},
-"exercises":[...]}
-Metti 8 voci in vocab e 3 esempi in grammar.
-Gli esercizi (10 in tutto, in ordine misto, usando il lessico e la grammatica della lezione) hanno questi formati:
-{"type":"choice","question":"domanda in italiano","options":["...","...","...","..."],"answer":indice_della_risposta_giusta_da_0,"explain":"perché, in italiano"}
-{"type":"fill","sentence":"frase in ${L().name} con ___ al posto di UNA parola","answer":"la parola mancante","hint":"traduzione italiana della frase intera"}
-{"type":"translate","it":"frase in italiano","answer":"traduzione corretta in ${L().name}"}
-{"type":"order","words":["parole","della","frase","nell'ordine","corretto"],"it":"traduzione italiana"}
-{"type":"listen","sentence":"frase breve in ${L().name}","it":"traduzione"}
-{"type":"speak","sentence":"frase breve in ${L().name}","it":"traduzione"}
-Usa: 2 choice, 2 fill, 2 translate, 1 order, 1 listen, 2 speak.`;
-  const l = await ask(sys, user, {temperature:0.6, maxTokens:3000}, validLesson);
-  l.exercises = cleanExercises(l.exercises);
-  if(l.exercises.length < 4) throw new Error("La lezione generata non è valida. Riprova.");
+  if(!force && state.lessons[key] && lessonOK(state.lessons[key])) return state.lessons[key];
+  const lv = u.level || S().level, code = S().lang, LN = L().name;
+  const sys = `Sei un autore esperto di corsi di ${LN} per italiani, secondo il QCER. ${who(lv)} ${JSON_ONLY}`;
+  const topic = `tema "${u.title}" (${u.focus}), livello ${lv} (${LEVEL_INFO[lv]?.name})`;
+  const theoryP = ask(sys,
+`Prepara la TEORIA di una lezione di ${LN} sul ${topic}.
+Regola fondamentale: le parole e le frasi d'esempio sono IN ${LN.toUpperCase()}; in italiano ci sono solo titolo, introduzione, spiegazione e traduzioni.
+JSON: {"title":"titolo in italiano","intro":"2 frasi in italiano su cosa si impara",
+"vocab":[{"${code}":"parola o espressione in ${LN}","it":"traduzione in italiano","ex":"frase d'esempio breve IN ${LN}","ex_it":"traduzione italiana della frase"}],
+"grammar":{"title":"argomento grammaticale in italiano","explanation":"spiegazione chiara in italiano, massimo 100 parole, con un confronto con l'italiano","examples":[{"${code}":"frase d'esempio IN ${LN}","it":"traduzione italiana"}]}}
+Metti 8 voci in vocab e 3 esempi in grammar.${code === "en" ? `
+Esempio di una voce: {"en":"weekend","it":"fine settimana","ex":"What did you do at the weekend?","ex_it":"Cosa hai fatto nel fine settimana?"}` : ""}`,
+    {temperature:0.5, maxTokens:1500},
+    r => Array.isArray(r.vocab) && r.vocab.map(v=>({word:v?.[code] ?? v?.word, translation:v?.it ?? v?.translation, example:v?.ex ?? v?.example})).filter(goodVocab).length >= 6);
+  const exP = ask(sys,
+`Prepara 10 ESERCIZI di ${LN} sul ${topic}, in ordine misto. Servono ad allenare il ${LN}: tutte le frasi da completare, ordinare, ascoltare o dire sono IN ${LN.toUpperCase()}; in italiano ci sono solo le domande, i suggerimenti e le traduzioni.
+Formati:
+{"type":"choice","question":"domanda in italiano","options":["4 risposte IN ${LN}"],"answer":indice_da_0,"explain":"perché, in italiano"}
+{"type":"fill","sentence":"frase IN ${LN} con ___ al posto di UNA parola","answer":"parola mancante","hint":"traduzione italiana della frase"}
+{"type":"translate","it":"frase in italiano","answer":"traduzione IN ${LN}"}
+{"type":"order","words":["parole","della","frase","IN","${LN}"],"it":"traduzione italiana"}
+{"type":"listen","sentence":"frase breve IN ${LN}","it":"traduzione"}
+{"type":"speak","sentence":"frase breve IN ${LN}","it":"traduzione"}
+Usa: 2 choice, 2 fill, 2 translate, 1 order, 1 listen, 2 speak.${code === "en" ? `
+Esempio di choice: {"type":"choice","question":"Come si dice «Ho letto un libro»?","options":["I read a book","I reads a book","I readed a book","I am read a book"],"answer":0,"explain":"read è irregolare: al passato si scrive uguale"}` : ""}
+JSON: {"exercises":[...]}`,
+    {temperature:0.6, maxTokens:2000},
+    r => cleanExercises(r.exercises).length >= 6);
+  const [th, ex] = await Promise.all([theoryP, exP]);
+  const l = {
+    title: th.title || u.title, intro: th.intro || "",
+    vocab: th.vocab.map(v => ({word:String(v?.[code] ?? v?.word ?? "").trim(), translation:String(v?.it ?? v?.translation ?? "").trim(), example:String(v?.ex ?? v?.example ?? "").trim(), example_it:String(v?.ex_it ?? "").trim()})).filter(goodVocab),
+    grammar: th.grammar ? {title: th.grammar.title || "", explanation: th.grammar.explanation || "",
+      examples: (th.grammar.examples||[]).map(x => ({target:String(x?.[code] ?? x?.target ?? "").trim(), it:String(x?.it ?? "").trim()})).filter(x => x.target && !soundsItalian(x.target))} : null,
+    exercises: cleanExercises(ex.exercises)
+  };
+  if(!lessonOK(l)) throw new Error("La lezione preparata dall'IA non era corretta. Premi Riprova: di solito al secondo tentativo va bene.");
   state.lessons[key] = l; save();
   return l;
 }
@@ -1618,19 +1705,65 @@ function renderExercise(box, ex, done){
   }
 }
 /* ============ TUTOR (conversazione) ============ */
-const Chat = {scenario:"libera", topic:"", turns:[], busy:false};
+/* ============ TUTOR: missioni e memoria ============ */
+const MISSIONS_ADULT = [
+  {id:"cena", e:"🍽️", t:"Cena al ristorante", lv:"A2", role:"il cameriere di un ristorante", goals:["Chiedi un tavolo per due","Ordina un piatto e da bere","Chiedi un'informazione su un piatto","Chiedi il conto e paga con la carta"]},
+  {id:"hotel", e:"🏨", t:"Check-in in albergo", lv:"A2", role:"il receptionist di un albergo", goals:["Dì che hai una prenotazione e a che nome","Chiedi a che ora è la colazione","Chiedi la password del wi-fi","Chiedi se puoi lasciare il bagaglio dopo il check-out"]},
+  {id:"strada", e:"🗺️", t:"Chiedere indicazioni", lv:"A2", role:"un passante gentile per strada", goals:["Chiedi come arrivare alla stazione","Chiedi quanto ci vuole a piedi","Chiedi se c'è un autobus","Ringrazia e saluta"]},
+  {id:"colleghi", e:"🤝", t:"Primo giorno di lavoro", lv:"B1", role:"un nuovo collega in ufficio", goals:["Presentati e dì qual è il tuo ruolo","Chiedi da quanto lavora lì","Chiedi un consiglio su come funziona l'ufficio","Proponi un caffè insieme"]},
+  {id:"negozio", e:"🛍️", t:"Cambiare un acquisto", lv:"B1", role:"il commesso di un negozio di abbigliamento", goals:["Spiega che vuoi cambiare una maglia","Spiega il motivo (taglia sbagliata o difetto)","Chiedi un'altra taglia o un altro colore","Chiedi se puoi avere un rimborso"]},
+  {id:"medico", e:"🩺", t:"Prenotare dal medico", lv:"B1", role:"la segretaria di uno studio medico, al telefono", goals:["Chiedi un appuntamento","Descrivi brevemente il problema","Accordati su giorno e ora","Chiedi cosa devi portare"]},
+  {id:"auto", e:"🚗", t:"Noleggiare un'auto", lv:"B1", role:"l'impiegato di un autonoleggio", goals:["Chiedi un'auto per tre giorni","Chiedi cosa copre l'assicurazione","Chiedi come funziona il carburante","Chiedi dove e quando riconsegnarla"]},
+  {id:"weekend", e:"🎒", t:"Organizzare un weekend", lv:"B1", role:"un amico con cui organizzi un viaggio", goals:["Proponi una meta e spiega perché","Mettetevi d'accordo sul mezzo di trasporto","Decidete dove dormire","Fissate giorno e ora di partenza"]},
+  {id:"vicino", e:"🔊", t:"Lamentarsi col vicino", lv:"B2", role:"un vicino di casa un po' sulla difensiva", goals:["Spiega con educazione il problema del rumore","Rispondi alle sue obiezioni","Proponi una soluzione","Chiudete con un accordo"]},
+  {id:"prezzo", e:"💶", t:"Trattare sul prezzo", lv:"B2", role:"un venditore di mobili usati, che non vuole scendere di prezzo", goals:["Fai domande sull'oggetto","Fai notare un difetto","Proponi un prezzo più basso","Chiudi l'affare o rinuncia con cortesia"]},
+  {id:"colloquio", e:"💼", t:"Colloquio di lavoro", lv:"B2", role:"il selezionatore di un'azienda", goals:["Presenta la tua esperienza","Racconta un tuo punto di forza con un esempio","Rispondi a una domanda su un tuo punto debole","Fai una domanda sull'azienda"]},
+  {id:"volo", e:"✈️", t:"Volo cancellato", lv:"C1", role:"l'addetto della compagnia aerea, stanco e sotto pressione", goals:["Spiega la situazione e chiedi alternative","Chiedi informazioni su rimborso o indennizzo","Insisti con cortesia per una soluzione migliore","Fatti confermare la soluzione per iscritto"]}
+];
+function tutorMem(){ state.tutorMem = state.tutorMem || {}; return state.tutorMem[S().lang] = state.tutorMem[S().lang] || {facts:[], errors:[], last:""}; }
+function memoryPrompt(){
+  if(S().tutorMemory === false) return "";
+  const m = tutorMem(); if(!m.facts.length && !m.errors.length && !m.last) return "";
+  return `\nCose che ricordi di questo studente da conversazioni precedenti (usale con naturalezza, per esempio chiedendo novità, senza elencarle tutte):
+${m.facts.length ? "- Fatti: " + m.facts.join("; ") : ""}
+${m.errors.length ? "- Errori che fa spesso, da fargli esercitare con delicatezza: " + m.errors.join("; ") : ""}
+${m.last ? "- L'ultima volta avete parlato di: " + m.last : ""}`;
+}
+async function rememberSession(){
+  if(S().tutorMemory === false || kidsModeOn()) return;
+  const userTurns = Chat.turns.filter(t=>t.role==="u");
+  if(userTurns.length < 3 || Chat.memAt === Chat.turns.length) return;
+  Chat.memAt = Chat.turns.length;
+  const m = tutorMem();
+  try{
+    const r = await ask(`Aggiorni la memoria di un tutor di lingue sul suo studente. ${JSON_ONLY}`,
+      `Memoria attuale: ${JSON.stringify(m)}
+Conversazione appena fatta (S = studente, T = tutor):
+${Chat.turns.slice(-20).map(t=>`${t.role==="u"?"S":"T"}: ${t.text}${t.corr?.length ? ` [errori: ${t.corr.map(c=>c.wrong+" → "+c.right).join(", ")}]` : ""}`).join("\n")}
+Aggiorna la memoria: tieni solo informazioni utili per le prossime conversazioni, che lo studente ha detto davvero (interessi, lavoro, famiglia, progetti, gusti), più gli errori ricorrenti. Non inventare nulla. Scrivi in italiano, frasi brevissime.
+JSON: {"facts":["massimo 12 fatti"],"errors":["massimo 6 errori ricorrenti"],"last":"una frase su cosa avete parlato"}`,
+      {temperature:0.2, maxTokens:700}, r => Array.isArray(r.facts));
+    const t = tutorMem(); t.facts = r.facts.map(String).slice(0,12); t.errors = (r.errors||[]).map(String).slice(0,6); t.last = String(r.last||""); t.date = today(); save();
+  }catch(e){}
+}
+function missionById(id){ return MISSIONS_ADULT.find(m=>m.id===id); }
+function missionBest(id){ return ((state.missionBest||{})[S().lang]||{})[id]; }
+
+const Chat = {scenario:"libera", topic:"", turns:[], busy:false, mode:"libera", mission:"cena", goals:[]};
 
 function tutorSystem(){
-  const p = PERSONAS[S().persona], sc = SCENARIOS[Chat.scenario];
+  const p = PERSONAS[S().persona], sc = SCENARIOS[Chat.scenario], m = Chat.mode === "missione" ? missionById(Chat.mission) : null;
+  const situation = m ? `Gioco di ruolo realistico: interpreti ${m.role}. Lo studente ha una missione con questi obiettivi: ${m.goals.map((g,i)=>`${i+1}) ${g}`).join("; ")}. Non elencare né suggerire gli obiettivi: comportati in modo realistico e dagli l'occasione di raggiungerli; se si blocca, aiutalo con una domanda.`
+    : `Situazione: ${sc.prompt}.${Chat.topic ? ` Cerca di far usare allo studente il lessico del tema "${Chat.topic}".` : ""}`;
   return `Sei ${p.name}, tutor di ${L().name}. Carattere: ${p.style}. ${who()}
-Situazione: ${sc.prompt}.${Chat.topic ? ` Cerca di far usare allo studente il lessico del tema "${Chat.topic}".` : ""}
+${situation}${m ? "" : memoryPrompt()}
 Regole:
 - La tua risposta ("reply") è SEMPRE in ${L().name}, adatta al livello ${S().level}: frasi brevi, massimo 2-3, e chiudi quasi sempre con una domanda per far parlare lo studente.
 - Resta nel personaggio e nella situazione.
 - Analizza solo l'ULTIMO messaggio dello studente: trova errori di grammatica, lessico, ortografia o frasi poco naturali. Se il messaggio inizia con [voce] è stato dettato: ignora maiuscole e punteggiatura.
 - Se lo studente scrive in italiano o non sa una parola, aiutalo e fagli ripetere la frase in ${L().name}.
 ${JSON_ONLY}
-Formato: {"reply":"...","translation":"traduzione italiana della tua risposta","corrections":[{"wrong":"parte sbagliata","right":"versione corretta","why":"spiegazione breve in italiano"}],"natural":"come lo direbbe un madrelingua, oppure stringa vuota"}
+Formato: {"reply":"...","translation":"traduzione italiana della tua risposta","corrections":[{"wrong":"parte sbagliata","right":"versione corretta","why":"spiegazione breve in italiano"}],"natural":"come lo direbbe un madrelingua, oppure stringa vuota"${m ? `,"goals_done":[numeri degli obiettivi che lo studente ha già raggiunto in tutta la conversazione, da 1 a ${m.goals.length}]` : ""}}
 Se non ci sono errori, "corrections" è [] e "natural" è "".`;
 }
 function chatMessages(newUser){
@@ -1658,6 +1791,7 @@ async function tutorTurn(userText, voice){
     corr.forEach(c=>recordMistake(c.wrong, c.right, c.why));
   }
   Chat.turns.push({role:"t", text:out.reply, tr:out.translation||""});
+  if(Chat.mode === "missione" && Array.isArray(out.goals_done)) out.goals_done.forEach(n => { if(+n >= 1) Chat.goals[+n-1] = true; });
   if(!first) addXP(corr.length ? 2 : 3);
 }
 
@@ -1672,8 +1806,13 @@ RENDER.tutor = main => {
     <aside class="tutor-side panel stack" style="align-items:center">
       ${avatarSVG(S().persona, 170)}
       <div><b>${esc(p.name)}</b> <span class="chip">${p.tag}</span></div>
-      <label class="field" style="width:100%;text-align:left">Situazione<select id="scen">${Object.entries(SCENARIOS).map(([k,v])=>`<option value="${k}" ${k===Chat.scenario?"selected":""}>${v.name}</option>`).join("")}</select></label>
+      <div class="row" role="tablist" style="justify-content:center"><button class="chip ${Chat.mode!=="missione"?"on":""}" data-mode="libera">💬 Chiacchierata</button><button class="chip ${Chat.mode==="missione"?"on":""}" data-mode="missione">🎯 Missioni</button></div>
+      ${Chat.mode === "missione" ? `<label class="field" style="width:100%;text-align:left">Missione<select id="mis">${MISSIONS_ADULT.map(m=>`<option value="${m.id}" ${m.id===Chat.mission?"selected":""}>${m.e} ${esc(m.t)} · ${m.lv}${missionBest(m.id)!=null?` · ★ ${missionBest(m.id)}`:""}</option>`).join("")}</select></label>
+        <div class="goals" id="goals"></div>
+        <button class="btn sun sm" id="miseval" style="width:100%">🏁 Termina e valuta</button>`
+      : `<label class="field" style="width:100%;text-align:left">Situazione<select id="scen">${Object.entries(SCENARIOS).map(([k,v])=>`<option value="${k}" ${k===Chat.scenario?"selected":""}>${v.name}</option>`).join("")}</select></label>
       ${Chat.topic?`<p class="small muted">Tema della lezione: ${esc(Chat.topic)}</p>`:""}
+      <details class="memo" style="width:100%;text-align:left"><summary class="small" style="cursor:pointer;font-weight:700">🧠 Cosa ricorda ${esc(p.name)} di te</summary><div id="memo" class="small"></div></details>`}
       <label class="row small"><input type="checkbox" id="tr" ${S().showTr?"checked":""}> Mostra le traduzioni</label>
       <button class="btn ghost sm" id="restart">Ricomincia la conversazione</button>
     </aside>
@@ -1691,6 +1830,10 @@ RENDER.tutor = main => {
   const draw = () => {
     const showTr = S().showTr;
     chat.innerHTML = Chat.turns.map((t,i)=>{
+      if(t.role==="r"){ const r = t.r; return `<div class="misrep"><div class="row" style="justify-content:space-between"><b>🏁 Missione: ${t.score}/100</b>${t.record?`<span class="chip on">Nuovo record</span>`:""}</div><p style="margin:6px 0">${esc(r.feedback||"")}</p>
+        ${(r.good||[]).length?`<p class="small" style="margin:4px 0"><b>Bene:</b> ${r.good.map(esc).join(" · ")}</p>`:""}${(r.improve||[]).length?`<p class="small" style="margin:4px 0"><b>Da migliorare:</b> ${r.improve.map(esc).join(" · ")}</p>`:""}
+        ${(r.phrases||[]).length?`<p class="small" style="margin:8px 0 4px"><b>Frasi utili:</b></p>${r.phrases.map(x=>`<div class="small"><button class="iconbtn" data-ph="${esc(x.t)}" style="width:28px;height:28px;vertical-align:middle">${icon("play")}</button> ${esc(x.t)} <span class="muted">· ${esc(x.it||"")}</span></div>`).join("")}`:""}
+        <button class="btn sm" data-again="1" style="margin-top:8px">Rifai la missione</button></div>`; }
       if(t.role==="u"){
         let h = `<div class="msg u">${esc(t.text)}</div>`;
         if(t.corr?.length || t.natural){
@@ -1702,8 +1845,38 @@ RENDER.tutor = main => {
         ${t.tr?`<div class="tr" ${showTr?"":"hidden"} data-tr="${i}">${esc(t.tr)}</div>`:""}${t.tr&&!showTr?`<button class="btn ghost sm" data-show="${i}" style="margin-top:6px">Traduci</button>`:""}</div>`;
     }).join("");
     $$("[data-say]", chat).forEach(b=>b.onclick=()=>Voice.speak(Chat.turns[b.dataset.say].text));
+    $$("[data-ph]", chat).forEach(b=>b.onclick=()=>Voice.speak(b.dataset.ph));
+    $$("[data-again]", chat).forEach(b=>b.onclick=()=>{ Chat.turns = []; Chat.goals = []; Chat.goalsToast = false; start(); });
+    drawGoals();
     $$("[data-show]", chat).forEach(b=>b.onclick=()=>{ $(`[data-tr="${b.dataset.show}"]`, chat).hidden=false; b.remove(); });
     chat.scrollTop = chat.scrollHeight;
+  };
+  const drawGoals = () => { const g = $("#goals"), m = missionById(Chat.mission); if(!g || !m) return;
+    g.innerHTML = `<p class="small muted" style="margin:0 0 6px">Obiettivi della missione:</p>${m.goals.map((x,i)=>`<div class="goal ${Chat.goals[i]?"ok":""}">${Chat.goals[i]?"✅":"⬜"} ${esc(x)}</div>`).join("")}`;
+    if(m.goals.every((x,i)=>Chat.goals[i]) && !Chat.goalsToast){ Chat.goalsToast = true; toast("🎯 Obiettivi raggiunti! Premi “Termina e valuta”"); SFX.win(); } };
+  const drawMemo = () => { const el = $("#memo"); if(!el) return; const m = tutorMem(), on = S().tutorMemory !== false;
+    el.innerHTML = `<label class="row" style="margin:8px 0"><input type="checkbox" id="memon" ${on?"checked":""}> Ricorda quello che ci diciamo</label>
+      ${on ? (m.facts.length || m.errors.length || m.last ? `${m.facts.length?`<p style="margin:4px 0"><b>Su di te:</b></p><ul style="margin:0;padding-left:18px">${m.facts.map(f=>`<li>${esc(f)}</li>`).join("")}</ul>`:""}${m.errors.length?`<p style="margin:6px 0 2px"><b>Errori da allenare:</b></p><ul style="margin:0;padding-left:18px">${m.errors.map(f=>`<li>${esc(f)}</li>`).join("")}</ul>`:""}${m.last?`<p style="margin:6px 0 0"><b>L'ultima volta:</b> ${esc(m.last)}</p>`:""}<button class="btn ghost sm" id="memdel" style="margin-top:8px">Dimentica tutto</button>` : `<p class="muted" style="margin:4px 0">Ancora niente: dopo qualche chiacchierata qui compariranno le cose che ricorda di te. Restano solo su questo dispositivo.</p>`) : ""}`;
+    $("#memon").onchange = e => { state.settings.tutorMemory = e.target.checked; save(); drawMemo(); };
+    const d = $("#memdel"); if(d) d.onclick = () => { if(confirm("Cancellare tutto quello che il tutor ricorda di te?")){ state.tutorMem[S().lang] = {facts:[], errors:[], last:""}; save(); drawMemo(); } }; };
+  const evalMission = async () => {
+    const m = missionById(Chat.mission); if(!m || Chat.busy) return;
+    if(Chat.turns.filter(t=>t.role==="u").length < 2){ toast("Prima prova a parlare un po' 🙂"); return; }
+    Chat.busy = true; status.innerHTML = `<span class="spinner"></span> Valuto la missione…`;
+    try{
+      const r = await ask(`Sei un insegnante di ${L().name} che valuta un gioco di ruolo. ${who()} ${JSON_ONLY}`,
+        `Missione: ${m.t}. Obiettivi: ${m.goals.map((g,i)=>`${i+1}) ${g}`).join("; ")}.
+Conversazione (S = studente, T = ${m.role}):
+${Chat.turns.map(t=>`${t.role==="u"?"S":"T"}: ${t.text}`).join("\n")}
+Valuta lo studente: quali obiettivi ha raggiunto davvero, quanto è stato chiaro, corretto e appropriato (registro, cortesia).
+JSON: {"score":0-100,"goals":[true o false per ogni obiettivo],"feedback":"giudizio in italiano, 2-3 frasi","good":["cosa ha fatto bene"],"improve":["cosa migliorare"],"phrases":[{"t":"frase utile in ${L().name} per questa situazione","it":"traduzione"}]}`,
+        {temperature:0.3, maxTokens:1200}, r => typeof r.score === "number");
+      const score = Math.max(0, Math.min(100, Math.round(r.score)));
+      state.missionBest = state.missionBest || {}; const mb = state.missionBest[S().lang] = state.missionBest[S().lang] || {};
+      const record = mb[m.id] == null || score > mb[m.id]; if(record) mb[m.id] = score; save(); addXP(5 + Math.round(score/10));
+      Chat.turns.push({role:"r", r, score, record}); draw(); if(score >= 75) { SFX.win(); confetti($(".chat").parentElement); }
+    }catch(e){ status.innerHTML = `<span class="status-bad">${esc(e.message)}</span>`; Chat.busy = false; return; }
+    Chat.busy = false; status.innerHTML = "";
   };
   const busy = on => { Chat.busy = on; $("#send").disabled = on; $("#mic").disabled = on; status.innerHTML = on ? `<span class="spinner"></span> ${esc(p.name)} sta scrivendo…` : ""; };
   const turn = async (text, voice) => {
@@ -1736,13 +1909,246 @@ RENDER.tutor = main => {
       status.textContent = ""; turn(r.text, true);
     }catch(e){ session = null; mic.classList.remove("on"); mic.innerHTML = icon("mic"); status.innerHTML = `<span style="color:var(--bad);font-weight:700">${esc(e.message)}</span>`; }
   };
-  $("#scen").onchange = e => { Chat.scenario = e.target.value; Chat.turns = []; Chat.topic = ""; start(); };
+  const sc = $("#scen"); if(sc) sc.onchange = e => { rememberSession(); Chat.scenario = e.target.value; Chat.turns = []; Chat.topic = ""; start(); };
+  const ms = $("#mis"); if(ms) ms.onchange = e => { Chat.mission = e.target.value; Chat.turns = []; Chat.goals = []; Chat.goalsToast = false; start(); };
+  const me = $("#miseval"); if(me) me.onclick = evalMission;
+  $$("[data-mode]", main).forEach(b=>b.onclick=()=>{ if(Chat.mode === b.dataset.mode) return; rememberSession(); Chat.mode = b.dataset.mode; Chat.turns = []; Chat.goals = []; Chat.goalsToast = false; route(); });
+  drawMemo();
   $("#tr").onchange = e => { state.settings.showTr = e.target.checked; save(); draw(); };
-  $("#restart").onclick = () => { Chat.turns = []; start(); };
+  $("#restart").onclick = () => { rememberSession(); Chat.turns = []; Chat.goals = []; Chat.goalsToast = false; start(); };
   const start = () => { draw(); if(!Chat.turns.length && S().connected) turn(null); };
-  cleanup = () => { if(session) session.stop(); };
+  cleanup = () => { if(session) session.stop(); rememberSession(); };
   start();
 };
+
+/* ============ STRUMENTI: testo, dizionario, ascolto, frasario ============ */
+const FRASARIO = [
+  {id:"base", e:"👋", t:"Frasi di base", p:[["Buongiorno","Good morning"],["Per favore","Please"],["Grazie mille","Thank you very much"],["Mi scusi","Excuse me"],["Non capisco","I don't understand"],["Può ripetere più lentamente, per favore?","Could you repeat that more slowly, please?"],["Parla italiano?","Do you speak Italian?"],["Come si dice … in inglese?","How do you say … in English?"]]},
+  {id:"aeroporto", e:"✈️", t:"In aeroporto", p:[["Dov'è il banco del check-in?","Where is the check-in desk?"],["Vorrei un posto vicino al finestrino","I'd like a window seat, please"],["Quanti bagagli posso portare?","How many bags can I take?"],["Da quale gate parte il volo?","Which gate does the flight leave from?"],["Il volo è in ritardo?","Is the flight delayed?"],["Ho perso la coincidenza","I've missed my connection"],["La mia valigia non è arrivata","My suitcase hasn't arrived"],["Dove posso prendere un taxi?","Where can I get a taxi?"]]},
+  {id:"albergo", e:"🏨", t:"In albergo", p:[["Ho una prenotazione a nome …","I have a reservation under the name …"],["A che ora è la colazione?","What time is breakfast?"],["Qual è la password del wi-fi?","What's the Wi-Fi password?"],["Posso lasciare qui la valigia?","Can I leave my suitcase here?"],["Il riscaldamento non funziona","The heating isn't working"],["Potrei avere un altro asciugamano?","Could I have another towel?"],["A che ora devo lasciare la camera?","What time is check-out?"],["Può chiamarmi un taxi?","Could you call me a taxi?"]]},
+  {id:"ristorante", e:"🍽️", t:"Al ristorante", p:[["Un tavolo per due, per favore","A table for two, please"],["Possiamo vedere il menù?","Can we see the menu?"],["Cosa mi consiglia?","What do you recommend?"],["Sono allergico a …","I'm allergic to …"],["Senza ghiaccio, per favore","No ice, please"],["Il conto, per favore","The bill, please"],["Posso pagare con la carta?","Can I pay by card?"],["Era tutto buonissimo","Everything was delicious"]]},
+  {id:"trasporti", e:"🚆", t:"Trasporti", p:[["Un biglietto per …, per favore","A ticket to …, please"],["Solo andata o andata e ritorno?","Single or return?"],["A che ora parte il prossimo treno?","What time does the next train leave?"],["Da quale binario parte?","Which platform does it leave from?"],["Questo autobus va in centro?","Does this bus go to the city centre?"],["Dove devo scendere?","Where should I get off?"],["Quanto costa la corsa?","How much is the fare?"],["Mi può lasciare qui, per favore","Could you drop me here, please?"]]},
+  {id:"indicazioni", e:"🗺️", t:"Chiedere indicazioni", p:[["Come arrivo a …?","How do I get to …?"],["È lontano?","Is it far?"],["Si può andare a piedi?","Can I walk there?"],["Sempre dritto","Straight ahead"],["Giri a destra / a sinistra","Turn right / left"],["Al semaforo","At the traffic lights"],["Mi può indicare sulla mappa?","Can you show me on the map?"],["Mi sono perso","I'm lost"]]},
+  {id:"negozi", e:"🛍️", t:"Negozi", p:[["Quanto costa?","How much is it?"],["Sto solo guardando, grazie","I'm just looking, thanks"],["Ce l'ha in una taglia più grande?","Do you have it in a bigger size?"],["Posso provarlo?","Can I try it on?"],["Dove sono i camerini?","Where are the fitting rooms?"],["Lo prendo","I'll take it"],["Posso avere lo scontrino?","Can I have the receipt?"],["Posso cambiarlo?","Can I exchange it?"]]},
+  {id:"salute", e:"💊", t:"Salute", p:[["Non mi sento bene","I don't feel well"],["Mi fa male qui","It hurts here"],["Ho la febbre","I have a temperature"],["Dov'è la farmacia più vicina?","Where is the nearest pharmacy?"],["Ho bisogno di un medico","I need a doctor"],["Sono allergico alla penicillina","I'm allergic to penicillin"],["Prendo queste medicine","I take these medicines"],["Ogni quanto devo prenderlo?","How often should I take it?"]]},
+  {id:"emergenze", e:"🆘", t:"Emergenze", p:[["Aiuto!","Help!"],["Chiami un'ambulanza!","Call an ambulance!"],["Chiami la polizia!","Call the police!"],["Mi hanno rubato il portafoglio","My wallet has been stolen"],["Ho perso il passaporto","I've lost my passport"],["C'è stato un incidente","There's been an accident"],["Dov'è l'ospedale?","Where is the hospital?"],["Ho bisogno di aiuto","I need help"]]}
+];
+async function phrasebook(){
+  const flat = FRASARIO.flatMap(c => c.p.map(x=>x[0]));
+  if(S().lang === "en") return FRASARIO.flatMap(c => c.p.map(x=>x[1]));
+  const cached = (state.phrasebook||{})[S().lang];
+  if(Array.isArray(cached) && cached.length === flat.length) return cached;
+  const r = await ask(`Sei un traduttore esperto di ${L().name}. ${JSON_ONLY}`,
+    `Traduci in ${L().name} queste frasi da viaggio, una per una e nello stesso ordine, in modo naturale e cortese come le direbbe un madrelingua. Lascia "…" dove c'è.\n${JSON.stringify(flat)}\nJSON: {"t":["..."]}`,
+    {temperature:0.2, maxTokens:4000}, r => Array.isArray(r.t) && r.t.length === flat.length);
+  state.phrasebook = {...(state.phrasebook||{}), [S().lang]: r.t.map(String)}; save();
+  return state.phrasebook[S().lang];
+}
+
+const TOOLS = [
+  ["testo","📄","Studia un testo","Incolla un testo e Parlami ne ricava parole, spiegazioni ed esercizi"],
+  ["dizionario","📚","Dizionario rapido","Cerca una parola in italiano o in lingua straniera, con pronuncia ed esempi"],
+  ["ascolto","🎧","Ascolto in sottofondo","Mini-podcast al tuo livello da ascoltare mentre fai altro"],
+  ["frasario","🧳","Frasario da viaggio","Frasi pronte per aeroporto, albergo, ristorante ed emergenze"]
+];
+RENDER.strumenti = main => {
+  const sub = location.hash.slice(1).split("-")[1];
+  if(sub === "testo") return toolText(main);
+  if(sub === "dizionario") return toolDict(main);
+  if(sub === "ascolto") return toolRadio(main);
+  if(sub === "frasario") return toolPhrases(main);
+  main.innerHTML = `<h1>Strumenti</h1>${needsSetup()}
+    <div class="grid2" style="margin-top:16px">${TOOLS.map(([id,e,t,d])=>`<a class="action" href="#strumenti-${id}" style="text-decoration:none"><span class="ic"><span style="font-size:1.7rem">${e}</span></span><span><h3>${t}</h3><span class="muted small">${d}</span></span></a>`).join("")}</div>`;
+};
+const toolBack = `<a class="btn ghost sm" href="#strumenti">${icon("back")} Strumenti</a>`;
+
+/* ---- Studia un testo ---- */
+async function toolText(main){
+  const lib = (state.studies||{})[S().lang] || [];
+  const show = st => {
+    const r = st.res, words = (r.vocab||[]).filter(v=>v.word);
+    let html = esc(st.text);
+    if(!NOSPACE.includes(S().lang)) words.slice().sort((a,b)=>b.word.length-a.word.length).forEach((v,i) => {
+      const re = new RegExp(`(^|[^\\p{L}])(${esc(v.word).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")})(?=[^\\p{L}]|$)`, "iu");
+      html = html.replace(re, (m, pre, w) => `${pre}<button class="vw" data-v="${words.indexOf(v)}">${w}</button>`);
+    });
+    main.innerHTML = `<a class="btn ghost sm" href="#strumenti-testo">${icon("back")} I tuoi testi</a>
+      <h1 style="margin-top:16px">${esc(r.title||"Il tuo testo")}</h1>
+      <p class="muted">${esc(r.summary||"")}${r.level ? ` · Livello stimato: <b>${esc(r.level)}</b>` : ""}</p>
+      <div class="row"><button class="btn sun" id="readall">${icon("play")} Leggi ad alta voce</button><button class="btn ghost" id="stopread">${icon("stop")} Stop</button><button class="btn ghost" id="addw">➕ Parole al ripasso</button></div>
+      <article class="reading studytext" style="margin-top:12px">${html.split(/\n\s*\n/).map(p=>`<p>${p.replace(/\n/g,"<br>")}</p>`).join("")}</article>
+      <div id="vdet" class="small" style="min-height:1.5em;margin:8px 0"></div>
+      <section class="panel stack" style="margin-top:12px"><h2 style="margin:0">Parole da imparare</h2><div class="vocab">${words.map((v,i)=>`<div class="vcard"><button class="iconbtn" data-say="${i}" aria-label="Ascolta">${icon("play")}</button><div><b>${esc(v.word)}</b><span class="muted small">${esc(v.translation)}</span>${v.note?`<div class="small">${esc(v.note)}</div>`:""}</div></div>`).join("")}</div></section>
+      ${(r.grammar||[]).length ? `<section class="panel stack" style="margin-top:12px"><h2 style="margin:0">Da notare</h2>${r.grammar.map(g=>`<div><b>${esc(g.title)}</b><p style="margin:2px 0 0">${esc(g.explanation)}</p></div>`).join("")}</section>` : ""}
+      ${(r.questions||[]).length ? `<section class="panel stack" style="margin-top:12px"><h2 style="margin:0">Hai capito?</h2>${r.questions.map((q,n)=>`<fieldset class="mcq"><legend><b>${n+1}.</b> ${esc(q.q)}</legend>${q.options.map((o,j)=>`<label class="mopt"><input type="radio" name="q${n}" value="${j}"> <span>${esc(o)}</span></label>`).join("")}</fieldset>`).join("")}<div><button class="btn" id="checkq">Controlla</button> <span id="qres"></span></div></section>` : ""}`;
+    $$(".vw", main).forEach(b=>b.onclick=()=>{ const v = words[+b.dataset.v]; Voice.speak(v.word); $("#vdet").innerHTML = `<b>${esc(v.word)}</b> = ${esc(v.translation)}${v.note?` · ${esc(v.note)}`:""}`; });
+    $$("[data-say]", main).forEach(b=>b.onclick=()=>Voice.speak(words[+b.dataset.say].word));
+    let stop = false; cleanup = () => { stop = true; speechSynthesis.cancel(); };
+    $("#readall").onclick = async () => { stop = false; for(const p of $$(".studytext p", main)){ if(stop) break; p.classList.add("cur"); await Voice.speak(p.textContent); p.classList.remove("cur"); } };
+    $("#stopread").onclick = () => { stop = true; speechSynthesis.cancel(); };
+    $("#addw").onclick = () => { let n = 0; words.forEach(v => { if(!state.words.some(w=>w.lang===S().lang && bare(w.word)===bare(v.word))){ state.words.push({id:uid(), lang:S().lang, word:v.word, translation:v.translation, example:v.example||"", box:1, due:today()}); n++; } }); save(); toast(n ? `${n} parole aggiunte al ripasso` : "Le parole sono già nel ripasso"); };
+    const cq = $("#checkq"); if(cq) cq.onclick = () => { let ok = 0; r.questions.forEach((q,n)=>{ const c = document.querySelector(`input[name="q${n}"]:checked`); $$(`input[name="q${n}"]`).forEach(inp=>{ const lab = inp.closest(".mopt"); lab.classList.toggle("right", +inp.value===+q.answer); lab.classList.toggle("wrong", inp.checked && +inp.value!==+q.answer); }); if(c && +c.value===+q.answer) ok++; }); $("#qres").innerHTML = `<b>${ok} su ${r.questions.length}</b>`; addXP(2+ok); };
+  };
+  const id = location.hash.slice(1).split("-")[2];
+  if(id){ const st = lib.find(x=>x.id===id); if(st) return show(st); }
+  main.innerHTML = `${toolBack}<h1 style="margin-top:16px">Studia un testo</h1>
+    <p class="muted">Incolla un testo in ${L().name.toLowerCase()}: un articolo, un'email, una ricetta, il testo di una canzone che hai. Parlami ne ricava le parole più utili, cosa notare di grammatica e qualche domanda. Il testo resta solo su questo dispositivo.</p>
+    ${needsSetup()}
+    <textarea class="input" id="tt" rows="9" maxlength="5000" placeholder="Incolla qui il testo…"></textarea>
+    <div class="row" style="margin-top:10px"><button class="btn" id="go">Studia questo testo</button><span id="tm" class="small"></span></div>
+    ${lib.length ? `<h2 style="margin-top:22px">I tuoi testi</h2><div class="stack" style="gap:8px">${lib.map(s=>`<a class="action" href="#strumenti-testo-${s.id}" style="text-decoration:none;padding:12px 16px"><span style="flex:1"><b>${esc(s.res.title||"Testo")}</b><br><span class="small muted">${esc(s.text.slice(0,90))}…</span></span></a>`).join("")}</div>` : ""}`;
+  $("#go").onclick = async () => {
+    const text = $("#tt").value.trim(); if(text.length < 40){ $("#tm").textContent = "Il testo è troppo corto."; return; }
+    $("#go").disabled = true; $("#tm").innerHTML = `<span class="spinner"></span> Leggo il testo…`;
+    try{
+      const r = await ask(`Sei un insegnante di ${L().name} per studenti italiani. ${who()} ${JSON_ONLY}`,
+        `Testo:\n"""${text.slice(0,5000)}"""\nAnalizzalo per lo studente:
+JSON: {"title":"titolo breve in italiano","summary":"riassunto in italiano, 2 frasi","level":"livello QCER stimato del testo","vocab":[{"word":"parola o espressione esattamente come compare nel testo","translation":"traduzione italiana nel contesto","note":"nota breve facoltativa"}],"grammar":[{"title":"struttura da notare","explanation":"spiegazione breve in italiano con un esempio dal testo"}],"questions":[{"q":"domanda di comprensione in italiano","options":["...","...","..."],"answer":0}]}
+Metti 8-12 parole utili per il livello ${S().level} (non le più banali), 2 punti di grammatica e 4 domande.`,
+        {temperature:0.4, maxTokens:2500}, r => Array.isArray(r.vocab));
+      const st = {id:uid(), text, res:r, date:today()};
+      state.studies = {...(state.studies||{}), [S().lang]: [st, ...lib].slice(0,8)}; save(); addXP(5);
+      location.hash = "strumenti-testo-" + st.id;
+    }catch(e){ $("#go").disabled = false; $("#tm").innerHTML = `<span class="status-bad">${esc(e.message)}</span>`; }
+  };
+}
+
+/* ---- Dizionario rapido ---- */
+function toolDict(main){
+  const hist = ((state.dict||{})[S().lang] || []);
+  main.innerHTML = `${toolBack}<h1 style="margin-top:16px">Dizionario rapido</h1>
+    <div class="row"><input class="input" id="dq" style="flex:1;min-width:200px" placeholder="Parola in italiano o in ${L().name.toLowerCase()}" autocomplete="off" autocapitalize="off"><button class="btn" id="dgo">Cerca</button></div>
+    <div id="dres" style="margin-top:14px"></div>
+    ${hist.length ? `<p class="small muted" style="margin-top:18px">Cercate di recente</p><div class="row">${hist.slice(0,24).map((h,i)=>`<button class="chip" data-h="${i}">${esc(h.r.word||h.q)}</button>`).join("")}</div>` : ""}`;
+  const showRes = r => {
+    $("#dres").innerHTML = `<section class="panel stack"><div class="row" style="justify-content:space-between"><div><h2 style="margin:0">${esc(r.word)}</h2><span class="muted">${esc(r.pos||"")}${r.pron?` · si pronuncia circa <b>${esc(r.pron)}</b>`:""}</span></div>
+      <div class="row"><button class="iconbtn" id="dsay" aria-label="Ascolta">${icon("play")}</button><button class="iconbtn" id="dslow" aria-label="Ascolta lento">${icon("slow")}</button></div></div>
+      <p style="margin:0;font-size:1.15rem"><b>${esc(r.it||"")}</b></p>
+      ${(r.meanings||[]).map(m=>`<div class="taskbox"><p style="margin:0">${esc(m.it||"")}</p>${m.example?`<p style="margin:6px 0 0"><button class="iconbtn" data-ex="${esc(m.example)}" style="width:30px;height:30px;vertical-align:middle">${icon("play")}</button> <i>${esc(m.example)}</i><br><span class="small muted">${esc(m.example_it||"")}</span></p>`:""}</div>`).join("")}
+      ${r.forms?`<p class="small" style="margin:0"><b>Forme:</b> ${esc(r.forms)}</p>`:""}${r.tips?`<p class="small" style="margin:0"><b>Nota:</b> ${esc(r.tips)}</p>`:""}
+      <div><button class="btn ghost sm" id="dadd">➕ Aggiungi al ripasso</button></div></section>`;
+    $("#dsay").onclick = () => Voice.speak(r.word); $("#dslow").onclick = () => Voice.speak(r.word, {rate:0.6});
+    $$("[data-ex]").forEach(b=>b.onclick=()=>Voice.speak(b.dataset.ex));
+    $("#dadd").onclick = () => { if(!state.words.some(w=>w.lang===S().lang && bare(w.word)===bare(r.word))){ state.words.push({id:uid(), lang:S().lang, word:r.word, translation:r.it||"", example:r.meanings?.[0]?.example||"", box:1, due:today()}); save(); toast("Aggiunta al ripasso"); } else toast("È già nel ripasso"); };
+    Voice.speak(r.word);
+  };
+  const search = async () => {
+    const q = $("#dq").value.trim(); if(!q) return;
+    const hit = hist.find(h => bare(h.q) === bare(q) || bare(h.r.word||"") === bare(q)); if(hit) return showRes(hit.r);
+    $("#dres").innerHTML = loadingHTML("Cerco…");
+    try{
+      const r = await ask(`Sei un dizionario bilingue italiano-${L().name.toLowerCase()} per studenti italiani. ${JSON_ONLY}`,
+        `Lo studente cerca: "${q}" (può essere scritto in italiano o in ${L().name}).
+JSON: {"word":"la parola in ${L().name}","it":"traduzioni italiane principali","pos":"categoria grammaticale in italiano","pron":"pronuncia approssimata scritta per un italiano","meanings":[{"it":"significato o uso in italiano","example":"frase d'esempio in ${L().name}","example_it":"traduzione"}],"forms":"forme utili (plurale, passato, ecc.) o stringa vuota","tips":"nota breve utile (falsi amici, errori tipici) o stringa vuota"}
+Al massimo 3 significati.`, {temperature:0.2, maxTokens:900}, r => r.word);
+      hist.unshift({q, r}); state.dict = {...(state.dict||{}), [S().lang]: hist.slice(0,150)}; save();
+      showRes(r);
+    }catch(e){ $("#dres").innerHTML = errorHTML(e); }
+  };
+  $("#dgo").onclick = search; $("#dq").onkeydown = e => { if(e.key==="Enter") search(); }; $("#dq").focus();
+  $$("[data-h]", main).forEach(b=>b.onclick=()=>{ const h = hist[+b.dataset.h]; $("#dq").value = h.q; showRes(h.r); });
+}
+
+/* ---- Ascolto in sottofondo ---- */
+const Radio = {ep:null, next:null, line:0, playing:false, lock:null};
+const RADIO_TOPICS = ["a sorpresa","vita quotidiana","viaggi","lavoro","cibo","sport","tecnologia","storie divertenti","notizie leggere","cultura"];
+async function radioEpisode(topic, level){
+  const t = topic === "a sorpresa" ? shuffle(RADIO_TOPICS.slice(1))[0] : topic;
+  return ask(`Scrivi brevi episodi audio per studenti di ${L().name} (livello ${level} del QCER): dialoghi naturali, vivaci e adatti a tutti. ${JSON_ONLY}`,
+    `Scrivi un mini-podcast in ${L().name} sul tema "${t}": un dialogo tra due persone con un nome, 12-16 battute, livello ${level}.
+JSON: {"title":"titolo","lines":[{"s":"nome di chi parla","t":"battuta in ${L().name}","it":"traduzione italiana"}],"words":[{"w":"parola utile","it":"traduzione"}]}
+Metti 5 parole utili.`, {temperature:0.95, maxTokens:2200}, r => Array.isArray(r.lines) && r.lines.length >= 6);
+}
+async function wake(on){ try{ if(on && "wakeLock" in navigator && !Radio.lock) Radio.lock = await navigator.wakeLock.request("screen"); if(!on && Radio.lock){ await Radio.lock.release(); Radio.lock = null; } }catch(e){} }
+function toolRadio(main){
+  const cfg = state.radio = state.radio || {topic:"a sorpresa", level:S().level, rate:0.95, text:true, auto:true};
+  main.innerHTML = `${toolBack}<h1 style="margin-top:16px">Ascolto in sottofondo</h1>
+    <p class="muted">Brevi dialoghi al tuo livello, uno dopo l'altro, da ascoltare mentre fai altro. Lo schermo resta acceso durante l'ascolto: su iPhone, se lo blocchi, la voce si ferma.</p>
+    ${needsSetup()}
+    <section class="panel stack"><div class="grid2">
+      <label class="field">Argomento<select id="rt">${RADIO_TOPICS.map(t=>`<option ${t===cfg.topic?"selected":""}>${t}</option>`).join("")}</select></label>
+      <label class="field">Livello<select id="rl">${LEVELS.map(l=>`<option ${l===cfg.level?"selected":""}>${l}</option>`).join("")}</select></label>
+      <label class="field">Velocità: <span id="rrv">${cfg.rate}</span><input type="range" id="rr" min="0.7" max="1.2" step="0.05" value="${cfg.rate}"></label></div>
+      <div class="row"><label class="row small"><input type="checkbox" id="rx" ${cfg.text?"checked":""}> Mostra il testo</label><label class="row small"><input type="checkbox" id="ra" ${cfg.auto?"checked":""}> Episodio successivo in automatico</label></div>
+      <div class="row"><button class="btn sun" id="rplay">${icon("play")} Ascolta</button><button class="btn ghost" id="rpause">${icon("stop")} Pausa</button><button class="btn ghost" id="rnext">⏭ Prossimo episodio</button></div>
+      <p class="small" id="rstat"></p></section>
+    <section class="panel" id="rep" style="margin-top:12px" hidden></section>`;
+  const set = (k,v) => { cfg[k] = v; save(); };
+  $("#rt").onchange = e => { set("topic", e.target.value); Radio.next = null; };
+  $("#rl").onchange = e => { set("level", e.target.value); Radio.next = null; };
+  $("#rr").oninput = e => { set("rate", +e.target.value); $("#rrv").textContent = e.target.value; };
+  $("#rx").onchange = e => { set("text", e.target.checked); draw(); };
+  $("#ra").onchange = e => set("auto", e.target.checked);
+  const stat = t => { const el = $("#rstat"); if(el) el.innerHTML = t; };
+  const prefetch = () => { if(!Radio.next) Radio.next = radioEpisode(cfg.topic, cfg.level).catch(()=>null); };
+  const draw = () => {
+    const box = $("#rep"); if(!box || !Radio.ep) return; box.hidden = false;
+    const ep = Radio.ep, sp = [...new Set(ep.lines.map(l=>l.s))];
+    box.innerHTML = `<h2 style="margin-top:0">🎧 ${esc(ep.title||"Episodio")}</h2>
+      ${cfg.text ? `<div class="stack" style="gap:6px">${ep.lines.map((l,i)=>`<p class="rline ${i===Radio.line && Radio.playing?"cur":""}" data-i="${i}"><b>${esc(l.s)}:</b> ${esc(l.t)}<br><span class="small muted">${esc(l.it||"")}</span></p>`).join("")}</div>` : `<p class="muted">Testo nascosto: ascolta e basta. Battuta ${Radio.line+1} di ${ep.lines.length}.</p>`}
+      ${(ep.words||[]).length ? `<p class="small" style="margin-bottom:0"><b>Parole utili:</b> ${ep.words.map(w=>`${esc(w.w)} = ${esc(w.it)}`).join(" · ")}</p>` : ""}`;
+    $$(".rline", box).forEach(p=>p.onclick=()=>{ Radio.line = +p.dataset.i; if(!Radio.playing) play(); else { speechSynthesis.cancel(); } });
+    const cur = $(".rline.cur", box); if(cur) cur.scrollIntoView({block:"nearest", behavior:"smooth"});
+  };
+  const play = async () => {
+    if(!Radio.ep){ stat(`<span class="spinner"></span> Preparo l'episodio…`); try{ Radio.ep = await (Radio.next || radioEpisode(cfg.topic, cfg.level)); Radio.next = null; if(!Radio.ep) throw new Error("Non sono riuscito a preparare l'episodio."); Radio.line = 0; }catch(e){ stat(`<span class="status-bad">${esc(e.message)}</span>`); return; } }
+    Radio.playing = true; wake(true); stat("In ascolto…"); prefetch();
+    const sp = [...new Set(Radio.ep.lines.map(l=>l.s))];
+    while(Radio.playing && Radio.line < Radio.ep.lines.length){
+      draw(); const l = Radio.ep.lines[Radio.line], at = Radio.line;
+      await Voice.speakAs(l.t, sp.indexOf(l.s), cfg.rate);
+      if(!Radio.playing) return;
+      if(Radio.line === at) Radio.line++;
+      await wait(350);
+    }
+    if(!Radio.playing) return;
+    addXP(3);
+    if(cfg.auto && $("#rep")){ stat(`<span class="spinner"></span> Arriva il prossimo episodio…`); Radio.ep = null; await wait(800); play(); }
+    else { Radio.playing = false; wake(false); stat("Episodio finito."); draw(); }
+  };
+  $("#rplay").onclick = () => { if(!Radio.playing) play(); };
+  $("#rpause").onclick = () => { Radio.playing = false; speechSynthesis.cancel(); wake(false); stat("In pausa: premi Ascolta per continuare."); draw(); };
+  $("#rnext").onclick = () => { Radio.playing = false; speechSynthesis.cancel(); Radio.ep = null; Radio.line = 0; setTimeout(play, 300); };
+  cleanup = () => { Radio.playing = false; speechSynthesis.cancel(); wake(false); };
+  if(Radio.ep) draw();
+}
+
+/* ---- Frasario da viaggio ---- */
+async function toolPhrases(main){
+  main.innerHTML = `${toolBack}${loadingHTML("Apro il frasario…")}`;
+  let tr; try{ tr = await phrasebook(); }catch(e){ main.innerHTML = toolBack + errorHTML(e); return; }
+  let k = 0; const items = FRASARIO.map(c => ({...c, p: c.p.map(x => ({it:x[0], t:tr[k++]}))}));
+  const fav = state.favPhr = state.favPhr || [];
+  const draw = (q="") => {
+    const nq = bare(q);
+    const cats = [{id:"fav", e:"⭐", t:"Preferite", p: items.flatMap(c=>c.p).filter(x=>fav.includes(x.it))}, ...items];
+    $("#fbody").innerHTML = cats.map(c => { const list = c.p.filter(x => !nq || bare(x.it).includes(nq) || bare(x.t).includes(nq)); if(!list.length) return "";
+      return `<details class="panel fcat" ${q || c.id==="fav" ? "open" : ""}><summary><span style="font-size:1.5rem">${c.e}</span> <b>${esc(c.t)}</b> <span class="small muted">${list.length}</span></summary>
+        <div class="stack" style="gap:8px;margin-top:10px">${list.map(x=>`<div class="phr"><div style="flex:1"><b class="ptxt">${esc(x.t)}</b><br><span class="small muted">${esc(x.it)}</span></div>
+          <button class="iconbtn" data-s="${esc(x.t)}" aria-label="Ascolta">${icon("play")}</button><button class="iconbtn" data-sl="${esc(x.t)}" aria-label="Ascolta lento">${icon("slow")}</button><button class="iconbtn" data-f="${esc(x.it)}" aria-label="Preferita">${fav.includes(x.it)?"⭐":"☆"}</button></div>`).join("")}</div></details>`; }).join("") || `<p class="muted">Nessuna frase trovata.</p>`;
+    $$("[data-s]").forEach(b=>b.onclick=()=>Voice.speak(b.dataset.s));
+    $$("[data-sl]").forEach(b=>b.onclick=()=>Voice.speak(b.dataset.sl, {rate:0.6}));
+    $$("[data-f]").forEach(b=>b.onclick=()=>{ const i = fav.indexOf(b.dataset.f); if(i<0) fav.push(b.dataset.f); else fav.splice(i,1); save(); draw($("#fq").value); });
+  };
+  main.innerHTML = `${toolBack}<h1 style="margin-top:16px">Frasario da viaggio</h1>
+    <p class="muted">Frasi pronte da far ascoltare o leggere al momento giusto. ${S().lang==="en" ? "Funziona anche senza internet." : "Tradotte una volta dall'IA, poi funzionano anche senza internet."} Tocca ☆ per tenere le tue preferite in cima.</p>
+    <input class="input" id="fq" placeholder="Cerca una frase…" autocomplete="off" style="margin-bottom:12px"><div id="fbody" class="stack"></div>`;
+  $("#fq").oninput = e => draw(e.target.value);
+  draw();
+}
+
+/* ============ ASPETTO: tema, colore, dimensione del testo ============ */
+const ACCENTS = {blu:["#3446E8","#E2E6FF","#8391FF","#2A3070"], verde:["#0F7A5A","#D6F2E7","#3FCB98","#123F31"], viola:["#6D3FD6","#ECE3FF","#B197FF","#3A2A70"], arancio:["#C2410C","#FFE4D1","#FF9A5C","#4A2414"], rosa:["#C2185B","#FCE4EC","#FF7FB0","#4A1830"]};
+function isDark(){ const t = S().theme || "auto"; return t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme: dark)").matches); }
+function applyLook(){
+  const r = document.documentElement, s = S();
+  if(s.theme && s.theme !== "auto") r.dataset.theme = s.theme; else delete r.dataset.theme;
+  const a = ACCENTS[s.accent || "blu"], d = isDark();
+  r.style.setProperty("--primary", d ? a[2] : a[0]); r.style.setProperty("--primary-soft", d ? a[3] : a[1]); r.style.setProperty("--primary-ink", d ? "#0D0F2E" : "#FFFFFF");
+  r.style.fontSize = {normale:"100%", grande:"112%", enorme:"125%"}[s.textSize || "normale"];
+  const m = document.querySelector('meta[name="theme-color"]'); if(m) m.content = d ? "#11132A" : a[0];
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", applyLook);
 
 /* ============ PRONUNCIA ============ */
 const Pron = {list:[], i:0, focus:""};
@@ -3715,6 +4121,7 @@ function runExercisesStandalone(main, lesson){
 }
 
 /* ============ Avvio ============ */
+applyLook();
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredInstall = e; if(location.hash==="#impostazioni") route(); });
 window.addEventListener("appinstalled", () => { deferredInstall = null; toast("App installata"); });
 if("serviceWorker" in navigator && (location.protocol==="https:" || ["localhost","127.0.0.1"].includes(location.hostname))){
