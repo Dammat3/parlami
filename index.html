@@ -418,6 +418,15 @@ body.kidsmode .brand-dot{background:var(--sun)}
 .rankrow.top{background:color-mix(in srgb, var(--sun) 22%, var(--surface-2))}
 .rk{font-size:1.4rem;width:32px;text-align:center;font-weight:800}.re{font-size:1.7rem}.rn{flex:1}.rx{font-family:var(--display);font-size:1.15rem}
 
+/* Motivazione */
+.grid2.two{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.wotd{border:2px solid var(--primary-soft)}
+.plan{border:2px solid var(--primary)}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:12px}
+.badge{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:16px 10px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);opacity:.75}
+.badge.got{opacity:1;border:2px solid var(--sun)}
+.badge .be{font-size:2.4rem}
+
 /* Exercise */
 .progress{height:12px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
 .progress > i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
@@ -514,7 +523,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.13";
+const APP_VERSION = "0.14";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -632,7 +641,7 @@ function addXP(n){
   const forKid = kidsContext() && typeof currentKid === "function" && currentKid();
   if(!forKid && state.todayDate !== t){ state.todayDate = t; state.todayXp = 0; }
   if(!forKid && state.lastDay !== t){
-    state.streak = (state.lastDay && dayDiff(state.lastDay, t) === 1) ? state.streak + 1 : 1;
+    state.streak = (state.lastDay && (dayDiff(state.lastDay, t) === 1 || protectStreak(t))) ? state.streak + 1 : 1;
     state.lastDay = t;
   }
   if(kidsContext() && typeof currentKid === "function" && currentKid()){
@@ -640,10 +649,12 @@ function addXP(n){
   } else { state.xp += n; state.todayXp += n; statDay(state).xp += n; }
   save(); renderRailFoot();
   toast(`+${n} XP`);
+  if(!forKid && typeof challengeTick === "function") challengeTick("xp", n);
 }
 function currentStreak(){
   if(!state.lastDay) return 0;
-  return dayDiff(state.lastDay, today()) <= 1 ? state.streak : 0;
+  const gap = dayDiff(state.lastDay, today());
+  return gap <= 1 || (state.shields||0) >= gap - 1 ? state.streak : 0;
 }
 function todayXp(){ return state.todayDate === today() ? state.todayXp : 0; }
 
@@ -1171,7 +1182,7 @@ async function familyBanner(){
 
 /* ============ PROFILI DEGLI ADULTI ============ */
 /* I dati di chi sta usando l'app stanno "in primo piano" in state; quelli degli altri in adults.data */
-const PERSON_KEYS = ["xp","streak","lastDay","todayXp","todayDate","dailyGoal","progress","words","mistakes","exams","placement","gameProg","missionBest","tutorMem","studies","dict","radio","favPhr","stats","seenW"];
+const PERSON_KEYS = ["challenges","shields","badges","counts","plan","wotd","wotdHist","xp","streak","lastDay","todayXp","todayDate","dailyGoal","progress","words","mistakes","exams","placement","gameProg","missionBest","tutorMem","studies","dict","radio","favPhr","stats","seenW"];
 const PERSON_SET = ["lang","level","persona","voiceURI","rate","autoSpeak","showTr","tutorMemory"];
 const ADULT_EMOJIS = ["🙂","😎","🧔","👩","👨","👵","👴","🦸","🧑‍🍳","🧑‍💻","🌻","⚽"];
 function adultsState(){
@@ -1236,7 +1247,14 @@ function peopleList(){
 RENDER.statistiche = main => {
   const tab = location.hash.slice(1).split("-")[1] || "io";
   const people = peopleList();
-  const tabs = `<div class="row" role="tablist" style="margin-bottom:14px"><a class="chip ${tab==="io"?"on":""}" href="#statistiche-io">📈 I miei progressi</a><a class="chip ${tab==="classifica"?"on":""}" href="#statistiche-classifica">🏆 Classifica di famiglia</a></div>`;
+  const tabs = `<div class="row" role="tablist" style="margin-bottom:14px"><a class="chip ${tab==="io"?"on":""}" href="#statistiche-io">📈 I miei progressi</a><a class="chip ${tab==="classifica"?"on":""}" href="#statistiche-classifica">🏆 Classifica di famiglia</a><a class="chip ${tab==="medaglie"?"on":""}" href="#statistiche-medaglie">🏅 Medaglie</a></div>`;
+  if(tab === "medaglie"){
+    const got = state.badges || {}, n = BADGES.filter(b => got[b.id]).length;
+    main.innerHTML = `<h1>Statistiche</h1>${tabs}<p class="muted">Hai ${n} medaglie su ${BADGES.length}. Le medaglie ancora da conquistare mostrano quanto ti manca.</p>
+      <div class="badges">${BADGES.map(b => { const has = got[b.id], v = (() => { try{ return b.v(); }catch(e){ return 0; } })();
+        return `<div class="badge ${has?"got":""}"><span class="be">${has ? b.e : "🔒"}</span><b>${esc(b.t)}</b><span class="small muted">${esc(b.d)}</span>${has ? `<span class="small">✓ ${has}</span>` : `<div class="progress" style="width:100%"><i style="width:${Math.min(100, v/b.n*100)}%"></i></div><span class="small muted">${Math.min(v,b.n)}/${b.n}</span>`}</div>`; }).join("")}</div>`;
+    return;
+  }
   if(tab === "classifica"){
     const rows = people.map(p => ({...p, wk: weekXP(p.store), st: streakOf(p.store)})).sort((x,y) => y.wk - x.wk);
     const medals = ["🥇","🥈","🥉"];
@@ -1400,6 +1418,176 @@ function pickAdult(){
   $("#pc", ov).onclick = () => ov.remove(); $("#pm", ov).onclick = () => ov.remove();
 }
 
+/* ============ MOTIVAZIONE: sfide, scudi, medaglie, parola del giorno, piano ============ */
+function counts(){ return state.counts ||= {}; }
+function bump(key, n = 1){ const c = counts(); c[key] = (c[key]||0) + n; }
+
+/* ---- Sfide di oggi (adulti) ---- */
+const CHALLENGES = {
+  xp:{t:"Guadagna 30 XP", need:30, e:"⭐"},
+  lesson:{t:"Completa una lezione", need:1, e:"📘"},
+  tutor:{t:"Scambia 5 messaggi con il tutor", need:5, e:"💬"},
+  cards:{t:"Ripassa 10 schede", need:10, e:"🗂️"},
+  game:{t:"Gioca 2 livelli", need:2, e:"🎮"},
+  perfect:{t:"Prendi 3 stelle in un livello", need:1, e:"🌟"},
+  pron:{t:"Allena la pronuncia 3 volte", need:3, e:"🎙️"},
+  radio:{t:"Ascolta un episodio fino alla fine", need:1, e:"🎧"},
+  wotd:{t:"Indovina la parola del giorno", need:1, e:"💡"},
+  mission:{t:"Completa una missione nel Tutor", need:1, e:"🎯"}
+};
+function todayChallenges(){
+  const c = state.challenges;
+  if(c?.date === today()) return c;
+  const keys = Object.keys(CHALLENGES), seed = [...(today() + currentAdult().id)].reduce((a,ch) => a + ch.charCodeAt(0), 0);
+  const pick = ["xp", ...keys.filter(k => k !== "xp").map((k,i) => ({k, r:(seed*37 + i*23) % 101})).sort((a,b) => a.r - b.r).slice(0,2).map(x => x.k)];
+  return state.challenges = {date:today(), list:pick, prog:{}, claimed:[], allDone:false};
+}
+function challengeTick(type, n = 1){
+  if(kidsContext()) return;
+  const c = todayChallenges(); if(!c.list.includes(type) || c.claimed.includes(type)) { checkBadgesSoon(); return; }
+  const def = CHALLENGES[type]; c.prog[type] = Math.min(def.need, (c.prog[type]||0) + n);
+  if(c.prog[type] >= def.need){
+    c.claimed.push(type); state.xp += 10; statDay(state).xp += 10; toast(`${def.e} Sfida completata: +10 XP`);
+    if(!c.allDone && c.list.every(k => c.claimed.includes(k))){
+      c.allDone = true; bump("dailyAll");
+      if((state.shields||0) < 2){ state.shields = (state.shields||0) + 1; setTimeout(() => toast("🛡️ Tutte le sfide fatte: hai guadagnato uno scudo!"), 1500); }
+      else setTimeout(() => toast("🏆 Tutte le sfide di oggi completate!"), 1500);
+      SFX.win();
+    }
+  }
+  save(); checkBadgesSoon();
+}
+/* Lo scudo salva i giorni di fila se salti un giorno */
+function protectStreak(t){
+  if(!state.lastDay) return false;
+  const gap = dayDiff(state.lastDay, t);
+  if(gap > 1 && (state.shields||0) >= gap - 1){ state.shields -= gap - 1; setTimeout(() => toast(`🛡️ ${gap-1 === 1 ? "Uno scudo ha" : (gap-1) + " scudi hanno"} salvato i tuoi giorni di fila!`), 1200); return true; }
+  return false;
+}
+
+/* ---- Medaglie ---- */
+const BADGES = [
+  {id:"s3", e:"🔥", t:"Si parte", d:"3 giorni di fila", v:() => state.streak||0, n:3},
+  {id:"s7", e:"🔥", t:"Una settimana", d:"7 giorni di fila", v:() => state.streak||0, n:7},
+  {id:"s30", e:"🌋", t:"Un mese di fila", d:"30 giorni di fila", v:() => state.streak||0, n:30},
+  {id:"s100", e:"☄️", t:"Inarrestabile", d:"100 giorni di fila", v:() => state.streak||0, n:100},
+  {id:"x100", e:"⭐", t:"Primi passi", d:"100 XP", v:() => state.xp||0, n:100},
+  {id:"x1000", e:"🌟", t:"Mille", d:"1.000 XP", v:() => state.xp||0, n:1000},
+  {id:"x5000", e:"💫", t:"Stella polare", d:"5.000 XP", v:() => state.xp||0, n:5000},
+  {id:"w25", e:"📗", t:"Vocabolario", d:"25 parole nel ripasso", v:() => (state.words||[]).length, n:25},
+  {id:"w100", e:"📚", t:"Cento parole", d:"100 parole nel ripasso", v:() => (state.words||[]).length, n:100},
+  {id:"w500", e:"🏛️", t:"Biblioteca vivente", d:"500 parole nel ripasso", v:() => (state.words||[]).length, n:500},
+  {id:"m50", e:"🧠", t:"Memoria d'acciaio", d:"50 parole ben imparate", v:() => (state.words||[]).filter(w => (w.box||1) >= 4).length, n:50},
+  {id:"l1", e:"📘", t:"Prima lezione", d:"Completa una lezione", v:() => Object.values(state.progress||{}).filter(p => p.done).length, n:1},
+  {id:"l10", e:"📙", t:"Studente", d:"10 lezioni completate", v:() => Object.values(state.progress||{}).filter(p => p.done).length, n:10},
+  {id:"l30", e:"🎓", t:"Secchione", d:"30 lezioni completate", v:() => Object.values(state.progress||{}).filter(p => p.done).length, n:30},
+  {id:"lvl", e:"🏅", t:"Livello finito", d:"Tutte le 10 lezioni di un livello", v:() => Math.max(0, ...LEVELS.map(lv => doneCount(lv))), n:10},
+  {id:"pl", e:"🧭", t:"So dove sono", d:"Fai il test di livello", v:() => Object.keys(state.placement||{}).length, n:1},
+  {id:"ex1", e:"📝", t:"Promosso!", d:"Supera un esame simulato", v:() => counts().examPass||0, n:1},
+  {id:"ex85", e:"🏆", t:"Con lode", d:"Almeno 85% in un esame", v:() => counts().examTop||0, n:1},
+  {id:"t50", e:"💬", t:"Chiacchierone", d:"50 messaggi al tutor", v:() => counts().tutorMsgs||0, n:50},
+  {id:"mi1", e:"🎯", t:"Missione compiuta", d:"Completa una missione", v:() => counts().missions||0, n:1},
+  {id:"mi80", e:"🕵️", t:"Agente speciale", d:"80 punti in una missione", v:() => counts().missionTop||0, n:1},
+  {id:"g50", e:"🎮", t:"Giocatore", d:"50 stelle nei giochi", v:() => Object.values((state.gameProg||{})[S().lang]||{}).reduce((a,g) => a + Object.values(g.stars||{}).reduce((x,y)=>x+y,0), 0), n:50},
+  {id:"d7", e:"✅", t:"Costanza", d:"Tutte le sfide del giorno per 7 volte", v:() => counts().dailyAll||0, n:7},
+  {id:"h10", e:"⏱️", t:"Dieci ore", d:"10 ore di studio", v:() => Math.floor(Object.values(state.stats?.days||{}).reduce((a,v) => a + (v.min||0), 0)/60), n:10},
+  {id:"wd7", e:"💡", t:"Curioso", d:"7 parole del giorno indovinate", v:() => counts().wotd||0, n:7}
+];
+let badgeTimer = null;
+function checkBadgesSoon(){ clearTimeout(badgeTimer); badgeTimer = setTimeout(checkBadges, 600); }
+function checkBadges(){
+  if(kidsContext()) return;
+  const got = state.badges ||= {}; let any = null;
+  for(const b of BADGES){ if(got[b.id]) continue; try{ if(b.v() >= b.n){ got[b.id] = today(); any = b; } }catch(e){} }
+  if(any){ save(); SFX.win(); toast(`🏅 Nuova medaglia: ${any.e} ${any.t}!`); }
+}
+
+/* ---- Parola del giorno ---- */
+async function wordOfDay(){
+  const w = state.wotd;
+  if(w?.date === today() && w.lang === S().lang && w.level === S().level) return w;
+  const hist = (state.wotdHist||[]).slice(-60);
+  const r = await ask(`Sei un insegnante di ${L().name} per italiani. ${JSON_ONLY}`,
+`Scegli la "parola del giorno" per uno studente di livello ${S().level}: una parola o espressione utile e interessante di ${L().name} (anche un modo di dire, se adatto al livello), diversa da queste: ${JSON.stringify(hist)}.
+JSON: {"word":"in ${L().name}","it":"traduzione italiana","pron":"pronuncia approssimata per un italiano","example":"frase d'esempio in ${L().name}","example_it":"traduzione","note":"curiosità o consiglio d'uso in italiano, una frase","quiz":{"q":"domanda in italiano per verificare il significato","options":["3 risposte in italiano"],"answer":indice}}`,
+    {temperature:0.9, maxTokens:600}, r => r.word && r.it && looksItalian(r.it) && r.quiz && Array.isArray(r.quiz.options) && r.quiz.options.length >= 2 && !soundsItalian(r.example||""));
+  state.wotd = {date:today(), lang:S().lang, level:S().level, data:r, done:false};
+  state.wotdHist = [...hist, r.word].slice(-60); save();
+  return state.wotd;
+}
+async function renderWotd(){
+  const box = $("#wotd"); if(!box || !S().connected) return;
+  try{
+    const w = await wordOfDay(), d = w.data; if(!$("#wotd")) return;
+    box.innerHTML = `<section class="panel stack wotd"><div class="row" style="justify-content:space-between"><span class="small muted">💡 Parola del giorno</span><button class="iconbtn" id="wsay" aria-label="Ascolta">${icon("play")}</button></div>
+      <div><span class="bigsent" style="font-size:1.7rem">${esc(d.word)}</span> <span class="muted">· ${esc(d.pron||"")}</span></div>
+      ${w.done ? `<p style="margin:0"><b>${esc(d.it)}</b></p><p class="small" style="margin:0"><i>${esc(d.example||"")}</i> · ${esc(d.example_it||"")}</p>${d.note?`<p class="small muted" style="margin:0">${esc(d.note)}</p>`:""}<div><button class="btn ghost sm" id="wadd">➕ Aggiungi al ripasso</button></div>`
+        : `<p style="margin:0">${esc(d.quiz.q)}</p><div class="row">${d.quiz.options.map((o,i)=>`<button class="chip" data-wq="${i}">${esc(o)}</button>`).join("")}</div>`}</section>`;
+    $("#wsay").onclick = () => Voice.speak(d.word);
+    $$("[data-wq]", box).forEach(b => b.onclick = () => { const ok = +b.dataset.wq === +d.quiz.answer; w.done = true; if(ok){ bump("wotd"); challengeTick("wotd"); addXP(5); SFX.ok(2); } else { SFX.bad(); toast(`Era: ${d.it}`); } save(); renderWotd(); });
+    const wa = $("#wadd"); if(wa) wa.onclick = () => { if(!state.words.some(x => x.lang === S().lang && bare(x.word) === bare(d.word))){ state.words.push({id:uid(), lang:S().lang, word:d.word, translation:d.it, example:d.example||"", box:1, due:today()}); save(); toast("Aggiunta al ripasso"); } else toast("È già nel ripasso"); };
+  }catch(e){ box.innerHTML = ""; }
+}
+
+/* ---- Piano di studio con obiettivo ---- */
+const GOALS = {
+  viaggio:{e:"✈️", t:"Un viaggio", missions:["hotel","cena","strada","auto","volo","negozio"], tools:"strumenti-frasario"},
+  lavoro:{e:"💼", t:"Lavoro", missions:["colleghi","colloquio","medico","prezzo","volo"], tools:"strumenti-testo"},
+  esame:{e:"📝", t:"Un esame o una certificazione", missions:["colloquio","vicino","prezzo","colleghi"], tools:"esami"},
+  conversare:{e:"💬", t:"Parlare con più sicurezza", missions:["weekend","colleghi","cena","vicino","negozio"], tools:"strumenti-ascolto"},
+  altro:{e:"🌱", t:"Imparare per piacere", missions:["weekend","cena","strada","negozio"], tools:"strumenti-ascolto"}
+};
+function planTarget(){ return state.plan; }
+function planRemaining(p){
+  const from = LEVELS.indexOf(S().level), to = LEVELS.indexOf(p.target);
+  if(to < from) return [];
+  return LEVELS.slice(from, to + 1).flatMap(lv => unitsOf(lv)).filter(u => !state.progress[unitKey(u)]?.done);
+}
+function planToday(){
+  const p = planTarget(); if(!p) return null;
+  const rem = planRemaining(p), daysLeft = Math.max(1, dayDiff(today(), p.deadline)), wd = new Date().getDay();
+  const g = GOALS[p.goal] || GOALS.altro, mid = g.missions[(dayDiff(p.start, today()) + 7) % g.missions.length];
+  const tasks = [];
+  if(rem.length) tasks.push({id:"lesson", e:"📘", t:`Lezione: ${rem[0].title} (${rem[0].level})`, go:"#" + unitHash(rem[0])});
+  if(p.minutes >= 20 && rem.length > 1) tasks.push({id:"lesson2", e:"📘", t:`Lezione: ${rem[1].title} (${rem[1].level})`, go:"#" + unitHash(rem[1])});
+  tasks.push({id:"tutor", e:"🎯", t:`Missione nel Tutor: ${missionById(mid)?.t || "chiacchierata"}`, go:"#tutor", mission:mid});
+  tasks.push({id:"cards", e:"🗂️", t:"Ripasso delle parole di oggi", go:"#ripasso"});
+  if(p.goal === "esame" && wd === 0) tasks.push({id:"exam", e:"📝", t:`Esame simulato ${p.target}`, go:"#esami-" + p.target});
+  else if(p.minutes >= 30) tasks.push({id:"game", e:"🎮", t:"Un gioco a scelta", go:"#giochi-adulti"});
+  const done = (p.done||{})[today()] || [];
+  return {p, rem, daysLeft, tasks, done, perDay: rem.length ? Math.ceil(rem.length / daysLeft * 10)/10 : 0};
+}
+function planTick(id){ const p = planTarget(); if(!p) return; p.done ||= {}; const d = p.done[today()] ||= []; if(!d.includes(id)){ d.push(id); save(); } }
+function planCardHTML(){
+  const pt = planToday();
+  if(!pt) return `<section class="panel stack plan"><div class="row" style="justify-content:space-between"><h2 style="margin:0">🗺️ Il tuo piano di studio</h2></div><p style="margin:0">Dimmi il tuo obiettivo e la data, e ti preparo un percorso con le cose da fare ogni giorno.</p><div><a class="btn" href="#piano">Crea il piano</a></div></section>`;
+  const g = GOALS[pt.p.goal] || GOALS.altro, totalU = LEVELS.slice(LEVELS.indexOf(S().level), LEVELS.indexOf(pt.p.target)+1).length*10, doneU = totalU - pt.rem.length;
+  return `<section class="panel stack plan"><div class="row" style="justify-content:space-between"><h2 style="margin:0">🗺️ Il percorso di oggi</h2><a class="small" href="#piano">${g.e} ${esc(g.t)} · ${pt.p.target} · ${pt.daysLeft} giorni</a></div>
+    <div class="mtasks">${pt.tasks.map(t => { const ok = pt.done.includes(t.id); return `<a class="mtask ${ok?"ok":""}" href="${t.go}" data-pt="${t.id}" ${t.mission?`data-mis="${t.mission}"`:""}><span class="me">${ok?"✅":t.e}</span><span><b>${esc(t.t)}</b></span></a>`; }).join("")}</div>
+    <div class="progress"><i style="width:${totalU ? doneU/totalU*100 : 100}%"></i></div>
+    <p class="small muted" style="margin:0">${pt.rem.length ? `${doneU} lezioni su ${totalU} per arrivare al ${pt.p.target}. Ritmo necessario: circa ${String(pt.perDay).replace(".",",")} lezioni al giorno${pt.perDay > (pt.p.minutes >= 20 ? 2 : 1) ? " — un po' alto: puoi allungare la data o studiare di più." : "."}` : `Hai completato tutte le lezioni fino al ${pt.p.target}! ${pt.p.goal === "esame" ? "Ora allenati con gli esami simulati." : "Continua con conversazioni e giochi."}`}</p></section>`;
+}
+RENDER.piano = main => {
+  const p = planTarget(), min = addDays(today(), 7);
+  main.innerHTML = `<a class="btn ghost sm" href="#home">${icon("back")} Oggi</a><h1 style="margin-top:16px">Il tuo piano di studio</h1>
+    <p class="muted">Scegli cosa vuoi raggiungere e per quando. Ogni giorno, nella pagina Oggi, trovi le cose da fare per arrivarci: lezioni del tuo percorso, una missione nel Tutor legata al tuo obiettivo e il ripasso.</p>
+    <section class="panel stack">
+      <div class="field">Il tuo obiettivo<div class="row" id="pg">${Object.entries(GOALS).map(([k,g]) => `<button class="chip ${(p?.goal||"viaggio")===k?"on":""}" data-g="${k}">${g.e} ${esc(g.t)}</button>`).join("")}</div></div>
+      <div class="grid2">
+        <label class="field">Livello da raggiungere<select class="input" id="pt">${LEVELS.filter(l => LEVELS.indexOf(l) >= LEVELS.indexOf(S().level)).map(l => `<option ${l===(p?.target||LEVELS[Math.min(5, LEVELS.indexOf(S().level)+1)])?"selected":""}>${l}</option>`).join("")}</select></label>
+        <label class="field">Entro il<input class="input" type="date" id="pd" min="${min}" value="${p?.deadline || addDays(today(), 120)}"></label>
+        <label class="field">Tempo al giorno<select class="input" id="pm">${[10,20,30,45].map(m => `<option value="${m}" ${m===(p?.minutes||20)?"selected":""}>${m} minuti</option>`).join("")}</select></label>
+      </div>
+      <p class="small muted" style="margin:0">Il tuo livello attuale è ${S().level}. Se non sei sicuro, fai prima il <a href="#esami-test">test di livello</a>.</p>
+      <div class="row"><button class="btn sun" id="psave">${p ? "Aggiorna il piano" : "Crea il piano"}</button>${p ? `<button class="btn ghost" id="pdel">Elimina il piano</button>` : ""}</div>
+    </section>`;
+  let goal = p?.goal || "viaggio";
+  $$("[data-g]", main).forEach(b => b.onclick = () => { goal = b.dataset.g; $$("[data-g]", main).forEach(x => x.classList.toggle("on", x === b)); });
+  $("#psave").onclick = () => { const deadline = $("#pd").value; if(!deadline || deadline < min){ toast("Scegli una data almeno tra una settimana"); return; }
+    state.plan = {goal, target:$("#pt").value, deadline, minutes:+$("#pm").value, start:p?.start || today(), done:p?.done || {}}; save(); toast("🗺️ Piano salvato"); location.hash = "home"; };
+  const pd = $("#pdel"); if(pd) pd.onclick = () => { if(confirm("Eliminare il piano di studio?")){ delete state.plan; save(); location.hash = "home"; } };
+};
+
 RENDER.home = main => {
   const p = PERSONAS[S().persona], goal = state.dailyGoal, done = Math.min(todayXp(), goal);
   const pct = Math.round(done/goal*100), nu = nextUnit(), due = dueWords().length;
@@ -1421,6 +1609,13 @@ RENDER.home = main => {
         <div class="progress" style="margin-top:8px"><i style="width:${pct}%"></i></div></div>
       <div class="stat"><b>${state.words.filter(w=>w.lang===S().lang).length}</b><span class="muted small">parole imparate</span></div>
     </div>
+    ${planCardHTML()}
+    <div class="grid2 two">
+      <section class="panel stack"><div class="row" style="justify-content:space-between"><h2 style="margin:0">🎯 Sfide di oggi</h2><span class="chip" title="Gli scudi salvano i giorni di fila se salti un giorno">🛡️ ${state.shields||0}/2</span></div>
+        <div class="mtasks">${(() => { const c = todayChallenges(); return c.list.map(k => { const d = CHALLENGES[k], pr = Math.min(d.need, c.prog[k]||0), ok = c.claimed.includes(k); return `<div class="mtask ${ok?"ok":""}"><span class="me">${ok?"✅":d.e}</span><span style="flex:1"><b>${esc(d.t)}</b>${d.need>1?`<span class="small muted"> ${pr}/${d.need}</span>`:""}</span></div>`; }).join(""); })()}</div>
+        <p class="small muted" style="margin:0">Ogni sfida vale 10 XP. Completale tutte e tre per guadagnare uno scudo 🛡️: se un giorno salti, salva i tuoi giorni di fila.</p></section>
+      <div id="wotd"></div>
+    </div>
     <div class="grid2">
       <button class="action" data-go="${unitHash(nu)}"><span class="ic">${icon("book")}</span><span><h3>Continua: ${esc(nu.title)}</h3><span class="muted small">Lezione con teoria ed esercizi</span></span></button>
       <button class="action" data-go="tutor"><span class="ic">${icon("chat")}</span><span><h3>Parla con ${esc(p.name)}</h3><span class="muted small">Conversazione a voce con correzioni</span></span></button>
@@ -1433,7 +1628,8 @@ RENDER.home = main => {
     <p class="muted small">Stai studiando ${L().name} · livello ${levelLabel(S().level)}. Puoi cambiarli nelle Impostazioni o in Lezioni.</p>
   </div>`;
   $$("[data-go]", main).forEach(b=>b.onclick=()=>location.hash=b.dataset.go);
-  familyBanner();
+  familyBanner(); renderWotd();
+  $$("[data-mis]", main).forEach(a => a.addEventListener("click", () => { Chat.mode = "missione"; Chat.mission = a.dataset.mis; Chat.turns = []; Chat.goals = []; }));
   $("#whoami").onclick = pickAdult;
 };
 
@@ -1904,7 +2100,7 @@ function runExercises(main, u, l){
         state.words.push({id:uid(), lang:S().lang, word:v.word, translation:v.translation, example:v.example||"", box:1, due:today()}); added++;
       }
     }
-    save(); addXP(10 + correct*2);
+    save(); addXP(10 + correct*2); challengeTick("lesson"); if(planTarget()) planTick((state.plan.done?.[today()]||[]).includes("lesson") ? "lesson2" : "lesson");
     main.innerHTML = `<div class="panel stack" style="text-align:center;align-items:center">
       ${avatarSVG(S().persona,120)}
       <h1>Lezione completata</h1>
@@ -2147,7 +2343,7 @@ async function tutorTurn(userText, voice){
   }
   Chat.turns.push({role:"t", text:out.reply, tr:out.translation||""});
   if(Chat.mode === "missione" && Array.isArray(out.goals_done)) out.goals_done.forEach(n => { if(+n >= 1) Chat.goals[+n-1] = true; });
-  if(!first) addXP(corr.length ? 2 : 3);
+  if(!first){ addXP(corr.length ? 2 : 3); bump("tutorMsgs"); challengeTick("tutor"); if(Chat.turns.filter(t=>t.role==="u").length >= 4) planTick("tutor"); }
 }
 
 RENDER.tutor = main => {
@@ -2228,7 +2424,7 @@ JSON: {"score":0-100,"goals":[true o false per ogni obiettivo],"feedback":"giudi
         {temperature:0.3, maxTokens:1200}, r => typeof r.score === "number");
       const score = Math.max(0, Math.min(100, Math.round(r.score)));
       state.missionBest = state.missionBest || {}; const mb = state.missionBest[S().lang] = state.missionBest[S().lang] || {};
-      const record = mb[m.id] == null || score > mb[m.id]; if(record) mb[m.id] = score; save(); addXP(5 + Math.round(score/10));
+      const record = mb[m.id] == null || score > mb[m.id]; if(record) mb[m.id] = score; bump("missions"); if(score >= 80) bump("missionTop"); challengeTick("mission"); planTick("tutor"); save(); addXP(5 + Math.round(score/10));
       Chat.turns.push({role:"r", r, score, record}); draw(); if(score >= 75) { SFX.win(); confetti($(".chat").parentElement); }
     }catch(e){ status.innerHTML = `<span class="status-bad">${esc(e.message)}</span>`; Chat.busy = false; return; }
     Chat.busy = false; status.innerHTML = "";
@@ -2514,7 +2710,7 @@ function toolRadio(main){
       await wait(350);
     }
     if(!Radio.playing) return;
-    addXP(3);
+    addXP(3); challengeTick("radio");
     if(cfg.auto && $("#rep")){ stat(`<span class="spinner"></span> Arriva il prossimo episodio…`); Radio.ep = null; await wait(800); play(); }
     else { Radio.playing = false; wake(false); stat("Episodio finito."); draw(); }
   };
@@ -2620,7 +2816,7 @@ RENDER.pronuncia = main => {
       $("#heard").innerHTML = `Ho capito: “${esc(scored.a.text)}”`;
       $("#result").innerHTML = `<div class="row" style="align-items:flex-start;gap:20px"><div class="score" style="color:${scored.final>=85?"var(--ok)":scored.final>=60?"var(--ink)":"var(--bad)"}">${scored.final}</div>
         <div style="flex:1"><div class="bigsent" style="font-size:1.3rem">${wordsHTML(scored.r.words)}</div><div id="tips" class="small" style="margin-top:10px"></div></div></div>`;
-      addXP(scored.final>=85 ? 3 : 1);
+      addXP(scored.final>=85 ? 3 : 1); challengeTick("pron");
       if(scored.final < 100) pronTips(s.text, scored.a.text, scored.r.missed);
       else $("#tips").innerHTML = `<b style="color:var(--ok)">Perfetto, ho capito ogni parola.</b>`;
     };
@@ -3749,6 +3945,7 @@ function stageResult(box, id, n, res){
   const sticker = g.kids && st > 0 && prev === 0 ? awardSticker() : null;
   if(g.kids && st > 0) setTimeout(()=>missionTick("gioco"), 1500);
   save(); addXP(4 + st*4);
+  if(!g.kids){ challengeTick("game"); if(st === 3) challengeTick("perfect"); planTick("game"); }
   if(st > 0) SFX.win(); else SFX.bad();
   const next = n < g.stages && st > 0;
   box.innerHTML = `<div class="panel stack result ${g.kids?"kids":""}" style="text-align:center;align-items:center;position:relative;overflow:hidden">
@@ -4438,7 +4635,8 @@ JSON: {"part1":["domanda"],"part2":{"topic":"argomento in ${L().name}","topic_it
       gram:["Grammatica e lessico","ripassa gli errori e fai gli esercizi mirati","#ripasso-errori"], write:["Scrittura","scrivi al tutor invece di parlare, così ti corregge ogni frase","#tutor"],
       speak:["Orale","conversa con il tutor ogni giorno e allena la pronuncia","#tutor"]};
     const rec = {date:today(), overall, verdict:v.t, per};
-    state.exams = state.exams || {}; state.exams[examKey(lv)] = [rec, ...examHistory(lv)].slice(0,5); save();
+    state.exams = state.exams || {}; state.exams[examKey(lv)] = [rec, ...examHistory(lv)].slice(0,5);
+    if(overall >= 60) bump("examPass"); if(overall >= 85) bump("examTop"); planTick("exam"); save();
     addXP(30);
     const mins = Math.round((Date.now()-E.t0)/60000);
     main.innerHTML = `<button class="btn ghost sm" id="back2">${icon("back")} Esami</button>
@@ -4457,6 +4655,7 @@ JSON: {"part1":["domanda"],"part2":{"topic":"argomento in ${L().name}","topic_it
 
 /* ============ RIPASSO ============ */
 function review(w, knew){
+  challengeTick("cards"); planTick("cards");
   w.box = knew ? Math.min((w.box||1)+1, BOX_DAYS.length-1) : 1;
   const d = new Date(); d.setDate(d.getDate() + BOX_DAYS[w.box]); w.due = d.toISOString().slice(0,10);
   save();
