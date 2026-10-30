@@ -500,7 +500,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.12.3";
+const APP_VERSION = "0.12.4";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -1007,7 +1007,7 @@ const VIEWS = [
 const RENDER = {};
 let cleanup = null;
 const KIDS_VIEWS = [
-  {h:"bambini", label:"Casa", e:"🏠"}, {h:"giochi", label:"Giochi", e:"🎮"}, {h:"bambini-voc", label:"Parole", e:"🖼️"},
+  {h:"bambini", label:"Casa", e:"🏠"}, {h:"giochi-bambini", label:"Giochi", e:"🎮"}, {h:"bambini-voc", label:"Parole", e:"🖼️"},
   {h:"bambini-canzoni", label:"Canzoni", e:"🎵"}, {h:"bambini-storie", label:"Storie", e:"📖"}, {h:"bambini-amico", label:"Pip", e:"🐧"}
 ];
 function renderNav(){
@@ -1029,7 +1029,7 @@ function route(){
   Voice.stop();
   const parts = (location.hash.slice(1) || (kidsModeOn() ? "bambini" : "home")).split("-"), id = parts[0];
   if(kidsModeOn()){
-    const ok = id === "bambini" || (id === "giochi" && (!parts[1] || parts[1] === "album" || GAMES[parts[1]]?.kids));
+    const ok = id === "bambini" || (id === "giochi" && (!parts[1] || parts[1] === "album" || parts[1] === "bambini" || GAMES[parts[1]]?.kids));
     if(!ok){ location.hash = "bambini"; return; }
   }
   document.body.classList.toggle("kidsmode", kidsModeOn());
@@ -2806,7 +2806,7 @@ JSON: {"text":"parte della storia in ${L().name}","it":"traduzione italiana","ch
       </div>`;
     $("#read", box).onclick = () => Voice.speak(r.text, {rate: kids ? 0.8 : undefined});
     Voice.speak(r.text, {rate: kids ? 0.8 : undefined});
-    if(end){ addXP(kids ? 8 : 10); SFX.win(); confetti(box); $("#again", box).onclick = () => { step = 0; history = []; turn(); }; $("#out", box).onclick = () => location.hash = "giochi"; }
+    if(end){ addXP(kids ? 8 : 10); SFX.win(); confetti(box); $("#again", box).onclick = () => { step = 0; history = []; turn(); }; $("#out", box).onclick = () => location.hash = kids ? "giochi-bambini" : "giochi-adulti"; }
     else $$("[data-c]", box).forEach(b=>b.onclick=()=>turn(r.choices[+b.dataset.c].text));
   };
   turn();
@@ -3396,6 +3396,7 @@ async function runTombolaDuo(main){
 RENDER.giochi = main => {
   const parts = location.hash.slice(1).split("-");
   if(parts[1]==="album") return renderAlbum(main);
+  if(parts[1]==="bambini" || parts[1]==="adulti") sessionStorage.setItem("parlami.gtab", parts[1]);
   const g = GAMES[parts[1]];
   if(g){ if(g.free) return runFree(main, parts[1]); if(parts[2] === "duo" && g.duo) return runTombolaDuo(main); if(parts[2]) return runStage(main, parts[1], Math.max(1, Math.min(g.stages, +parts[2]||1))); return renderStageMap(main, parts[1]); }
   const tab = kidsModeOn() ? "bambini" : (sessionStorage.getItem("parlami.gtab") || "adulti");
@@ -3415,13 +3416,13 @@ RENDER.giochi = main => {
         ${g.free ? `<span class="small muted" style="display:block;margin-top:4px">Sempre diversa</span>` : `<span class="gprog"><span class="progress" style="flex:1"><i style="width:${st/max*100}%;background:var(--sun)"></i></span><span class="small">★ ${st}/${max}</span></span>`}</span></button>`; }).join("")}
   </div>
   <p class="small muted" style="margin-top:14px">✦ crea sempre contenuti nuovi con l'IA. Gli altri giochi usano l'IA solo per preparare nuovi pacchetti di parole${tab==="bambini" ? "; per i bambini in inglese non serve proprio" : ""}.</p>`;
-  $$("[data-t]", main).forEach(b=>b.onclick=()=>{ sessionStorage.setItem("parlami.gtab", b.dataset.t); route(); });
+  $$("[data-t]", main).forEach(b=>b.onclick=()=>{ location.hash = "giochi-" + b.dataset.t; });
   $$("[data-g]", main).forEach(b=>b.onclick=()=>location.hash="giochi-"+b.dataset.g);
 };
 function renderStageMap(main, id){
   const g = GAMES[id], p = gprog(id);
   const nextN = Array.from({length:g.stages}, (_,i)=>i+1).find(n=>unlocked(id,n) && !(p.stars[n])) || 1;
-  main.innerHTML = `<a class="btn ghost sm" href="#giochi">${icon("back")} Giochi</a>
+  main.innerHTML = `<a class="btn ghost sm" href="#giochi-${g.kids ? "bambini" : "adulti"}">${icon("back")} Giochi</a>
     <div class="row" style="justify-content:space-between;margin-top:16px"><h1 style="margin:0">${esc(g.name)}</h1><span class="chip">★ ${totalStars(id)}/${g.stages*3}</span></div>
     <p class="muted">${esc(g.desc)}.${g.kids ? "" : " Livelli 1–2: A1 · 3–5: A2 · 6–8: B1 · 9–10: B2 · 11: C1 · 12: C2."}</p>
     <div class="stagemap ${g.kids?"kids":""}">${Array.from({length:g.stages}, (_,i)=>{ const n = i+1, open = unlocked(id,n), s = p.stars[n]||0;
@@ -3465,8 +3466,8 @@ function stageResult(box, id, n, res){
 }
 function runFree(main, id){
   const g = GAMES[id];
-  if(g.kids){ main.innerHTML = `<a class="btn ghost sm" href="#giochi">${icon("back")} Giochi</a><div id="game" style="margin-top:14px;position:relative"></div>`; storyGame($("#game"), {kids:true}); return; }
-  main.innerHTML = `<a class="btn ghost sm" href="#giochi">${icon("back")} Giochi</a>
+  if(g.kids){ main.innerHTML = `<a class="btn ghost sm" href="#giochi-bambini">${icon("back")} Giochi</a><div id="game" style="margin-top:14px;position:relative"></div>`; storyGame($("#game"), {kids:true}); return; }
+  main.innerHTML = `<a class="btn ghost sm" href="#giochi-adulti">${icon("back")} Giochi</a>
     <h1 style="margin-top:16px">Storia a bivi</h1><p class="muted">Una storia sempre diversa (mistero, avventura, fantascienza…) in cui scegli tu cosa succede. Scegli la difficoltà:</p>
     <div class="row">${LEVELS.map(lv=>`<button class="chip ${lv===S().level?"on":""}" data-l="${lv}">${lv}</button>`).join("")}</div>
     <div id="game" style="margin-top:14px;position:relative"></div>`;
@@ -3474,7 +3475,7 @@ function runFree(main, id){
 }
 function renderAlbum(main){
   const have = kidStore().stickers || [];
-  main.innerHTML = `<a class="btn ghost sm" href="#giochi">${icon("back")} Giochi</a>
+  main.innerHTML = `<a class="btn ghost sm" href="#giochi-bambini">${icon("back")} Giochi</a>
     <h1 style="margin-top:16px">Album degli adesivi</h1><p class="muted">Ogni livello superato per la prima volta in un gioco per bambini regala un adesivo. Ne hai ${have.length} su ${STICKERS.length}!</p>
     <div class="album">${STICKERS.map(s=>`<div class="slot ${have.includes(s)?"got":""}">${have.includes(s) ? s : "?"}</div>`).join("")}</div>`;
 }
@@ -3555,7 +3556,7 @@ function choosePin(){
 
 /* ---- Missione del giorno ---- */
 const MISSIONS = {
-  gioco:{t:"Supera un livello in un gioco", e:"🎮", go:"#giochi", need:1},
+  gioco:{t:"Supera un livello in un gioco", e:"🎮", go:"#giochi-bambini", need:1},
   canzone:{t:"Ascolta una canzoncina fino alla fine", e:"🎵", go:"#bambini-canzoni", need:1},
   storia:{t:"Ascolta una storia fino alla fine", e:"📖", go:"#bambini-storie", need:1},
   parole:{t:"Ascolta 5 parole del vocabolario", e:"🔤", go:"#bambini-voc", need:5},
@@ -3616,7 +3617,7 @@ function storyLibrary(){ return (state.kidsStories||{})[S().lang] || []; }
 
 /* ---- Pagine ---- */
 const KID_TILES = [
-  ["giochi","🎮","Giochi","#giochi"],["voc","🖼️","Le prime parole","#bambini-voc"],["abc","🔤","L'alfabeto","#bambini-abc"],
+  ["giochi","🎮","Giochi","#giochi-bambini"],["voc","🖼️","Le prime parole","#bambini-voc"],["abc","🔤","L'alfabeto","#bambini-abc"],
   ["canzoni","🎵","Canzoncine","#bambini-canzoni"],["storie","📖","Storie","#bambini-storie"],["amico","🐧","Parla con Pip","#bambini-amico"],["album","📒","Album","#giochi-album"]
 ];
 RENDER.bambini = main => {
@@ -4213,7 +4214,7 @@ RENDER.ripasso = main => {
   // Schede
   const due = shuffle(dueWords());
   if(!due.length){
-    box.innerHTML = `<div class="panel stack" style="align-items:flex-start"><h2>Niente da ripassare oggi</h2><p class="muted">Le parole tornano qui quando è il momento giusto per ripassarle: dopo 1, 3, 7, 14 e 30 giorni.</p><div class="row"><a class="btn" href="#giochi">Fai un gioco</a><a class="btn ghost" href="#lezioni">Nuova lezione</a></div></div>`;
+    box.innerHTML = `<div class="panel stack" style="align-items:flex-start"><h2>Niente da ripassare oggi</h2><p class="muted">Le parole tornano qui quando è il momento giusto per ripassarle: dopo 1, 3, 7, 14 e 30 giorni.</p><div class="row"><a class="btn" href="#giochi-adulti">Fai un gioco</a><a class="btn ghost" href="#lezioni">Nuova lezione</a></div></div>`;
     return;
   }
   let i = 0, known = 0;
