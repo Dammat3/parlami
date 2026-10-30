@@ -475,7 +475,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.10.1";
+const APP_VERSION = "0.11";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -999,6 +999,99 @@ function unitKey(u){ return `${S().lang}:${u.level || S().level}:${u.id}`; }
 function unitHash(u){ return `lezioni-${u.level}-${u.id}`; }
 function doneCount(level){ return unitsOf(level).filter(u=>state.progress[unitKey(u)]?.done).length; }
 
+/* ============ CHIAVI DI FAMIGLIA (cifrate con una password) ============ */
+const b64e = buf => { let s = ""; new Uint8Array(buf).forEach(b => s += String.fromCharCode(b)); return btoa(s); };
+const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function famKey(pass, salt){
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:600000, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["encrypt","decrypt"]);
+}
+async function famEncrypt(obj, pass){
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:"AES-GCM", iv}, await famKey(pass, salt), new TextEncoder().encode(JSON.stringify(obj)));
+  return {app:"parlami", v:1, created:Date.now(), salt:b64e(salt), iv:b64e(iv), data:b64e(ct)};
+}
+async function famDecrypt(file, pass){
+  try{
+    const pt = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64d(file.iv)}, await famKey(pass, b64d(file.salt)), b64d(file.data));
+    return JSON.parse(new TextDecoder().decode(pt));
+  }catch(e){ throw new Error("Password sbagliata."); }
+}
+let famFileCache;
+async function fetchFamily(){
+  if(famFileCache !== undefined) return famFileCache;
+  try{
+    const r = await fetch("famiglia.json?t=" + Date.now(), {cache:"no-store"});
+    famFileCache = r.ok ? await r.json() : null;
+    if(famFileCache && famFileCache.app !== "parlami") famFileCache = null;
+  }catch(e){ famFileCache = null; }
+  return famFileCache;
+}
+function applyFamily(list, file){
+  const local = (S().providers || []).filter(p => p.preset === "freellmapi");
+  state.settings.providers = [...list.map(p => ({...p, id:uid()})), ...local.map(p => ({...p, on: !IS_IOS && !/Android/i.test(navigator.userAgent) && p.on}))];
+  state.settings.familyStamp = file.created; state.settings.connected = true;
+  Object.keys(cooldown).forEach(k => delete cooldown[k]);
+  save();
+}
+/* Finestra per scrivere una password */
+function askPassword({title, text, confirm2=false, button="Conferma"}){
+  return new Promise(resolve=>{
+    const ov = document.createElement("div"); ov.className = "overlay"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true");
+    ov.innerHTML = `<div class="panel stack pinbox" style="width:min(420px,100%)"><h2 style="margin:0">${esc(title)}</h2><p class="small" style="margin:0">${text}</p>
+      <input class="input" id="fp1" type="password" autocomplete="new-password" placeholder="Password di famiglia">
+      ${confirm2 ? `<input class="input" id="fp2" type="password" autocomplete="new-password" placeholder="Ripeti la password">` : ""}
+      <label class="row small"><input type="checkbox" id="fshow"> Mostra la password</label>
+      <p class="status-bad" id="fm" style="margin:0"></p>
+      <div class="row"><button class="btn" id="fok">${esc(button)}</button><button class="btn ghost" id="fno">Annulla</button></div></div>`;
+    document.body.appendChild(ov); $("#fp1", ov).focus();
+    $("#fshow", ov).onchange = e => $$("input[type=password], input.pw", ov).forEach(i => { i.type = e.target.checked ? "text" : "password"; i.classList.add("pw"); });
+    const ok = () => { const a = $("#fp1", ov).value;
+      if(confirm2){ if(a.length < 10){ $("#fm", ov).textContent = "Usa almeno 10 caratteri: per esempio tre o quattro parole di fila."; return; } if(a !== $("#fp2", ov).value){ $("#fm", ov).textContent = "Le due password sono diverse."; return; } }
+      if(!a) return; ov.remove(); resolve(a); };
+    $("#fok", ov).onclick = ok; $$("input", ov).forEach(i => i.addEventListener("keydown", e => { if(e.key === "Enter") ok(); }));
+    $("#fno", ov).onclick = () => { ov.remove(); resolve(null); };
+  });
+}
+async function createFamilyFile(){
+  const list = (S().providers || []).filter(p => p.preset !== "freellmapi" && p.key);
+  if(!list.length){ toast("Prima inserisci almeno una chiave di un provider"); return; }
+  const pass = await askPassword({title:"Crea le chiavi di famiglia", confirm2:true, button:"Crea il file",
+    text:"Scegli una password di famiglia lunga, per esempio tre o quattro parole di fila. La userete una sola volta su ogni dispositivo. Non scriverla in nessun file su GitHub."});
+  if(!pass) return;
+  toast("Cifro le chiavi…");
+  const file = await famEncrypt(list.map(p => ({preset:p.preset, name:p.name, base:p.base, key:p.key, model:p.model||"", manual:!!p.manual, on:p.on !== false})), pass);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(file)], {type:"application/json"}));
+  a.download = "famiglia.json"; a.click();
+  state.settings.familyStamp = file.created; save();
+  toast("File famiglia.json scaricato: caricalo su GitHub");
+}
+async function unlockFamily(){
+  famFileCache = undefined;
+  const file = await fetchFamily();
+  if(!file){ toast("Non trovo il file famiglia.json su GitHub"); return false; }
+  for(;;){
+    const pass = await askPassword({title:"Sblocca le chiavi di famiglia", text:"Scrivi la password di famiglia. Serve solo questa volta su questo dispositivo.", button:"Sblocca"});
+    if(!pass) return false;
+    try{ const list = await famDecrypt(file, pass); applyFamily(list, file); toast("🔑 Chiavi inserite!"); return true; }
+    catch(e){ toast(e.message); }
+  }
+}
+/* Riquadro in Oggi: compare se ci sono chiavi di famiglia nuove da sbloccare */
+async function familyBanner(){
+  if(kidsModeOn()) return;
+  const file = await fetchFamily(), el = $("#fambanner");
+  if(!file || !el) return;
+  const hasKeys = usableProviders().some(p => p.preset !== "freellmapi");
+  const newer = !state.settings.familyStamp || file.created > state.settings.familyStamp;
+  if(hasKeys && !newer) return;
+  el.innerHTML = `<section class="panel stack" style="border:2px solid var(--sun)"><h2 style="margin:0">🔑 ${hasKeys ? "Ci sono chiavi di famiglia aggiornate" : "Sblocca le chiavi di famiglia"}</h2>
+    <p style="margin:0">${hasKeys ? "Qualcuno ha aggiornato le chiavi dell'IA. Scrivi la password di famiglia per usarle anche qui." : "Le chiavi dell'IA sono già pronte: scrivi la password di famiglia e Parlami funziona subito, senza configurare niente."}</p>
+    <div><button class="btn sun" id="famgo">Sblocca</button></div></section>`;
+  $("#famgo").onclick = async () => { if(await unlockFamily()) route(); };
+}
+
 RENDER.home = main => {
   const p = PERSONAS[S().persona], goal = state.dailyGoal, done = Math.min(todayXp(), goal);
   const pct = Math.round(done/goal*100), nu = nextUnit(), due = dueWords().length;
@@ -1008,6 +1101,7 @@ RENDER.home = main => {
     : `Oggi ti mancano ${goal-done} XP. Ti propongo di cominciare da “${nu.title}”.`;
   main.innerHTML = `
   <div class="stack">
+    <div id="fambanner"></div>
     ${needsSetup()}
     <section class="hero">
       ${avatarSVG(S().persona, 150)}
@@ -1029,6 +1123,7 @@ RENDER.home = main => {
     <p class="muted small">Stai studiando ${L().name} · livello ${levelLabel(S().level)}. Puoi cambiarli nelle Impostazioni o in Lezioni.</p>
   </div>`;
   $$("[data-go]", main).forEach(b=>b.onclick=()=>location.hash=b.dataset.go);
+  familyBanner();
 };
 
 /* ============ IMPOSTAZIONI ============ */
@@ -1064,6 +1159,11 @@ RENDER.impostazioni = main => {
       <div id="provs" class="stack"></div>
       <div class="row"><select class="input" id="addp" style="max-width:320px">${Object.entries(PRESETS).filter(([k])=>k==="custom" || !s.providers.some(p=>p.preset===k)).map(([k,v])=>`<option value="${k}">${esc(v.name)}</option>`).join("")}</select><button class="btn ghost" id="addbtn">Aggiungi provider</button></div>
       <div class="row"><button class="btn" id="s-test">Prova tutti</button><span id="s-test-out" class="small"></span></div>
+    </section>
+    <section class="panel stack">
+      <h2>Chiavi di famiglia</h2>
+      <p class="muted" style="margin:0">Per non inserire le chiavi a mano su ogni dispositivo: crea un file con le chiavi <b>cifrate</b> da una password di famiglia e caricalo su GitHub con gli altri file. Sugli altri dispositivi basterà scrivere la password una volta.</p>
+      <div class="row"><button class="btn ghost" id="famcreate">🔒 Crea il file delle chiavi</button><button class="btn ghost" id="famuse">🔑 Usa le chiavi di famiglia</button></div>
     </section>
     <section class="panel stack">
       <h2>Bambini</h2>
@@ -1109,6 +1209,8 @@ RENDER.impostazioni = main => {
     set("connected", ok > 0);
     out.innerHTML = ok ? `<span class="status-ok">${ok} provider su ${list.length} funzionano da questo dispositivo.</span>` : `<span class="status-bad">Nessun provider risponde da questo dispositivo. Guarda il messaggio sotto ciascuno.</span>`;
   };
+  $("#famcreate").onclick = createFamilyFile;
+  $("#famuse").onclick = async () => { if(await unlockFamily()) route(); };
   const inst = $("#s-install");
   if(inst) inst.onclick = async () => { deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; route(); };
   $("#s-export").onclick = () => {
