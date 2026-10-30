@@ -400,6 +400,10 @@ body.kidsmode .brand-dot{background:var(--sun)}
 .phr{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
 .phr .ptxt{font-size:1.1rem}
 
+.cklog{display:flex;flex-direction:column;gap:4px;max-height:50vh;overflow-y:auto}
+.ckrow{font-size:.92rem;padding:4px 8px;border-radius:8px;background:var(--surface-2)}
+.ckrow.ok{background:var(--ok-bg)}.ckrow.bad{background:var(--bad-bg);color:var(--bad)}
+
 /* Exercise */
 .progress{height:12px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
 .progress > i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
@@ -496,7 +500,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.12.1";
+const APP_VERSION = "0.12.3";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -1372,6 +1376,19 @@ RENDER.lezioni = main => {
 };
 
 /* ============ TEST DI LIVELLO ============ */
+/* Un secondo passaggio dell'IA controlla che ogni domanda abbia UNA sola risposta giusta, e che sia quella indicata */
+async function verifyMCQ(qs, textOf){
+  if(!qs.length) return qs;
+  try{
+    const r = await ask(`Sei un insegnante madrelingua di ${L().name}, molto attento ai dettagli. ${JSON_ONLY}`,
+`Controlla queste domande a scelta multipla:
+${JSON.stringify(qs.map((q,i)=>({i, domanda:textOf(q), opzioni:q.options, giusta:+q.answer})))}
+Per ognuna verifica che ESATTAMENTE una opzione sia corretta. Se l'indice "giusta" è sbagliato, scrivi quello giusto. Se nessuna opzione è giusta, se ce n'è più di una o se la domanda non ha senso, scrivi -1.
+JSON con tutte le domande: {"check":[{"i":0,"giusta":0}]}`, {temperature:0, maxTokens:1500}, r => Array.isArray(r.check));
+    const map = new Map(r.check.filter(c=>c && Number.isInteger(+c.i)).map(c => [+c.i, +c.giusta]));
+    return qs.filter((q,i) => { const g = map.has(i) ? map.get(i) : +q.answer; if(!(g >= 0 && g < q.options.length)) return false; q.answer = g; return true; });
+  }catch(e){ return qs; }
+}
 async function runPlacement(main){
   main.innerHTML = `<button class="btn ghost sm" id="back">${icon("back")} Esami</button>
     <h1 style="margin-top:18px">Test di livello</h1>
@@ -1381,12 +1398,15 @@ async function runPlacement(main){
   let qs;
   try{
     const r = await ask(`Sei un esaminatore esperto di certificazioni di ${L().name} secondo il QCER. ${JSON_ONLY}`,
-      `Crea un test di piazzamento per uno studente italiano: 18 domande a scelta multipla, esattamente 3 per ciascun livello A1, A2, B1, B2, C1, C2, in ordine di difficoltà crescente.
-Mescola grammatica, lessico e comprensione di frasi brevi. La consegna è in italiano, le frasi e le opzioni sono in ${L().name}. Ogni domanda ha 4 opzioni e una sola risposta giusta.
-JSON: {"questions":[{"level":"A1","question":"consegna in italiano con la frase in ${L().name}","options":["...","...","...","..."],"answer":indice_da_0}]}`,
-      {temperature:0.5, maxTokens:3500}, r=>Array.isArray(r.questions) && r.questions.length>=12);
-    qs = r.questions.filter(q => LEVELS.includes(q.level) && Array.isArray(q.options) && q.options.length>=2 && Number.isInteger(+q.answer));
-    if(qs.length < 12) throw new Error("Il test generato non è valido. Riprova.");
+      `Crea un test di piazzamento di ${L().name} per uno studente italiano: 18 domande, esattamente 3 per ciascun livello A1, A2, B1, B2, C1, C2, in ordine di difficoltà crescente.
+Ogni domanda è una FRASE IN ${L().name.toUpperCase()} con uno spazio ___ da completare, e 4 opzioni IN ${L().name.toUpperCase()}: una sola è corretta, le altre sono sicuramente sbagliate. Mescola grammatica e lessico del livello. Non fare domande di traduzione.${S().lang==="en" ? `
+Esempio: {"level":"A1","sentence":"She ___ a teacher.","options":["is","are","am","be"],"answer":0}` : ""}
+JSON: {"questions":[{"level":"A1","sentence":"frase con ___","options":["...","...","...","..."],"answer":indice_da_0}]}`,
+      {temperature:0.5, maxTokens:3000}, r=>Array.isArray(r.questions) && r.questions.filter(q=>q && String(q.sentence||"").includes("___") && Array.isArray(q.options) && !soundsItalian(q.sentence) && !soundsItalian(q.options.join(" "))).length>=12);
+    qs = r.questions.filter(q => q && LEVELS.includes(q.level) && String(q.sentence||"").includes("___") && !soundsItalian(q.sentence) && Array.isArray(q.options) && q.options.length>=3 && new Set(q.options.map(bare)).size === q.options.length && Number.isInteger(+q.answer) && +q.answer < q.options.length);
+    const pt = $("#pt"); if(pt) pt.innerHTML = loadingHTML("Controllo che ogni domanda abbia una sola risposta giusta…");
+    qs = await verifyMCQ(qs, q => q.sentence);
+    if(qs.length < 12) throw new Error("Le domande preparate dall'IA non erano corrette. Premi Riprova.");
     qs.sort((a,b)=>LEVELS.indexOf(a.level)-LEVELS.indexOf(b.level));
   }catch(e){
     if(!$("#pt")) return;
@@ -1398,7 +1418,7 @@ JSON: {"questions":[{"level":"A1","question":"consegna in italiano con la frase 
     if(i >= qs.length) return result();
     const q = qs[i];
     box.innerHTML = `<div class="row" style="flex-wrap:nowrap;margin-bottom:14px"><div class="progress" style="flex:1"><i style="width:${i/qs.length*100}%"></i></div><span class="small muted">${i+1}/${qs.length}</span></div>
-      <section class="panel"><div class="ex-q">${esc(q.question)}</div><div class="options">${q.options.map((o,k)=>`<button class="opt" data-k="${k}">${esc(o)}</button>`).join("")}<button class="opt" data-k="-1" style="font-weight:400">Non lo so</button></div></section>`;
+      <section class="panel"><p class="muted small" style="margin:0 0 4px">Completa la frase</p><div class="ex-q">${esc(q.sentence || q.question || "")}</div><div class="options">${q.options.map((o,k)=>`<button class="opt" data-k="${k}">${esc(o)}</button>`).join("")}<button class="opt" data-k="-1" style="font-weight:400">Non lo so</button></div></section>`;
     $$(".opt", box).forEach(b=>b.onclick=()=>{ answers.push(+b.dataset.k === +q.answer); i++; show(); });
   };
   const result = () => {
@@ -1447,10 +1467,14 @@ function cleanExercises(list){
 }
 function goodVocab(v){ return v && v.word && v.translation && looksItalian(v.translation) && bare(v.word) !== bare(v.translation) && (!v.example || !soundsItalian(v.example)); }
 function lessonOK(l){
-  return l && Array.isArray(l.vocab) && l.vocab.filter(goodVocab).length >= 6 && Array.isArray(l.exercises) && l.exercises.length >= 6
-    && (!l.grammar || (l.grammar.examples||[]).filter(x=>x.target && !soundsItalian(x.target)).length >= 2);
+  return l && Array.isArray(l.vocab) && l.vocab.filter(goodVocab).length >= 6 && Array.isArray(l.exercises) && l.exercises.length >= 6;
 }
-async function getLesson(u, force=false){
+function lessonProblem(l){
+  if(!l || !Array.isArray(l.vocab) || l.vocab.filter(goodVocab).length < 6) return "le parole";
+  if(!Array.isArray(l.exercises) || l.exercises.length < 6) return "gli esercizi";
+  return "";
+}
+async function getLesson(u, force=false, attempt=0){
   const key = unitKey(u);
   if(!force && state.lessons[key] && lessonOK(state.lessons[key])) return state.lessons[key];
   const lv = u.level || S().level, code = S().lang, LN = L().name;
@@ -1485,12 +1509,40 @@ JSON: {"exercises":[...]}`,
     title: th.title || u.title, intro: th.intro || "",
     vocab: th.vocab.map(v => ({word:String(v?.[code] ?? v?.word ?? "").trim(), translation:String(v?.it ?? v?.translation ?? "").trim(), example:String(v?.ex ?? v?.example ?? "").trim(), example_it:String(v?.ex_it ?? "").trim()})).filter(goodVocab),
     grammar: th.grammar ? {title: th.grammar.title || "", explanation: th.grammar.explanation || "",
-      examples: (th.grammar.examples||[]).map(x => ({target:String(x?.[code] ?? x?.target ?? "").trim(), it:String(x?.it ?? "").trim()})).filter(x => x.target && !soundsItalian(x.target))} : null,
+      examples: (Array.isArray(th.grammar.examples) ? th.grammar.examples : []).map(x => typeof x === "string" ? {target:x.trim(), it:""} : ({target:String(x?.[code] ?? x?.target ?? x?.example ?? x?.sentence ?? x?.frase ?? x?.text ?? "").trim(), it:String(x?.it ?? x?.translation ?? x?.traduzione ?? "").trim()})).filter(x => x.target && !soundsItalian(x.target))} : null,
     exercises: cleanExercises(ex.exercises)
   };
-  if(!lessonOK(l)) throw new Error("La lezione preparata dall'IA non era corretta. Premi Riprova: di solito al secondo tentativo va bene.");
+  if(!lessonOK(l)){
+    if(attempt < 1) return getLesson(u, true, attempt + 1);
+    throw new Error(`L'IA ha sbagliato ${lessonProblem(l) || "la lezione"} due volte di fila. Premi Riprova tra qualche secondo.`);
+  }
+  if(S().reviewLessons !== false){ try{ await reviewLesson(l, lv); }catch(e){} }
   state.lessons[key] = l; save();
   return l;
+}
+/* Correttore di bozze: un secondo passaggio dell'IA ricontrolla lingua, traduzioni e risposte degli esercizi */
+async function reviewLesson(l, lv){
+  const code = S().lang, LN = L().name;
+  const r = await ask(`Sei un revisore madrelingua di ${LN} che parla perfettamente italiano. Controlli lezioni per studenti italiani con grande attenzione. ${JSON_ONLY}`,
+`Lezione di ${LN}, livello ${lv}:
+${JSON.stringify({vocab:l.vocab.map((v,i)=>({i, [code]:v.word, it:v.translation, ex:v.example})), grammar:(l.grammar?.examples||[]).map((x,i)=>({i, [code]:x.target, it:x.it})), exercises:l.exercises.map((e,i)=>({i, ...e}))})}
+Controlla ogni elemento:
+1) parole, frasi d'esempio e frasi degli esercizi devono essere in ${LN} corretto e naturale (mai in italiano);
+2) le traduzioni italiane devono essere giuste e scritte in buon italiano;
+3) ogni esercizio deve avere UNA sola risposta corretta, ed è quella indicata; le opzioni sbagliate devono essere davvero sbagliate.
+Rispondi SOLO con le correzioni necessarie, liste vuote se è tutto giusto:
+{"vocab":[{"i":0,"${code}":"...","it":"...","ex":"..."}],"grammar":[{"i":0,"${code}":"...","it":"..."}],"exercises":[{"i":0,"fix":{"type":"...","...":"esercizio corretto completo"}},{"i":1,"remove":true}],"notes":"commento breve in italiano"}`,
+    {temperature:0.1, maxTokens:1800}, r => r && typeof r === "object" && !Array.isArray(r));
+  let changes = 0;
+  (r.vocab||[]).forEach(c => { const v = l.vocab[c?.i]; if(!v) return; const w = c[code] ?? c.word; if(w) v.word = String(w); if(c.it && looksItalian(c.it)) v.translation = String(c.it); if(c.ex && !soundsItalian(c.ex)) v.example = String(c.ex); changes++; });
+  (r.grammar||[]).forEach(c => { const g = l.grammar?.examples?.[c?.i]; if(!g) return; const t = c[code] ?? c.target; if(t && !soundsItalian(t)) g.target = String(t); if(c.it) g.it = String(c.it); changes++; });
+  const rm = new Set();
+  (r.exercises||[]).forEach(c => { if(!c || !(c.i in l.exercises)) return; if(c.remove) rm.add(c.i); else if(c.fix && cleanExercises([c.fix]).length) l.exercises[c.i] = c.fix; else return; changes++; });
+  const ex = cleanExercises(l.exercises.filter((_,i)=>!rm.has(i)));
+  if(ex.length >= 5) l.exercises = ex;
+  l.vocab = l.vocab.filter(goodVocab);
+  l.reviewed = true; l.reviewChanges = changes; l.reviewNotes = String(r.notes||"");
+  return changes;
 }
 
 function runLesson(main, u){
@@ -1515,7 +1567,8 @@ function showTheory(main, u, l){
   const g = l.grammar || {};
   main.innerHTML = `
   <div class="row" style="justify-content:space-between"><button class="btn ghost sm" id="back">${icon("back")} Lezioni</button>
-  <button class="btn ghost sm" id="regen" title="Crea una versione nuova di questa lezione">Nuova versione</button></div>
+  <span class="row" style="gap:8px"><button class="btn ghost sm" id="rev" title="Fai ricontrollare la lezione da un secondo passaggio dell'IA">🔍 Ricontrolla</button><button class="btn ghost sm" id="regen" title="Crea una versione nuova di questa lezione">Nuova versione</button></span></div>
+  ${l.reviewed ? `<p class="small muted" style="margin:8px 0 0">✓ Ricontrollata${l.reviewChanges ? ` (${l.reviewChanges} correzioni)` : ", nessun errore trovato"}${l.reviewNotes ? ` · ${esc(l.reviewNotes)}` : ""}</p>` : ""}
   <h1 style="margin-top:18px">${esc(l.title || u.title)}</h1>
   <p class="muted">${esc(l.intro||"")}</p>
   <div class="stack">
@@ -1529,6 +1582,9 @@ function showTheory(main, u, l){
   </div>`;
   $("#back").onclick = () => location.hash = u.level ? "lezioni-"+u.level : "lezioni";
   $("#regen").onclick = () => { delete state.lessons[unitKey(u)]; save(); runLesson(main, u); };
+  $("#rev").onclick = async () => { const b = $("#rev"); b.disabled = true; b.innerHTML = `<span class="spinner"></span> Ricontrollo…`;
+    try{ const n = await reviewLesson(l, u.level || S().level); state.lessons[unitKey(u)] = l; save(); toast(n ? `${n} correzioni fatte` : "Nessun errore trovato"); showTheory(main, u, l); }
+    catch(e){ b.disabled = false; b.textContent = "🔍 Ricontrolla"; toast(e.message); } };
   $$("[data-say]", main).forEach(b=>b.onclick=()=>Voice.speak(l.vocab[b.dataset.say].word));
   $$("[data-ex]", main).forEach(b=>b.onclick=()=>Voice.speak(g.examples[b.dataset.ex].target));
   $("#start").onclick = () => runExercises(main, u, l);
@@ -1781,7 +1837,7 @@ async function tutorTurn(userText, voice){
   if(!first) Chat.turns.push({role:"u", text:userText, voice});
   let out;
   for(let a=0;a<2;a++){
-    try{ out = await llm(chatMessages(content), {temperature:0.8, maxTokens:700}); if(out && out.reply) break; }
+    try{ out = await llm(chatMessages(content), {temperature:0.8, maxTokens:700}); if(out && out.reply && (a === 1 || !soundsItalian(out.reply))) break; }
     catch(e){ if(e.network || a===1) throw e; }
   }
   if(!out || !out.reply) throw new Error("L'IA non ha risposto nel formato previsto.");
@@ -1878,7 +1934,7 @@ JSON: {"score":0-100,"goals":[true o false per ogni obiettivo],"feedback":"giudi
     }catch(e){ status.innerHTML = `<span class="status-bad">${esc(e.message)}</span>`; Chat.busy = false; return; }
     Chat.busy = false; status.innerHTML = "";
   };
-  const busy = on => { Chat.busy = on; $("#send").disabled = on; $("#mic").disabled = on; status.innerHTML = on ? `<span class="spinner"></span> ${esc(p.name)} sta scrivendo…` : ""; };
+  const busy = on => { Chat.busy = on; if(!$("#send")) return; $("#send").disabled = on; $("#mic").disabled = on; status.innerHTML = on ? `<span class="spinner"></span> ${esc(p.name)} sta scrivendo…` : ""; };
   const turn = async (text, voice) => {
     if(Chat.busy) return;
     busy(true); draw();
@@ -1927,10 +1983,10 @@ const FRASARIO = [
   {id:"aeroporto", e:"✈️", t:"In aeroporto", p:[["Dov'è il banco del check-in?","Where is the check-in desk?"],["Vorrei un posto vicino al finestrino","I'd like a window seat, please"],["Quanti bagagli posso portare?","How many bags can I take?"],["Da quale gate parte il volo?","Which gate does the flight leave from?"],["Il volo è in ritardo?","Is the flight delayed?"],["Ho perso la coincidenza","I've missed my connection"],["La mia valigia non è arrivata","My suitcase hasn't arrived"],["Dove posso prendere un taxi?","Where can I get a taxi?"]]},
   {id:"albergo", e:"🏨", t:"In albergo", p:[["Ho una prenotazione a nome …","I have a reservation under the name …"],["A che ora è la colazione?","What time is breakfast?"],["Qual è la password del wi-fi?","What's the Wi-Fi password?"],["Posso lasciare qui la valigia?","Can I leave my suitcase here?"],["Il riscaldamento non funziona","The heating isn't working"],["Potrei avere un altro asciugamano?","Could I have another towel?"],["A che ora devo lasciare la camera?","What time is check-out?"],["Può chiamarmi un taxi?","Could you call me a taxi?"]]},
   {id:"ristorante", e:"🍽️", t:"Al ristorante", p:[["Un tavolo per due, per favore","A table for two, please"],["Possiamo vedere il menù?","Can we see the menu?"],["Cosa mi consiglia?","What do you recommend?"],["Sono allergico a …","I'm allergic to …"],["Senza ghiaccio, per favore","No ice, please"],["Il conto, per favore","The bill, please"],["Posso pagare con la carta?","Can I pay by card?"],["Era tutto buonissimo","Everything was delicious"]]},
-  {id:"trasporti", e:"🚆", t:"Trasporti", p:[["Un biglietto per …, per favore","A ticket to …, please"],["Solo andata o andata e ritorno?","Single or return?"],["A che ora parte il prossimo treno?","What time does the next train leave?"],["Da quale binario parte?","Which platform does it leave from?"],["Questo autobus va in centro?","Does this bus go to the city centre?"],["Dove devo scendere?","Where should I get off?"],["Quanto costa la corsa?","How much is the fare?"],["Mi può lasciare qui, per favore","Could you drop me here, please?"]]},
+  {id:"trasporti", e:"🚆", t:"Trasporti", p:[["Un biglietto per …, per favore","A ticket to …, please"],["Solo andata o andata e ritorno?","Single or return?"],["A che ora parte il prossimo treno?","What time does the next train leave?"],["Da quale binario parte?","Which platform does it leave from?"],["Questo autobus va in centro?","Does this bus go to the city centre?"],["Dove devo scendere?","Where should I get off?"],["Quanto costa la corsa?","How much is the fare?"],["Mi può lasciare qui, per favore?","Could you drop me here, please?"]]},
   {id:"indicazioni", e:"🗺️", t:"Chiedere indicazioni", p:[["Come arrivo a …?","How do I get to …?"],["È lontano?","Is it far?"],["Si può andare a piedi?","Can I walk there?"],["Sempre dritto","Straight ahead"],["Giri a destra / a sinistra","Turn right / left"],["Al semaforo","At the traffic lights"],["Mi può indicare sulla mappa?","Can you show me on the map?"],["Mi sono perso","I'm lost"]]},
   {id:"negozi", e:"🛍️", t:"Negozi", p:[["Quanto costa?","How much is it?"],["Sto solo guardando, grazie","I'm just looking, thanks"],["Ce l'ha in una taglia più grande?","Do you have it in a bigger size?"],["Posso provarlo?","Can I try it on?"],["Dove sono i camerini?","Where are the fitting rooms?"],["Lo prendo","I'll take it"],["Posso avere lo scontrino?","Can I have the receipt?"],["Posso cambiarlo?","Can I exchange it?"]]},
-  {id:"salute", e:"💊", t:"Salute", p:[["Non mi sento bene","I don't feel well"],["Mi fa male qui","It hurts here"],["Ho la febbre","I have a temperature"],["Dov'è la farmacia più vicina?","Where is the nearest pharmacy?"],["Ho bisogno di un medico","I need a doctor"],["Sono allergico alla penicillina","I'm allergic to penicillin"],["Prendo queste medicine","I take these medicines"],["Ogni quanto devo prenderlo?","How often should I take it?"]]},
+  {id:"salute", e:"💊", t:"Salute", p:[["Non mi sento bene","I don't feel well"],["Mi fa male qui","It hurts here"],["Ho la febbre","I have a temperature"],["Dov'è la farmacia più vicina?","Where is the nearest pharmacy?"],["Ho bisogno di un medico","I need a doctor"],["Sono allergico alla penicillina","I'm allergic to penicillin"],["Prendo queste medicine","I'm taking these medicines"],["Ogni quanto devo prenderlo?","How often should I take it?"]]},
   {id:"emergenze", e:"🆘", t:"Emergenze", p:[["Aiuto!","Help!"],["Chiami un'ambulanza!","Call an ambulance!"],["Chiami la polizia!","Call the police!"],["Mi hanno rubato il portafoglio","My wallet has been stolen"],["Ho perso il passaporto","I've lost my passport"],["C'è stato un incidente","There's been an accident"],["Dov'è l'ospedale?","Where is the hospital?"],["Ho bisogno di aiuto","I need help"]]}
 ];
 async function phrasebook(){
@@ -1949,7 +2005,8 @@ const TOOLS = [
   ["testo","📄","Studia un testo","Incolla un testo e Parlami ne ricava parole, spiegazioni ed esercizi"],
   ["dizionario","📚","Dizionario rapido","Cerca una parola in italiano o in lingua straniera, con pronuncia ed esempi"],
   ["ascolto","🎧","Ascolto in sottofondo","Mini-podcast al tuo livello da ascoltare mentre fai altro"],
-  ["frasario","🧳","Frasario da viaggio","Frasi pronte per aeroporto, albergo, ristorante ed emergenze"]
+  ["frasario","🧳","Frasario da viaggio","Frasi pronte per aeroporto, albergo, ristorante ed emergenze"],
+  ["controllo","🔍","Prepara e controlla tutto","Crea in anticipo tutte le lezioni e le fa ricontrollare, con un resoconto finale"]
 ];
 RENDER.strumenti = main => {
   const sub = location.hash.slice(1).split("-")[1];
@@ -1957,10 +2014,66 @@ RENDER.strumenti = main => {
   if(sub === "dizionario") return toolDict(main);
   if(sub === "ascolto") return toolRadio(main);
   if(sub === "frasario") return toolPhrases(main);
+  if(sub === "controllo") return toolCheck(main);
   main.innerHTML = `<h1>Strumenti</h1>${needsSetup()}
     <div class="grid2" style="margin-top:16px">${TOOLS.map(([id,e,t,d])=>`<a class="action" href="#strumenti-${id}" style="text-decoration:none"><span class="ic"><span style="font-size:1.7rem">${e}</span></span><span><h3>${t}</h3><span class="muted small">${d}</span></span></a>`).join("")}</div>`;
 };
 const toolBack = `<a class="btn ghost sm" href="#strumenti">${icon("back")} Strumenti</a>`;
+
+/* ---- Prepara e controlla tutto ---- */
+const Check = {running:false, log:[]};
+function toolCheck(main){
+  const levels = LEVELS, total = levels.length * 10;
+  const count = () => { let ok = 0, rev = 0; levels.forEach(lv => unitsOf(lv).forEach(u => { const l = state.lessons[unitKey(u)]; if(l && lessonOK(l)){ ok++; if(l.reviewed) rev++; } })); return {ok, rev}; };
+  const draw = () => {
+    const c = count();
+    main.innerHTML = `${toolBack}<h1 style="margin-top:16px">Prepara e controlla tutto</h1>
+      <p class="muted">Crea in anticipo tutte le lezioni di ${L().name.toLowerCase()} (6 livelli × 10 lezioni) e le fa ricontrollare da un secondo passaggio dell'IA, che corregge frasi non in ${L().name.toLowerCase()}, errori e traduzioni sbagliate. Le lezioni già pronte e ricontrollate vengono saltate, quindi puoi interrompere e riprendere quando vuoi. Dopo, le lezioni partono subito.</p>
+      ${needsSetup()}
+      <section class="panel stack">
+        <div class="row" style="justify-content:space-between"><b>${c.rev} lezioni ricontrollate su ${total}</b><span class="small muted">${c.ok} pronte</span></div>
+        <div class="progress"><i style="width:${c.rev/total*100}%"></i></div>
+        <label class="row small"><input type="checkbox" id="ckp" checked> Prepara anche le parole dei giochi (2 argomenti per livello)</label>
+        <label class="row small"><input type="checkbox" id="ckr" ${S().reviewLessons!==false?"checked":""}> Ricontrolla in automatico anche le lezioni nuove che apri</label>
+        <p class="small muted" style="margin:0">Ci vogliono circa 20–40 minuti, secondo la velocità dell'IA. Tieni l'app aperta e lo schermo acceso. Usa una parte della quota gratuita: se un servizio la esaurisce, l'app passa all'altro o aspetta.</p>
+        <div class="row">${Check.running ? `<button class="btn ghost" id="ckstop">⏸ Ferma</button>` : `<button class="btn sun" id="ckgo">${c.rev ? "▶ Continua" : "▶ Inizia"}</button>`}</div>
+      </section>
+      <section class="panel stack" style="margin-top:12px"><h2 style="margin:0">Resoconto</h2><div id="cklog" class="cklog">${Check.log.length ? Check.log.map(x=>`<div class="ckrow ${x.k}">${x.t}</div>`).join("") : `<p class="muted small" style="margin:0">Ancora niente.</p>`}</div></section>`;
+    $("#ckr").onchange = e => { state.settings.reviewLessons = e.target.checked; save(); };
+    const go = $("#ckgo"); if(go) go.onclick = () => run($("#ckp").checked);
+    const st = $("#ckstop"); if(st) st.onclick = () => { Check.running = false; toast("Mi fermo dopo la lezione in corso"); };
+  };
+  const log = (k, t) => { Check.log.unshift({k, t}); Check.log = Check.log.slice(0, 200); const el = $("#cklog"); if(el) el.innerHTML = Check.log.map(x=>`<div class="ckrow ${x.k}">${x.t}</div>`).join(""); };
+  const run = async (packs) => {
+    if(Check.running) return; Check.running = true; wake(true); draw();
+    let fixed = 0, failed = 0;
+    for(const lv of levels){
+      for(const u of unitsOf(lv)){
+        if(!Check.running) break;
+        const key = unitKey(u), have = state.lessons[key];
+        if(have && lessonOK(have) && have.reviewed) continue;
+        log("doing", `⏳ ${lv} · ${esc(u.title)}…`);
+        let ok = false;
+        for(let attempt = 0; attempt < 2 && !ok && Check.running; attempt++){
+          try{
+            let l = have && lessonOK(have) ? have : await getLesson(u, true);
+            if(!l.reviewed) await reviewLesson(l, lv);
+            state.lessons[key] = l; save(); ok = true; fixed += l.reviewChanges || 0;
+            Check.log.shift(); log("ok", `✅ ${lv} · ${esc(u.title)} — ${l.vocab.length} parole, ${l.exercises.length} esercizi${l.reviewChanges ? `, ${l.reviewChanges} correzioni` : ", nessun errore"}`);
+          }catch(e){ if(attempt === 0){ Check.log.shift(); log("doing", `⏳ ${lv} · ${esc(u.title)}: riprovo tra poco…`); await wait(20000); } else { Check.log.shift(); failed++; log("bad", `❌ ${lv} · ${esc(u.title)} — ${esc(e.message)}`); } }
+        }
+        await wait(1200);
+        if($("#ckgo, #ckstop")) { const c = count(); const b = main.querySelector(".progress i"); if(b) b.style.width = (c.rev/total*100)+"%"; const t = main.querySelector(".panel b"); if(t) t.textContent = `${c.rev} lezioni ricontrollate su ${total}`; }
+      }
+      if(!Check.running) break;
+      if(packs){ for(const t of WB_THEMES.slice(0, 2)){ if(!Check.running) break; const lvg = lv; try{ if(!hasPack(lvg, t)){ await wordPack(lvg, t); log("ok", `✅ Parole dei giochi ${lvg} · ${t}`); } }catch(e){ log("bad", `❌ Parole dei giochi ${lvg} · ${t} — ${esc(e.message)}`); } } }
+    }
+    const done = Check.running; Check.running = false; wake(false);
+    log(done ? "ok" : "doing", done ? `🏁 Fatto. ${fixed} correzioni in totale${failed ? `, ${failed} lezioni non riuscite: premi Continua per riprovarle` : ""}.` : "⏸ Fermato. Premi Continua per riprendere.");
+    if($("#cklog")) draw();
+  };
+  draw();
+}
 
 /* ---- Studia un testo ---- */
 async function toolText(main){
@@ -2057,7 +2170,7 @@ async function radioEpisode(topic, level){
   return ask(`Scrivi brevi episodi audio per studenti di ${L().name} (livello ${level} del QCER): dialoghi naturali, vivaci e adatti a tutti. ${JSON_ONLY}`,
     `Scrivi un mini-podcast in ${L().name} sul tema "${t}": un dialogo tra due persone con un nome, 12-16 battute, livello ${level}.
 JSON: {"title":"titolo","lines":[{"s":"nome di chi parla","t":"battuta in ${L().name}","it":"traduzione italiana"}],"words":[{"w":"parola utile","it":"traduzione"}]}
-Metti 5 parole utili.`, {temperature:0.95, maxTokens:2200}, r => Array.isArray(r.lines) && r.lines.length >= 6);
+Metti 5 parole utili.`, {temperature:0.95, maxTokens:2200}, r => Array.isArray(r.lines) && r.lines.filter(l=>l && l.t && !soundsItalian(l.t)).length >= 6);
 }
 async function wake(on){ try{ if(on && "wakeLock" in navigator && !Radio.lock) Radio.lock = await navigator.wakeLock.request("screen"); if(!on && Radio.lock){ await Radio.lock.release(); Radio.lock = null; } }catch(e){} }
 function toolRadio(main){
@@ -2235,8 +2348,8 @@ RENDER.pronuncia = main => {
       const r = await ask(`Sei un insegnante di pronuncia del ${L().name.toLowerCase()} per studenti italiani. ${who()} ${JSON_ONLY}`,
         `Crea 6 frasi da leggere ad alta voce, adatte al livello ${S().level}${Pron.focus?`, centrate su: ${Pron.focus}`:", che contengano i suoni più difficili per un italiano"}. Lunghezza crescente.\n`+
         `JSON: {"sentences":[{"text":"frase in ${L().name}","it":"traduzione italiana","tip":"un consiglio breve in italiano sul suono più difficile della frase"}]}`,
-        {temperature:0.8, maxTokens:1000}, r=>Array.isArray(r.sentences) && r.sentences.length);
-      Pron.list = r.sentences.filter(x=>x.text); Pron.i = 0; drawCard();
+        {temperature:0.8, maxTokens:1000}, r=>Array.isArray(r.sentences) && r.sentences.filter(x=>x && x.text && !soundsItalian(x.text)).length >= 3);
+      Pron.list = r.sentences.filter(x=>x && x.text && !soundsItalian(x.text)); Pron.i = 0; drawCard();
     }catch(e){ card.innerHTML = errorHTML(e); }
   };
   $("#useown").onclick = () => { const v = $("#own").value.trim(); if(!v) return; Pron.list = [{text:v, it:"", tip:""}, ...Pron.list]; Pron.i = 0; drawCard(); };
@@ -2296,7 +2409,7 @@ const KIDS_WORDS = [
   ["🍉","anguria","watermelon","cibo"],["🥕","carota","carrot","cibo"],["🍞","pane","bread","cibo"],["🧀","formaggio","cheese","cibo"],["🥛","latte","milk","cibo"],
   ["🍕","pizza","pizza","cibo"],["🍦","gelato","ice cream","cibo"],["🍰","torta","cake","cibo"],["🥚","uovo","egg","cibo"],["🍪","biscotto","cookie","cibo"],
   ["🏠","casa","house","casa"],["🚪","porta","door","casa"],["🪑","sedia","chair","casa"],["🛏️","letto","bed","casa"],["📖","libro","book","casa"],
-  ["✏️","matita","pencil","casa"],["⚽","palla","ball","casa"],["🧸","orsacchiotto","teddy bear","casa"],["☂️","ombrello","umbrella","casa"],["⏰","sveglia","clock","casa"],["📦","scatola","box","casa"],["🧺","cesto","basket","casa"],
+  ["✏️","matita","pencil","casa"],["⚽","palla","ball","casa"],["🧸","orsacchiotto","teddy bear","casa"],["☂️","ombrello","umbrella","casa"],["⏰","sveglia","alarm clock","casa"],["📦","scatola","box","casa"],["🧺","cesto","basket","casa"],
   ["👀","occhi","eyes","corpo"],["👂","orecchio","ear","corpo"],["👃","naso","nose","corpo"],["👄","bocca","mouth","corpo"],["✋","mano","hand","corpo"],["🦶","piede","foot","corpo"],
   ["👕","maglietta","T-shirt","vestiti"],["👖","pantaloni","trousers","vestiti"],["👗","vestito","dress","vestiti"],["👟","scarpe","shoes","vestiti"],["🧢","cappello","cap","vestiti"],["🧦","calzini","socks","vestiti"],
   ["🎩","cappello elegante","hat","vestiti"],["👑","corona","crown","vestiti"],["🧥","cappotto","coat","vestiti"],["🧣","sciarpa","scarf","vestiti"],["🕶️","occhiali da sole","sunglasses","vestiti"],["🧤","guanti","gloves","vestiti"],["👢","stivali","boots","vestiti"],["🩳","pantaloncini","shorts","vestiti"],
@@ -2444,7 +2557,7 @@ Per ognuna scrivi questi campi:
 Esempio di formato per l'inglese: {"en":"beer","traduzione_italiana":"birra","def":"an alcoholic drink made from grain","ex":"He ordered a cold beer.","esempio_italiano":"Ha ordinato una birra fredda."}
 JSON: {"words":[{"${code}":"...","traduzione_italiana":"...","def":"...","ex":"...","esempio_italiano":"..."}]}`,
     {temperature:0.7, maxTokens:1600},
-    r => { if(!Array.isArray(r.words)) return false; const l = r.words.map(w => ({word:w?.[code] ?? w?.word, translation:w?.traduzione_italiana ?? w?.it ?? w?.translation})).filter(w=>w.word && w.translation); return l.length >= 8 && goodTranslations(l); })
+    r => { if(!Array.isArray(r.words)) return false; const l = r.words.map(w => ({word:w?.[code] ?? w?.word, translation:w?.traduzione_italiana ?? w?.it ?? w?.translation})).filter(w=>w.word && w.translation); return l.length >= 8 && goodTranslations(l) && r.words.filter(w=>soundsItalian(w?.ex ?? w?.example ?? "")).length <= 2; })
   .then(r => {
     const list = uniqueWords(r.words.map(w => ({id:uid(), word:String(w[code] ?? w.word ?? "").trim(), translation:String(w.traduzione_italiana ?? w.it ?? w.translation ?? "").trim(),
       def:String(w.def||"").trim(), example:String(w.ex ?? w.example ?? "").trim(), example_it:(t => looksItalian(t) ? t : "")(String(w.esempio_italiano ?? w.ex_it ?? w.example_it ?? "").trim()), level, theme})));
@@ -2679,7 +2792,7 @@ ${step >= steps-1 ? "Questa è l'ultima parte: chiudi la storia con un finale so
 Scrivi ${kids?"2-3 frasi brevissime":"4-6 frasi"} in ${L().name}.
 JSON: {"text":"parte della storia in ${L().name}","it":"traduzione italiana","choices":[${kids?'{"emoji":"🔑","text":"scelta brevissima","it":"traduzione"}':'{"text":"scelta","it":"traduzione"}'}]}`;
     let r;
-    try{ r = await ask(sys, user, {temperature:0.95, maxTokens:900}, r=>typeof r.text==="string"); }
+    try{ r = await ask(sys, user, {temperature:0.95, maxTokens:900}, r=>typeof r.text==="string" && r.text.trim() && !soundsItalian(r.text)); }
     catch(e){ box.innerHTML = errorHTML(e, "retry"); $("#retry", box).onclick = () => turn(choice); return; }
     history.push(r.text); step++;
     const end = step >= steps || !Array.isArray(r.choices) || !r.choices.length;
@@ -2795,7 +2908,8 @@ const GAMES = {
     async load(n){ return {...await stageWords("anagramma", n, 20), c:this.cfg(n)}; },
     async play(box, n, d){
       const c = d.c, h = makeHud(box, {title:"Anagramma", n, time:c.time});
-      const items = (c.kind==="word" ? d.words.filter(w=>[...w.word].length <= Math.min(c.maxLen, 14) && [...w.word].length >= 3) : d.words.filter(w=>w.example && tokens(w.example).length>=4 && tokens(w.example).length<=12)).slice(0, c.rounds);
+      let items = (c.kind==="word" ? d.words.filter(w=>[...w.word].length <= Math.min(c.maxLen, 14) && [...w.word].length >= 3) : d.words.filter(w=>w.example && tokens(w.example).length>=4 && tokens(w.example).length<=12)).slice(0, c.rounds);
+      if(items.length < c.rounds && c.kind === "word") items = [...d.all].filter(w=>[...w.word].length >= 3 && [...w.word].length <= 14).sort((a,b)=>[...a.word].length-[...b.word].length).slice(0, c.rounds);
       await orderRounds(box, h, items, {sentence: c.kind==="sentence", perItemTime:c.time,
         hint: w => `<p class="muted">${c.kind==="sentence" ? `Ricomponi la frase: <b>${esc(w.example_it)}</b>` : `Ricomponi la parola che vuol dire <b>${esc(w.translation)}</b>`}</p>`});
       h.stop(); return {pct: Math.round(h.hits/items.length*100), score:h.score, line:`${h.hits} su ${items.length} ricomposte.`};
@@ -2828,7 +2942,7 @@ const GAMES = {
       const r = await ask(`Sei un autore di indovinelli in ${L().name} per studenti. ${JSON_ONLY}`,
         `Crea 5 indovinelli "Chi sono? / Cosa sono?" di livello ${lv} del QCER, con soluzioni legate al tema "${theme}" e tutte diverse. Ognuno ha 3 indizi in ${L().name}, dal più difficile al più facile; la soluzione è una parola o un'espressione comune del livello ${lv}.
 JSON: {"riddles":[{"clues":["indizio difficile","indizio medio","indizio facile"],"answer":"soluzione in ${L().name}","alt":["altre forme accettabili"],"it":"soluzione in italiano"}]}`,
-        {temperature:0.95, maxTokens:1400}, r=>Array.isArray(r.riddles) && r.riddles.length>=3);
+        {temperature:0.95, maxTokens:1400}, r=>Array.isArray(r.riddles) && r.riddles.filter(x=>x && x.answer && Array.isArray(x.clues) && !soundsItalian(x.clues.join(" "))).length>=3);
       return {list: r.riddles.filter(x=>x.answer && Array.isArray(x.clues) && x.clues.length)};
     },
     play(box, n, d){ return new Promise(resolve=>{
@@ -3329,6 +3443,7 @@ async function runStage(main, id, n){
   stageResult($("#game"), id, n, res);
 }
 function stageResult(box, id, n, res){
+  if(!Number.isFinite(res.pct)) res.pct = 0;
   const g = GAMES[id], p = gprog(id), st = starsFor(res.pct), prev = p.stars[n] || 0;
   p.plays = (p.plays||0) + 1; if(st > prev) p.stars[n] = st; const record = (res.score||0) > (p.best[n]||0); if(record) p.best[n] = res.score||0;
   const sticker = g.kids && st > 0 && prev === 0 ? awardSticker() : null;
@@ -3635,7 +3750,7 @@ async function kidsSongs(main, id){
       const r = await ask(`Scrivi filastrocche originali e allegre per bambini di ${age} anni che imparano il ${L().name.toLowerCase()}. Contenuti sempre gentili e adatti ai bambini. Non copiare canzoni esistenti. ${JSON_ONLY}`,
         `Scrivi una filastrocca originale in ${L().name} sul tema "${topic}", con rime e ritmo, ${age==="3-5" ? "4 versi brevissimi con parole facilissime e ripetute" : "6-8 versi brevi con parole facili"}.
 JSON: {"title":"titolo in ${L().name}","emoji":"una emoji","it":"di cosa parla, in italiano, una frase","lines":["verso"],"words":[["parola in ${L().name}","traduzione"]]}`,
-        {temperature:1, maxTokens:700}, r=>Array.isArray(r.lines) && r.lines.length>=3 && r.title);
+        {temperature:1, maxTokens:700}, r=>Array.isArray(r.lines) && r.lines.length>=3 && r.title && !soundsItalian(r.lines.join(" ")));
       const s = {id:uid(), e:r.emoji||"🎶", title:r.title, it:r.it||"", lines:r.lines.map(String), words:(r.words||[]).filter(x=>Array.isArray(x)&&x.length===2).slice(0,6), age};
       state.kidsSongs = state.kidsSongs || {}; state.kidsSongs[S().lang] = [s, ...(state.kidsSongs[S().lang]||[])].slice(0,20); save();
       location.hash = "bambini-canzoni-" + s.id;
@@ -3653,7 +3768,7 @@ async function kidsStories(main, id){
         `Scrivi una storia originale in ${L().name} con protagonista ${hero}. ${age==="3-5" ? "5 pagine, ognuna con UNA frase brevissima (massimo 7 parole) e parole facilissime, anche ripetute." : "6 pagine, ognuna con 2 frasi brevi e parole facili."}
 Ogni pagina ha una scena fatta di 2-4 emoji. Alla fine 2 domande facili di comprensione con 3 risposte fatte di emoji e una parola.
 JSON: {"title":"titolo in ${L().name}","cover":"emoji","pages":[{"scene":"🐰🌳","text":"testo in ${L().name}","it":"traduzione italiana"}],"questions":[{"q":"domanda in ${L().name}","q_it":"traduzione","options":[{"e":"🥕","t":"parola"}],"answer":0}]}`,
-        {temperature:0.95, maxTokens:1800}, r=>Array.isArray(r.pages) && r.pages.length>=3 && r.title);
+        {temperature:0.95, maxTokens:1800}, r=>Array.isArray(r.pages) && r.pages.length>=3 && r.title && !soundsItalian(r.pages.map(p=>p.text||"").join(" ")));
       const s = {id:uid(), title:r.title, cover:r.cover||"📖", pages:r.pages.filter(p=>p.text), questions:(r.questions||[]).filter(q=>Array.isArray(q.options) && q.options.length>=2 && Number.isInteger(+q.answer)), age, date:today()};
       state.kidsStories = state.kidsStories || {}; state.kidsStories[S().lang] = [s, ...storyLibrary()].slice(0,15); save();
       if(location.hash === "#bambini-storie-nuova") location.hash = "bambini-storie-" + s.id;
@@ -3846,7 +3961,7 @@ async function runExam(main, lv){
     const sec = EXAM_SECTIONS[k].id;
     if(sec === "read"){
       const r = await gen(k, `Crea la prova di LETTURA del livello ${lv}: un testo originale in ${L().name} di circa ${sp.read} parole (${["A1","A2"].includes(lv)?"per esempio un avviso, un'email o un annuncio":["B1","B2"].includes(lv)?"per esempio un articolo di rivista o un blog":"per esempio un articolo d'opinione o un saggio"}), poi 5 domande di comprensione in ${L().name}, a scelta multipla con 4 opzioni e una sola risposta giusta. Almeno una domanda deve verificare un significato implicito se il livello è B2 o superiore.
-JSON: {"title":"titolo del testo","instructions":"consegna in ${L().name}","instructions_it":"consegna in italiano","text":"il testo, con paragrafi separati da \\n\\n","questions":[{"q":"domanda","options":["...","...","...","..."],"answer":0}]}`, r=>r.text && Array.isArray(r.questions) && r.questions.filter(validMcq).length>=4);
+JSON: {"title":"titolo del testo","instructions":"consegna in ${L().name}","instructions_it":"consegna in italiano","text":"il testo, con paragrafi separati da \\n\\n","questions":[{"q":"domanda","options":["...","...","...","..."],"answer":0}]}`, r=>r.text && !soundsItalian(r.text) && Array.isArray(r.questions) && r.questions.filter(validMcq).length>=4);
       const qs = r.questions.filter(validMcq);
       main.innerHTML = header(k) + `<section class="panel stack" style="margin-top:12px"><p style="margin:0"><b>${esc(r.instructions||"")}</b><br><span class="small muted">${esc(r.instructions_it||"")}</span></p>
         <article class="reading"><h3>${esc(r.title||"")}</h3>${String(r.text).split(/\n\s*\n/).map(p=>`<p>${esc(p)}</p>`).join("")}</article>
@@ -3856,7 +3971,7 @@ JSON: {"title":"titolo del testo","instructions":"consegna in ${L().name}","inst
     }
     else if(sec === "listen"){
       const r = await gen(k, `Crea la prova di ASCOLTO del livello ${lv}: il copione di ${["A1","A2"].includes(lv)?"un dialogo breve tra due persone in una situazione quotidiana":"un dialogo o un'intervista tra due persone"} in ${L().name}, di circa ${sp.listen} parole, naturale e adatto al livello. Poi 5 domande in ${L().name} a scelta multipla con 4 opzioni, a cui si può rispondere solo ascoltando.
-JSON: {"context":"descrizione breve della situazione in ${L().name}","context_it":"in italiano","lines":[{"speaker":"A","text":"battuta"},{"speaker":"B","text":"battuta"}],"questions":[{"q":"domanda","options":["...","...","...","..."],"answer":0}]}`, r=>Array.isArray(r.lines) && r.lines.length>=3 && Array.isArray(r.questions) && r.questions.filter(validMcq).length>=4);
+JSON: {"context":"descrizione breve della situazione in ${L().name}","context_it":"in italiano","lines":[{"speaker":"A","text":"battuta"},{"speaker":"B","text":"battuta"}],"questions":[{"q":"domanda","options":["...","...","...","..."],"answer":0}]}`, r=>Array.isArray(r.lines) && r.lines.length>=3 && !soundsItalian(r.lines.map(l=>l.text||"").join(" ")) && Array.isArray(r.questions) && r.questions.filter(validMcq).length>=4);
       const qs = r.questions.filter(validMcq); let plays = 0, playing = false;
       main.innerHTML = header(k) + `<section class="panel stack" style="margin-top:12px">
         <p style="margin:0"><b>${esc(r.context||"")}</b><br><span class="small muted">${esc(r.context_it||"")}</span></p>
@@ -3880,8 +3995,9 @@ JSON: {"context":"descrizione breve della situazione in ${L().name}","context_it
     }
     else if(sec === "gram"){
       const r = await gen(k, `Crea la prova di GRAMMATICA E LESSICO del livello ${lv}: ${sp.gram} domande a scelta multipla in ${L().name} con 4 opzioni, ciascuna con una frase che contiene ___ al posto della parte mancante. Copri gli argomenti grammaticali e il lessico tipici del livello ${lv}, dal più facile al più difficile.
-JSON: {"questions":[{"q":"frase con ___","options":["...","...","...","..."],"answer":0,"why":"spiegazione breve in italiano"}]}`, r=>Array.isArray(r.questions) && r.questions.filter(validMcq).length>=6);
-      const qs = r.questions.filter(validMcq);
+JSON: {"questions":[{"q":"frase con ___","options":["...","...","...","..."],"answer":0,"why":"spiegazione breve in italiano"}]}`, r=>Array.isArray(r.questions) && r.questions.filter(q=>validMcq(q) && !soundsItalian(q.q)).length>=6);
+      main.innerHTML = header(k) + loadingHTML("Controllo che ogni domanda abbia una sola risposta giusta…"); bindBack();
+      const qs = await verifyMCQ(r.questions.filter(q => validMcq(q) && !soundsItalian(q.q)), q => q.q);
       main.innerHTML = header(k) + `<section class="panel stack" style="margin-top:12px"><p style="margin:0"><b>Scegli la risposta giusta per completare ogni frase.</b></p>${mcqHTML(qs, "g")}<button class="btn" id="submit">Consegna la prova</button></section>`;
       bindBack(); startClock();
       $("#submit").onclick = () => { E.per.gram = scoreMcq(qs, "g");
@@ -3929,7 +4045,7 @@ JSON: {"task":"consegna completa in ${L().name}","task_it":"traduzione italiana 
 Parte 1: ${sp.part1} domande personali dell'esaminatore, adatte al livello.
 Parte 2: un argomento su cui il candidato parla da solo per ${sp.long} secondi, con 3 spunti.
 ${sp.part3 ? `Parte 3: ${sp.part3} domande di discussione più ampie legate all'argomento della parte 2.` : "Nessuna parte 3."}
-JSON: {"part1":["domanda"],"part2":{"topic":"argomento in ${L().name}","topic_it":"in italiano","prompts":["spunto 1","spunto 2","spunto 3"]},"part3":["domanda"]}`, r=>Array.isArray(r.part1) && r.part1.length && r.part2?.topic, 1200);
+JSON: {"part1":["domanda"],"part2":{"topic":"argomento in ${L().name}","topic_it":"in italiano","prompts":["spunto 1","spunto 2","spunto 3"]},"part3":["domanda"]}`, r=>Array.isArray(r.part1) && !soundsItalian(r.part1.join(" ")) && r.part1.length && r.part2?.topic, 1200);
       const steps = [
         ...r.part1.slice(0, sp.part1).map(q=>({part:1, q, max:45})),
         {part:2, q:r.part2.topic, it:r.part2.topic_it, prompts:r.part2.prompts||[], max:sp.long, prep:sp.prep},
