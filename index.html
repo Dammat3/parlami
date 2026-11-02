@@ -543,7 +543,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.15.2";
+const APP_VERSION = "0.16";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -1202,7 +1202,7 @@ async function familyBanner(){
 
 /* ============ PROFILI DEGLI ADULTI ============ */
 /* I dati di chi sta usando l'app stanno "in primo piano" in state; quelli degli altri in adults.data */
-const PERSON_KEYS = ["minpairs","challenges","shields","badges","counts","plan","wotd","wotdHist","xp","streak","lastDay","todayXp","todayDate","dailyGoal","progress","words","mistakes","exams","placement","gameProg","missionBest","tutorMem","studies","dict","radio","favPhr","stats","seenW"];
+const PERSON_KEYS = ["diary","readDone","minpairs","challenges","shields","badges","counts","plan","wotd","wotdHist","xp","streak","lastDay","todayXp","todayDate","dailyGoal","progress","words","mistakes","exams","placement","gameProg","missionBest","tutorMem","studies","dict","radio","favPhr","stats","seenW"];
 const PERSON_SET = ["lang","level","persona","voiceURI","rate","autoSpeak","showTr","tutorMemory"];
 const ADULT_EMOJIS = ["🙂","😎","🧔","👩","👨","👵","👴","🦸","🧑‍🍳","🧑‍💻","🌻","⚽"];
 function adultsState(){
@@ -1339,7 +1339,7 @@ function googleCalLink(time, days, mins){
 const Sync = {busy:false, dirty:false, timer:null, status:"", ready:false};
 const GIST_DESC = "Parlami – sincronizzazione (dati cifrati, non modificare)";
 const SYNC_FILES = ["parlami-persone.json", "parlami-contenuti.json"];
-const SHARED_KEYS = ["lessons","wordBank","kidsVocab","kidsPhr","kidsSongs","kidsStories","phrasebook"];
+const SHARED_KEYS = ["library","idiomsAI","notesAI","lessons","wordBank","kidsVocab","kidsPhr","kidsSongs","kidsStories","phrasebook"];
 function syncCfg(){ return state.settings.sync; }
 async function gh(path, opts={}, token = syncCfg()?.token){
   let r;
@@ -1393,7 +1393,7 @@ async function syncNow(manual=false){
     if(rc){
       state.lessons ||= {}; for(const [key, l] of Object.entries(rc.lessons||{})){ const mine = state.lessons[key]; if(!mine || (!mine.reviewed && l.reviewed)) state.lessons[key] = l; }
       state.wordBank ||= {}; for(const [key, l] of Object.entries(rc.wordBank||{})) if(!state.wordBank[key]) state.wordBank[key] = l;
-      for(const key of ["kidsSongs","kidsStories"]){ state[key] ||= {}; for(const [lang, list] of Object.entries(rc[key]||{})){ const mine = state[key][lang] || []; state[key][lang] = [...mine, ...list.filter(x => !mine.some(m => m.id === x.id))].slice(0, 30); } }
+      for(const key of ["kidsSongs","kidsStories","library","idiomsAI","notesAI"]){ state[key] ||= {}; for(const [lang, list] of Object.entries(rc[key]||{})){ const mine = state[key][lang] || []; state[key][lang] = [...mine, ...list.filter(x => !mine.some(m => m.id === x.id))].slice(0, 30); } }
       for(const key of ["kidsVocab","kidsPhr","phrasebook"]){ state[key] ||= {}; for(const [lang, v] of Object.entries(rc[key]||{})) if(!state[key][lang]) state[key][lang] = v; }
     }
     // carica la versione unita
@@ -2535,6 +2535,9 @@ const TOOLS = [
   ["dizionario","📚","Dizionario rapido","Cerca una parola in italiano o in lingua straniera, con pronuncia ed esempi"],
   ["ascolto","🎧","Ascolto in sottofondo","Mini-podcast al tuo livello da ascoltare mentre fai altro"],
   ["frasario","🧳","Frasario da viaggio","Frasi pronte per aeroporto, albergo, ristorante ed emergenze"],
+  ["diario","📔","Diario","Scrivi qualche riga ogni giorno: l'IA te la corregge come un insegnante"],
+  ["biblioteca","📚","Biblioteca","Letture per il tuo livello: racconti, misteri, articoli, con domande"],
+  ["cultura","🌍","Cultura e modi di dire","Espressioni idiomatiche e curiosità sui paesi della lingua"],
   ["controllo","🔍","Prepara e controlla tutto","Crea in anticipo tutte le lezioni e le fa ricontrollare, con un resoconto finale"]
 ];
 RENDER.strumenti = main => {
@@ -2544,10 +2547,233 @@ RENDER.strumenti = main => {
   if(sub === "ascolto") return toolRadio(main);
   if(sub === "frasario") return toolPhrases(main);
   if(sub === "controllo") return toolCheck(main);
+  if(sub === "diario") return toolDiary(main);
+  if(sub === "biblioteca") return toolLibrary(main);
+  if(sub === "cultura") return toolCulture(main);
   main.innerHTML = `<h1>Strumenti</h1>${needsSetup()}
     <div class="grid2" style="margin-top:16px">${TOOLS.map(([id,e,t,d])=>`<a class="action" href="#strumenti-${id}" style="text-decoration:none"><span class="ic"><span style="font-size:1.7rem">${e}</span></span><span><h3>${t}</h3><span class="muted small">${d}</span></span></a>`).join("")}</div>`;
 };
 const toolBack = `<a class="btn ghost sm" href="#strumenti">${icon("back")} Strumenti</a>`;
+
+/* ============ LEGGERE E SCRIVERE: diario, biblioteca, cultura ============ */
+const LIB_GENRES = [["racconto","📖 Racconto"],["mistero","🔍 Mistero"],["articolo","📰 Articolo"],["dialogo","💬 Dialogo"],["lettera","✉️ Lettera o email"],["biografia","👤 Biografia"],["viaggio","🧳 Diario di viaggio"],["scienza","🔬 Curiosità scientifica"]];
+const LIB_WORDS = {A1:120, A2:180, B1:280, B2:380, C1:480, C2:580};
+const DIARY_PROMPTS = {
+  A:["Racconta cosa hai fatto oggi.","Descrivi la tua colazione di stamattina.","Parla della tua famiglia.","Cosa farai questo fine settimana?","Descrivi la tua casa o la tua stanza.","Qual è il tuo cibo preferito e perché?","Racconta il tuo hobby preferito."],
+  B:["Racconta una cosa bella o strana che ti è successa questa settimana.","Descrivi un viaggio che ricordi con piacere.","Qual è un tuo obiettivo per quest'anno e come vuoi raggiungerlo?","Racconta un film o un libro che ti è piaciuto.","Descrivi una persona importante per te.","Cosa cambieresti della tua città?"],
+  C:["Esprimi la tua opinione su come la tecnologia cambia le relazioni.","Racconta un momento in cui hai cambiato idea su qualcosa.","Vantaggi e svantaggi di lavorare da casa.","Descrivi una tradizione della tua famiglia e il suo significato.","Se potessi vivere in un'altra epoca, quale sceglieresti e perché?"]
+};
+const libList = () => (state.library ||= {})[S().lang] ||= [];
+const backTools = `<a class="btn ghost sm" href="#strumenti">${icon("back")} Strumenti</a>`;
+
+/* ---- Diario ---- */
+function toolDiary(main){
+  const list = (state.diary ||= {})[S().lang] ||= [];
+  const id = location.hash.slice(1).split("-")[2];
+  if(id){ const e = list.find(x => x.id === id); if(e) return showDiary(main, e); }
+  const pool = DIARY_PROMPTS[S().level[0]] || DIARY_PROMPTS.A, prompt = pool[(new Date().getDate()) % pool.length];
+  const todayDone = list.find(e => e.date === today());
+  main.innerHTML = `${backTools}<h1 style="margin-top:16px">Diario</h1>
+    <p class="muted">Scrivi qualche riga in ${L().name.toLowerCase()}: l'IA te le corregge come un insegnante, ti spiega gli errori e li mette nel ripasso. Più scrivi, più migliori.</p>${needsSetup()}
+    <section class="panel stack">
+      <div class="taskbox"><b>✏️ Spunto di oggi:</b> ${esc(prompt)} <span class="small muted">(oppure scrivi quello che vuoi)</span></div>
+      <textarea class="input" id="dt" rows="8" placeholder="Scrivi qui in ${L().name.toLowerCase()}…" spellcheck="false"></textarea>
+      <div class="row" style="justify-content:space-between"><span class="small muted" id="dwc">0 parole</span><button class="btn" id="dgo">✨ Correggi</button></div>
+      <p id="dmsg" class="small" style="margin:0"></p>
+    </section>
+    ${todayDone ? `<p class="small" style="margin-top:10px">✅ Hai già scritto oggi: puoi scrivere ancora, se vuoi.</p>` : ""}
+    ${list.length ? `<h2 style="margin-top:22px">Le tue pagine</h2><div class="stack" style="gap:8px">${list.map(e => `<a class="action" href="#strumenti-diario-${e.id}" style="text-decoration:none;padding:12px 16px"><span style="flex:1"><b>${e.date}</b> · ${e.res?.score != null ? `voto ${e.res.score}` : ""}<br><span class="small muted">${esc(e.text.slice(0,100))}…</span></span></a>`).join("")}</div>` : ""}`;
+  $("#dt").oninput = () => { $("#dwc").textContent = `${$("#dt").value.trim().split(/\s+/).filter(Boolean).length} parole`; };
+  $("#dgo").onclick = async () => {
+    const text = $("#dt").value.trim(); if(text.split(/\s+/).length < 5){ $("#dmsg").textContent = "Scrivi almeno una frase o due."; return; }
+    $("#dgo").disabled = true; $("#dmsg").innerHTML = `<span class="spinner"></span> L'insegnante sta leggendo…`;
+    try{
+      const r = await ask(`Sei un insegnante di ${L().name} gentile ma preciso, per studenti italiani. ${who()} ${JSON_ONLY}`,
+`Pagina di diario scritta dallo studente:
+"""${text.slice(0,3000)}"""
+Correggila. Mantieni il suo stile e le sue idee, correggi solo errori e frasi poco naturali.
+JSON: {"corrected":"il testo corretto completo, in ${L().name}","corrections":[{"wrong":"...","right":"...","why":"spiegazione breve in italiano"}],"feedback":"commento incoraggiante in italiano, 2-3 frasi, con un consiglio","score":0-100,"phrases":[{"t":"un'espressione più ricca che avrebbe potuto usare, in ${L().name}","it":"traduzione"}]}
+Al massimo 10 correzioni e 3 espressioni.`, {temperature:0.2, maxTokens:2200}, r => r.corrected && !soundsItalian(r.corrected) && Array.isArray(r.corrections));
+      const e = {id:uid(), date:today(), text, res:r}; list.unshift(e); state.diary[S().lang] = list.slice(0, 60);
+      (r.corrections||[]).slice(0,10).forEach(c => recordMistake(c.wrong, c.right, c.why));
+      save(); addXP(8); bump("diary"); location.hash = "strumenti-diario-" + e.id;
+    }catch(err){ $("#dgo").disabled = false; $("#dmsg").innerHTML = `<span class="status-bad">${esc(err.message)}</span>`; }
+  };
+}
+function showDiary(main, e){
+  const r = e.res || {};
+  main.innerHTML = `<a class="btn ghost sm" href="#strumenti-diario">${icon("back")} Diario</a><h1 style="margin-top:16px">Pagina del ${e.date}</h1>
+    <section class="panel stack"><div class="row" style="justify-content:space-between"><b>Il tuo testo</b>${r.score != null ? `<span class="chip on">Voto ${r.score}/100</span>` : ""}</div><p style="margin:0;white-space:pre-wrap" class="muted">${esc(e.text)}</p></section>
+    <section class="panel stack" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>✅ Versione corretta</b><button class="iconbtn" id="dsay" aria-label="Ascolta">${icon("play")}</button></div><p style="margin:0;white-space:pre-wrap">${esc(r.corrected||"")}</p></section>
+    ${(r.corrections||[]).length ? `<section class="panel stack" style="margin-top:12px"><b>Correzioni</b>${r.corrections.map(c => `<p style="margin:0"><s class="muted">${esc(c.wrong)}</s> → <b>${esc(c.right)}</b><br><span class="small muted">${esc(c.why||"")}</span></p>`).join("")}</section>` : `<p class="status-ok" style="margin-top:12px">Nessun errore: complimenti!</p>`}
+    ${r.feedback ? `<section class="panel" style="margin-top:12px"><b>💬 L'insegnante dice:</b> ${esc(r.feedback)}</section>` : ""}
+    ${(r.phrases||[]).length ? `<section class="panel stack" style="margin-top:12px"><b>✨ Per arricchire il testo</b>${r.phrases.map(p => `<p style="margin:0"><button class="iconbtn" data-ps="${esc(p.t)}" style="width:28px;height:28px;vertical-align:middle">${icon("play")}</button> <b>${esc(p.t)}</b> · ${esc(p.it||"")}</p>`).join("")}</section>` : ""}`;
+  $("#dsay").onclick = () => Voice.speak(r.corrected || e.text);
+  $$("[data-ps]", main).forEach(b => b.onclick = () => Voice.speak(b.dataset.ps));
+}
+
+/* ---- Biblioteca di letture ---- */
+function toolLibrary(main){
+  const parts = location.hash.slice(1).split("-"), id = parts[2];
+  const lib = libList(), done = state.readDone ||= [];
+  if(id){ const it = lib.find(x => x.id === id); if(it) return showReading(main, it); }
+  const lv = sessionStorage.getItem("parlami.libLv") || S().level;
+  const items = lib.filter(x => x.level === lv);
+  main.innerHTML = `${backTools}<h1 style="margin-top:16px">Biblioteca</h1>
+    <p class="muted">Letture brevi scritte per il tuo livello: racconti, misteri, articoli, lettere. Tocca le parole evidenziate per la traduzione, ascolta la lettura e rispondi alle domande. Le letture create restano per tutta la famiglia.</p>${needsSetup()}
+    <div class="row" style="margin-bottom:12px">${LEVELS.map(l => `<button class="chip ${l===lv?"on":""}" data-lv="${l}">${l}</button>`).join("")}</div>
+    <section class="panel stack"><b>✨ Una lettura nuova (${lv})</b><div class="row">${LIB_GENRES.map(([k,t]) => `<button class="chip" data-gen="${k}">${t}</button>`).join("")}</div><p id="lmsg" class="small" style="margin:0"></p></section>
+    <div class="grid2" style="margin-top:14px">${items.map(x => `<a class="action" href="#strumenti-biblioteca-${x.id}" style="text-decoration:none"><span class="ic"><span style="font-size:1.6rem">${(LIB_GENRES.find(g=>g[0]===x.genre)||["","📖"])[1].split(" ")[0]}</span></span><span style="flex:1"><h3>${esc(x.title)}</h3><span class="muted small">${esc(x.summary_it||"")}</span>${done.includes(x.id) ? `<span class="small" style="display:block">✅ Letta</span>` : ""}</span></a>`).join("") || `<p class="muted">Ancora nessuna lettura per il livello ${lv}: scegline una qui sopra.</p>`}</div>`;
+  $$("[data-lv]", main).forEach(b => b.onclick = () => { sessionStorage.setItem("parlami.libLv", b.dataset.lv); toolLibrary(main); });
+  $$("[data-gen]", main).forEach(b => b.onclick = async () => {
+    $$("[data-gen]", main).forEach(x => x.disabled = true); $("#lmsg").innerHTML = `<span class="spinner"></span> Sto scrivendo la lettura…`;
+    const gen = b.dataset.gen, gname = LIB_GENRES.find(g => g[0] === gen)[1].slice(2);
+    try{
+      const qLang = ["A1","A2"].includes(lv) ? "in italiano" : `in ${L().name}`;
+      const r = await ask(`Sei un autore di letture graduate (graded readers) di ${L().name} per studenti italiani. Scrivi testi originali, interessanti e adatti a tutti. ${JSON_ONLY}`,
+`Scrivi una lettura originale in ${L().name}, genere: ${gname}, di circa ${LIB_WORDS[lv]} parole, esattamente al livello ${lv} del QCER (lessico e grammatica di quel livello), con un titolo accattivante. Dividi il testo in paragrafi con \\n\\n.
+Poi un glossario di 8 parole o espressioni del testo (scritte esattamente come compaiono) con la traduzione italiana, e 4 domande di comprensione ${qLang} con 3 opzioni ${qLang}.
+JSON: {"title":"titolo in ${L().name}","summary_it":"di cosa parla, una frase in italiano","text":"testo","glossary":[{"word":"...","it":"..."}],"questions":[{"q":"...","options":["...","...","..."],"answer":0}]}`,
+        {temperature:0.9, maxTokens:2600}, r => r.text && !soundsItalian(r.text) && r.title && Array.isArray(r.glossary));
+      const it = {id:uid(), level:lv, genre:gen, title:r.title, summary_it:r.summary_it||"", text:r.text, glossary:(r.glossary||[]).filter(g => g.word && g.it), questions:(r.questions||[]).filter(q => Array.isArray(q.options) && q.options.length >= 2 && Number.isInteger(+q.answer)), date:today()};
+      lib.unshift(it); state.library[S().lang] = lib.slice(0, 80); save();
+      location.hash = "strumenti-biblioteca-" + it.id;
+    }catch(e){ $$("[data-gen]", main).forEach(x => x.disabled = false); $("#lmsg").innerHTML = `<span class="status-bad">${esc(e.message)}</span>`; }
+  });
+}
+function showReading(main, it){
+  let html = esc(it.text);
+  if(!NOSPACE.includes(S().lang)) it.glossary.slice().sort((a,b)=>b.word.length-a.word.length).forEach(g => {
+    const re = new RegExp(`(^|[^\\p{L}])(${esc(g.word).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")})(?=[^\\p{L}]|$)`, "iu");
+    html = html.replace(re, (m, pre, w) => `${pre}<button class="vw" data-g="${it.glossary.indexOf(g)}">${w}</button>`);
+  });
+  const done = (state.readDone ||= []).includes(it.id);
+  main.innerHTML = `<a class="btn ghost sm" href="#strumenti-biblioteca">${icon("back")} Biblioteca</a>
+    <h1 style="margin-top:16px">${esc(it.title)}</h1><p class="muted">${it.level} · ${esc((LIB_GENRES.find(g=>g[0]===it.genre)||["",""])[1])} · ${esc(it.summary_it)}</p>
+    <div class="row"><button class="btn sun" id="rread">${icon("play")} Leggimela</button><button class="btn ghost" id="rstop">${icon("stop")} Stop</button><button class="btn ghost" id="radd">➕ Glossario al ripasso</button></div>
+    <article class="reading studytext" style="margin-top:12px">${html.split(/\n\s*\n/).map(p => `<p>${p.replace(/\n/g,"<br>")}</p>`).join("")}</article>
+    <div id="gdet" class="small" style="min-height:1.5em;margin:8px 0"></div>
+    ${it.questions.length ? `<section class="panel stack"><h2 style="margin:0">Hai capito?</h2>${it.questions.map((q,n) => `<fieldset class="mcq"><legend><b>${n+1}.</b> ${esc(q.q)}</legend>${q.options.map((o,j) => `<label class="mopt"><input type="radio" name="lq${n}" value="${j}"> <span>${esc(o)}</span></label>`).join("")}</fieldset>`).join("")}<div><button class="btn" id="lcheck">${done ? "Controlla di nuovo" : "Controlla e segna come letta"}</button> <span id="lres"></span></div></section>` : ""}`;
+  $$(".vw", main).forEach(b => b.onclick = () => { const g = it.glossary[+b.dataset.g]; Voice.speak(g.word); $("#gdet").innerHTML = `<b>${esc(g.word)}</b> = ${esc(g.it)}`; });
+  let stop = false; cleanup = () => { stop = true; speechSynthesis.cancel(); };
+  $("#rread").onclick = async () => { stop = false; for(const p of $$(".studytext p", main)){ if(stop) break; p.classList.add("cur"); await Voice.speak(p.textContent); p.classList.remove("cur"); } };
+  $("#rstop").onclick = () => { stop = true; speechSynthesis.cancel(); };
+  $("#radd").onclick = () => { let n = 0; it.glossary.forEach(g => { if(!state.words.some(w => w.lang === S().lang && bare(w.word) === bare(g.word))){ state.words.push({id:uid(), lang:S().lang, word:g.word, translation:g.it, example:"", box:1, due:today()}); n++; } }); save(); toast(n ? `${n} parole aggiunte al ripasso` : "Le parole sono già nel ripasso"); };
+  const lc = $("#lcheck"); if(lc) lc.onclick = () => {
+    let ok = 0; it.questions.forEach((q,n) => { const c = document.querySelector(`input[name="lq${n}"]:checked`); $$(`input[name="lq${n}"]`).forEach(inp => { const lab = inp.closest(".mopt"); lab.classList.toggle("right", +inp.value === +q.answer); lab.classList.toggle("wrong", inp.checked && +inp.value !== +q.answer); }); if(c && +c.value === +q.answer) ok++; });
+    $("#lres").innerHTML = `<b>${ok} su ${it.questions.length}</b>`;
+    if(!state.readDone.includes(it.id)){ state.readDone.push(it.id); bump("reads"); addXP(6 + ok*2); save(); }
+  };
+}
+
+/* ---- Cultura e modi di dire ---- */
+const IDIOMS_EN = [
+  ["break the ice","rompere il ghiaccio","Iniziare una conversazione e mettere tutti a proprio agio.","A funny story is a good way to break the ice.","Una storia divertente è un buon modo per rompere il ghiaccio."],
+  ["a piece of cake","un gioco da ragazzi","Una cosa facilissima.","The test was a piece of cake.","La verifica è stata un gioco da ragazzi."],
+  ["cost an arm and a leg","costare un occhio della testa","Costare moltissimo.","That new phone costs an arm and a leg.","Quel telefono nuovo costa un occhio della testa."],
+  ["it's raining cats and dogs","piove a catinelle","Piove fortissimo.","Take an umbrella, it's raining cats and dogs!","Prendi l'ombrello, piove a catinelle!"],
+  ["kill two birds with one stone","prendere due piccioni con una fava","Ottenere due risultati con una sola azione.","I'll visit my aunt and do some shopping there: two birds with one stone.","Vado a trovare la zia e faccio la spesa lì: due piccioni con una fava."],
+  ["once in a blue moon","una volta ogni morte di papa","Rarissimamente.","He calls me once in a blue moon.","Mi chiama una volta ogni morte di papa."],
+  ["when pigs fly","quando gli asini voleranno","Mai, è impossibile.","He'll clean his room when pigs fly.","Pulirà la sua stanza quando gli asini voleranno."],
+  ["bite off more than you can chew","fare il passo più lungo della gamba","Prendersi un impegno troppo grande.","Don't bite off more than you can chew with this project.","Non fare il passo più lungo della gamba con questo progetto."],
+  ["the ball is in your court","la palla passa a te","Adesso tocca a te decidere o agire.","I've made my offer: the ball is in your court.","Ho fatto la mia offerta: ora tocca a te."],
+  ["spill the beans","vuotare il sacco","Rivelare un segreto.","Come on, spill the beans! Who is it?","Dai, vuota il sacco! Chi è?"],
+  ["let the cat out of the bag","farsi sfuggire un segreto","Rivelare per sbaglio una sorpresa o un segreto.","She let the cat out of the bag about the party.","Si è lasciata sfuggire la festa a sorpresa."],
+  ["under the weather","non essere in forma","Sentirsi un po' male.","I'm feeling a bit under the weather today.","Oggi non mi sento molto in forma."],
+  ["hit the sack","andare a nanna","Andare a dormire.","I'm tired, I'm going to hit the sack.","Sono stanco, vado a nanna."],
+  ["pull someone's leg","prendere in giro qualcuno","Scherzare facendo credere una cosa falsa.","Relax, I'm just pulling your leg!","Tranquillo, ti sto solo prendendo in giro!"],
+  ["break a leg","in bocca al lupo","Si dice per augurare buona fortuna, soprattutto prima di uno spettacolo.","Break a leg tonight!","In bocca al lupo per stasera!"],
+  ["call it a day","staccare per oggi","Smettere di lavorare per la giornata.","It's late, let's call it a day.","È tardi, stacchiamo per oggi."],
+  ["get cold feet","tirarsi indietro all'ultimo","Farsi prendere dalla paura poco prima di fare qualcosa.","He got cold feet before the interview.","Si è tirato indietro all'ultimo prima del colloquio."],
+  ["on cloud nine","al settimo cielo","Felicissimo.","She's been on cloud nine since she got the job.","È al settimo cielo da quando ha avuto il lavoro."],
+  ["hit the nail on the head","colpire nel segno","Dire esattamente la cosa giusta.","You hit the nail on the head with that comment.","Con quel commento hai colpito nel segno."],
+  ["better late than never","meglio tardi che mai","Meglio fare una cosa in ritardo che non farla.","You finally called! Better late than never.","Finalmente hai chiamato! Meglio tardi che mai."]
+].map(([t,eq,mean,ex,ex_it],i) => ({id:"en"+i, t, eq, mean, ex, ex_it}));
+const NOTES_EN = [
+  {id:"n1", e:"🌦️", t:"Il tempo, argomento numero uno", it:"Nel Regno Unito parlare del tempo è il modo più comune per iniziare una conversazione con chiunque, anche con sconosciuti. Non è noia: è un modo gentile per essere cordiali.", ph:[["Lovely day, isn't it?","Bella giornata, vero?"],["It's freezing today!","Oggi si gela!"]]},
+  {id:"n2", e:"👋", t:"“How are you?” non è una vera domanda", it:"Spesso “How are you?” o “How's it going?” sono solo un saluto: si risponde brevemente e si ricambia, senza raccontare come si sta davvero.", ph:[["Fine, thanks. And you?","Bene, grazie. E tu?"],["Not bad, thanks!","Non c'è male, grazie!"]]},
+  {id:"n3", e:"🙏", t:"Please, thank you, sorry", it:"In inglese “please”, “thank you” e “sorry” si usano moltissimo, anche per piccole cose. Senza “please” una richiesta può sembrare scortese. “Sorry” si dice anche quando qualcuno ti urta!", ph:[["Could I have a coffee, please?","Potrei avere un caffè, per favore?"],["Sorry, could you say that again?","Scusa, puoi ripetere?"]]},
+  {id:"n4", e:"🚶", t:"La fila è sacra", it:"Nei paesi anglosassoni, e soprattutto nel Regno Unito, si fa la fila con ordine ovunque: alla fermata dell'autobus, al bar, al negozio. Passare davanti è considerato molto maleducato.", ph:[["Are you in the queue?","Sei in fila?"],["Excuse me, I think I was next.","Scusi, credo di essere io il prossimo."]]},
+  {id:"n5", e:"💵", t:"La mancia", it:"Negli Stati Uniti la mancia al ristorante è quasi obbligatoria (di solito tra il 15 e il 20%), perché fa parte dello stipendio del cameriere. Nel Regno Unito è più leggera, spesso già inclusa come “service charge”.", ph:[["Is service included?","Il servizio è incluso?"],["Keep the change.","Tenga il resto."]]},
+  {id:"n6", e:"🇬🇧🇺🇸", t:"Inglese britannico e americano", it:"Molte parole cambiano: flat/apartment (appartamento), lift/elevator (ascensore), biscuit/cookie (biscotto), chips/fries (patatine fritte), holiday/vacation (vacanza), autumn/fall (autunno). Anche alcune parole si scrivono diverse: colour/color.", ph:[["Where's the lift? / Where's the elevator?","Dov'è l'ascensore?"],["I'm on holiday. / I'm on vacation.","Sono in vacanza."]]},
+  {id:"n7", e:"📅", t:"Le date all'americana", it:"Negli Stati Uniti nelle date si scrive prima il mese: 03/04 è il 4 marzo, non il 3 aprile! Nel Regno Unito invece si scrive come in Italia.", ph:[["My birthday is on May 5th.","Il mio compleanno è il 5 maggio."],["See you on the 3rd!","Ci vediamo il 3!"]]},
+  {id:"n8", e:"📏", t:"Miglia, libbre e gradi Fahrenheit", it:"Negli Stati Uniti le distanze sono in miglia (1 miglio ≈ 1,6 km), il peso in libbre (1 libbra ≈ 450 g) e la temperatura in Fahrenheit (70 °F ≈ 21 °C). Anche nel Regno Unito le strade usano le miglia.", ph:[["It's about five miles away.","È a circa otto chilometri."],["It's 80 degrees outside!","Fuori ci sono circa 27 gradi!"]]},
+  {id:"n9", e:"🍽️", t:"I pasti e i loro nomi", it:"Breakfast è la colazione, lunch il pranzo (spesso leggero), dinner la cena. In parte del Regno Unito “tea” può voler dire anche la cena!", ph:[["What's for dinner?","Cosa c'è per cena?"],["Let's grab some lunch.","Andiamo a mangiare qualcosa per pranzo."]]},
+  {id:"n10", e:"🗣️", t:"Il “tu” e il “lei” non esistono", it:"In inglese c'è solo “you”. La cortesia si esprime con il tono e con forme come “could you…?”, “would you mind…?”, invece che con il “lei”.", ph:[["Would you mind opening the window?","Le dispiacerebbe aprire la finestra?"],["Could you help me, please?","Potrebbe aiutarmi, per favore?"]]}
+];
+function toolCulture(main){
+  const tab = location.hash.slice(1).split("-")[2] || "modi";
+  const en = S().lang === "en";
+  const idioms = [...(en ? IDIOMS_EN : []), ...(((state.idiomsAI ||= {})[S().lang]) || [])];
+  const notes = [...(en ? NOTES_EN : []), ...(((state.notesAI ||= {})[S().lang]) || [])];
+  main.innerHTML = `${backTools}<h1 style="margin-top:16px">Cultura e modi di dire</h1>
+    <div class="row" style="margin-bottom:12px"><a class="chip ${tab==="modi"?"on":""}" href="#strumenti-cultura-modi">💬 Modi di dire</a><a class="chip ${tab==="note"?"on":""}" href="#strumenti-cultura-note">🌍 Curiosità culturali</a></div>
+    <div id="cbody" class="stack"></div>
+    <div style="margin-top:14px"><button class="btn ghost" id="cmore">✨ ${tab==="modi" ? "Altri modi di dire" : "Altre curiosità"}</button> <span id="cmsg" class="small"></span></div>`;
+  const body = $("#cbody");
+  if(tab === "modi") body.innerHTML = idioms.length ? idioms.map((x,i) => `<section class="panel stack idiom"><div class="row" style="justify-content:space-between"><span class="bigsent" style="font-size:1.35rem">${esc(x.t)}</span><button class="iconbtn" data-say="${esc(x.t)}" aria-label="Ascolta">${icon("play")}</button></div>
+      <p style="margin:0">🇮🇹 <b>${esc(x.eq)}</b> · <span class="muted">${esc(x.mean)}</span></p><p class="small" style="margin:0"><button class="iconbtn" data-say="${esc(x.ex)}" style="width:28px;height:28px;vertical-align:middle">${icon("play")}</button> <i>${esc(x.ex)}</i> · ${esc(x.ex_it)}</p>
+      <div><button class="btn ghost sm" data-add="${i}">➕ Al ripasso</button></div></section>`).join("") : `<p class="muted">Premi “Altri modi di dire” per scoprirne qualcuno.</p>`;
+  else body.innerHTML = notes.length ? notes.map(n => `<section class="panel stack"><h3 style="margin:0">${n.e||"🌍"} ${esc(n.t)}</h3><p style="margin:0">${esc(n.it)}</p>${(n.ph||[]).map(([t,it]) => `<p class="small" style="margin:0"><button class="iconbtn" data-say="${esc(t)}" style="width:28px;height:28px;vertical-align:middle">${icon("play")}</button> <b>${esc(t)}</b> · ${esc(it)}</p>`).join("")}</section>`).join("") : `<p class="muted">Premi “Altre curiosità” per scoprirne qualcuna.</p>`;
+  $$("[data-say]", main).forEach(b => b.onclick = () => Voice.speak(b.dataset.say));
+  $$("[data-add]", main).forEach(b => b.onclick = () => { const x = idioms[+b.dataset.add]; if(!state.words.some(w => w.lang === S().lang && bare(w.word) === bare(x.t))){ state.words.push({id:uid(), lang:S().lang, word:x.t, translation:x.eq, example:x.ex, box:1, due:today()}); save(); toast("Aggiunto al ripasso"); } else toast("È già nel ripasso"); });
+  $("#cmore").onclick = async () => {
+    if(!S().connected){ toast("Serve l'IA: collegala nelle Impostazioni"); return; }
+    $("#cmore").disabled = true; $("#cmsg").innerHTML = `<span class="spinner"></span>`;
+    try{
+      if(tab === "modi"){
+        const r = await ask(`Sei un esperto di ${L().name} e di italiano. ${JSON_ONLY}`,
+          `Elenca 6 modi di dire o espressioni idiomatiche molto usati in ${L().name}, adatti al livello ${S().level}, diversi da questi: ${JSON.stringify(idioms.map(x=>x.t))}.
+JSON: {"idioms":[{"t":"espressione in ${L().name}","eq":"equivalente italiano più vicino","mean":"significato in italiano","ex":"esempio in ${L().name}","ex_it":"traduzione"}]}`, {temperature:0.8, maxTokens:1400}, r => Array.isArray(r.idioms) && r.idioms.length >= 3 && !soundsItalian(r.idioms.map(x=>x.ex||"").join(" ")));
+        state.idiomsAI[S().lang] = [...(state.idiomsAI[S().lang]||[]), ...r.idioms.filter(x => x.t && x.eq).map(x => ({...x, id:uid()}))].slice(-200);
+      } else {
+        const r = await ask(`Sei un esperto della cultura dei paesi in cui si parla ${L().name}, e scrivi per italiani. ${JSON_ONLY}`,
+          `Scrivi 4 curiosità culturali utili per un italiano che impara ${L().name} (abitudini, buone maniere, differenze tra paesi, feste, cibo, lingua), diverse da queste: ${JSON.stringify(notes.map(n=>n.t))}.
+JSON: {"notes":[{"e":"una emoji","t":"titolo in italiano","it":"spiegazione in italiano, 2-3 frasi","ph":[["frase utile in ${L().name}","traduzione"]]}]}`, {temperature:0.8, maxTokens:1400}, r => Array.isArray(r.notes) && r.notes.length >= 2);
+        state.notesAI[S().lang] = [...(state.notesAI[S().lang]||[]), ...r.notes.filter(n => n.t && n.it).map(n => ({...n, id:uid()}))].slice(-120);
+      }
+      save(); bump("culture"); addXP(3); toolCulture(main);
+    }catch(e){ $("#cmore").disabled = false; $("#cmsg").innerHTML = `<span class="status-bad">${esc(e.message)}</span>`; }
+  };
+}
+
+/* ============ RESOCONTO PER I GENITORI ============ */
+function kidAct(key){ const k = typeof currentKid === "function" ? currentKid() : null; if(!k) return; const d = statDay(kidStore()); d[key] = (d[key]||0) + 1; }
+const KACT = [["voc","🖼️ Parole ascoltate"],["abc","🔤 Lettere ascoltate"],["song","🎵 Canzoncine finite"],["story","📖 Storie ascoltate"],["game","🎮 Livelli superati"],["pip","🐧 Chiacchiere con Pip"]];
+async function kidsReport(main){
+  if(kidsModeOn() && !(await askPin("Resoconto per i genitori"))){ location.hash = "bambini"; return; }
+  const k = kidsState(); if(!k.profiles.length){ main.innerHTML = `<a class="btn ghost sm" href="#bambini-genitori">${icon("back")} Area genitori</a><p style="margin-top:16px">Crea prima un profilo per un bambino.</p>`; return; }
+  let sel = sessionStorage.getItem("parlami.repKid") || k.current || k.profiles[0].id, week = 0;
+  const draw = () => {
+    const p = k.profiles.find(x => x.id === sel) || k.profiles[0], st = k.data[p.id] || {}, days = st.stats?.days || {};
+    const ws = addDays(weekStart(), -7*week), list = Array.from({length:7}, (_,i) => addDays(ws, i)), sum = key => list.reduce((a,d) => a + (days[d]?.[key]||0), 0);
+    const active = list.filter(d => (days[d]?.xp||0) > 0 || (days[d]?.min||0) > 0).length, min = sum("min"), xp = sum("xp");
+    const stars = Object.values((st.gameProg||{})[S().lang] || {}).reduce((a,g) => a + Object.values(g.stars||{}).reduce((x,y)=>x+y,0), 0);
+    const maxMin = Math.max(5, ...list.map(d => days[d]?.min||0)), dn = d => ["dom","lun","mar","mer","gio","ven","sab"][new Date(d+"T12:00:00").getDay()];
+    const tips = [];
+    if(active < 3) tips.push("Prova a fare qualche minuto quasi ogni giorno: per i bambini la regolarità conta più della durata.");
+    if(!sum("song")) tips.push("Non ha ancora ascoltato le canzoncine: sono un ottimo modo per memorizzare suoni e parole.");
+    if(!sum("story")) tips.push("Una storia da ascoltare insieme prima di dormire è un bel momento per imparare.");
+    if(p.age === "6-8" && !sum("abc")) tips.push("Per la sua età l'alfabeto e “Con che lettera inizia?” aiutano a collegare suoni e lettere.");
+    if(min >= 60) tips.push("Ottima costanza questa settimana! Lodatelo: la motivazione è tutto.");
+    const txt = `Resoconto di ${p.name} (${week ? "settimana scorsa" : "questa settimana"}): ${active} giorni attivi, ${min} minuti, ${xp} XP. ${KACT.map(([key,t]) => `${t.slice(3)}: ${sum(key)}`).join(", ")}. Stelle nei giochi: ${stars}. Adesivi: ${(st.stickers||[]).length}.`;
+    main.innerHTML = `<a class="btn ghost sm" href="#bambini-genitori">${icon("back")} Area genitori</a><h1 style="margin-top:16px">📊 Resoconto per i genitori</h1>
+      <div class="row" style="margin-bottom:10px">${k.profiles.map(x => `<button class="chip ${x.id===p.id?"on":""}" data-kid="${x.id}">${x.emoji} ${esc(x.name)}</button>`).join("")}</div>
+      <div class="row" style="margin-bottom:14px"><button class="chip ${week===0?"on":""}" data-w="0">Questa settimana</button><button class="chip ${week===1?"on":""}" data-w="1">Settimana scorsa</button></div>
+      <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
+        <div class="stat"><b>${active}/7</b><span class="muted small">giorni attivi</span></div><div class="stat"><b>${min}</b><span class="muted small">minuti</span></div>
+        <div class="stat"><b>${xp}</b><span class="muted small">XP</span></div><div class="stat"><b>★ ${stars}</b><span class="muted small">stelle (totali)</span></div><div class="stat"><b>${(st.stickers||[]).length}</b><span class="muted small">adesivi (totali)</span></div></div>
+      <section class="panel stack" style="margin-top:14px"><h2 style="margin:0">Minuti al giorno</h2><div class="bars">${list.map(d => `<div class="bar"><span class="bv">${days[d]?.min||0}</span><i style="height:${(days[d]?.min||0)/maxMin*100}%"></i><span class="bl">${dn(d)}</span></div>`).join("")}</div></section>
+      <section class="panel stack" style="margin-top:14px"><h2 style="margin:0">Cosa ha fatto</h2>${KACT.map(([key,t]) => `<div class="row" style="justify-content:space-between"><span>${t}</span><b>${sum(key)}</b></div>`).join("")}</section>
+      ${tips.length ? `<section class="panel stack" style="margin-top:14px"><h2 style="margin:0">💡 Consigli</h2>${tips.map(t => `<p style="margin:0">${esc(t)}</p>`).join("")}</section>` : ""}
+      <div class="row" style="margin-top:14px"><button class="btn ghost" id="rcopy">📋 Copia il resoconto</button><span class="small muted">per mandarlo a un altro genitore</span></div>
+      <p class="small muted">Il resoconto conta le attività dal momento in cui è arrivata questa funzione. Con la sincronizzazione attiva vedi le attività fatte su tutti i dispositivi.</p>`;
+    $$("[data-kid]", main).forEach(b => b.onclick = () => { sel = b.dataset.kid; sessionStorage.setItem("parlami.repKid", sel); draw(); });
+    $$("[data-w]", main).forEach(b => b.onclick = () => { week = +b.dataset.w; draw(); });
+    $("#rcopy").onclick = async () => { try{ await navigator.clipboard.writeText(txt); toast("Resoconto copiato"); }catch(e){ prompt("Copia il testo:", txt); } };
+  };
+  draw();
+}
 
 /* ---- Prepara e controlla tutto ---- */
 const Check = {running:false, log:[]};
@@ -4318,6 +4544,7 @@ function todayMission(){
   return st.mission;
 }
 function missionTick(type, key){
+  const act = {parole:"voc", abc:"abc", canzone:"song", storia:"story", gioco:"game", amico:"pip"}[type]; if(act) kidAct(act);
   const m = todayMission(); if(!m || !m.tasks.includes(type)) return;
   if(key != null){ m.seen[type] = m.seen[type] || []; if(m.seen[type].includes(key)) return; m.seen[type].push(key); }
   m.prog[type] = Math.min(MISSIONS[type].need, (m.prog[type]||0) + 1);
@@ -4368,6 +4595,7 @@ const KID_TILES = [
 RENDER.bambini = main => {
   const parts = location.hash.slice(1).split("-"), sub = parts[1];
   if(sub === "genitori") return kidsParents(main);
+  if(sub === "resoconto") return kidsReport(main);
   if(sub === "chi") return kidsWho(main);
   const k = kidsState();
   if(!sub && (!currentKid() && k.profiles.length)) return kidsWho(main);
@@ -4409,6 +4637,10 @@ async function kidsParents(main){
       <div class="row" id="ke">${KID_EMOJIS.map((e,i)=>`<button class="chip ${i===0?"on":""}" data-e="${e}" style="font-size:1.4rem">${e}</button>`).join("")}</div>
       <div><button class="btn" id="kadd">Aggiungi</button></div>
       <p class="small muted" style="margin:0">I profili restano solo su questo dispositivo. Basta il nome di battesimo: non servono altri dati.</p>
+    </section>
+    <section class="panel stack" style="margin-top:16px"><h2 style="margin:0">📊 Resoconto della settimana</h2>
+      <p style="margin:0">Cosa ha fatto ogni bambino: giorni attivi, minuti, giochi, canzoni, storie, con qualche consiglio.</p>
+      <div><a class="btn" href="#bambini-resoconto">Apri il resoconto</a></div>
     </section>
     <section class="panel stack" style="margin-top:16px"><h2 style="margin:0">Modalità bambini</h2>
       <p style="margin:0">Quando è attiva, l'app mostra solo l'area bambini: giochi, parole, canzoni, storie e Pip. Lezioni, esami, impostazioni e chiavi dell'IA restano nascoste, e per uscire serve il tuo codice di 4 cifre.</p>
