@@ -447,6 +447,15 @@ body.kidsmode .brand-dot{background:var(--sun)}
 body:has(.call) .toast{bottom:auto;top:calc(60px + env(safe-area-inset-top,0px))}
 .explain{background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 12px;margin-top:8px}
 
+/* Bambini 0.17 */
+.simon{font-size:4.2rem;line-height:1}
+.phs{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;width:100%}
+.phc{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;border-radius:20px;border:3px solid var(--line);border-bottom-width:6px;background:var(--surface)}
+.phc b{font-family:var(--display);font-size:2.4rem;color:var(--primary);line-height:1}
+.readword{display:flex;gap:6px;justify-content:center;margin:14px 0 8px}
+.readword span{font-family:var(--display);font-size:clamp(2.2rem,9vw,3.4rem);font-weight:800;padding:2px 10px;border-radius:12px;background:var(--surface-2);border:2px solid var(--line)}
+.howto{border:3px solid var(--sun)}
+
 /* Exercise */
 .progress{height:12px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
 .progress > i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
@@ -543,7 +552,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.16";
+const APP_VERSION = "0.17";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -4336,7 +4345,11 @@ Object.assign(GAMES, {
       };
     }); }}
 });
-GAME_ORDER.bambini = ["kpalloncini","ktombola","kcolora","korsetto","kfoto","kascolta","kmemory","kconta","kdillo","kposto","kdove","kiniziale","kcruci","klettere","kpalloncino","kstoria"];
+Object.assign(GAMES, {
+  ksimon:{kids:true, age:"3-8", name:"Simon dice", icon:"🤸", desc:"Ascolta gli ordini in inglese e muoviti, ma solo se Simon lo dice!", stages:10, async load(){ return {}; }, play(box, n){ return simonPlay(box, n); }},
+  kfonica:{kids:true, age:"6-8", name:"Phonics: i suoni", icon:"🔤", desc:"Impara come suonano le lettere inglesi, poi leggi e scrivi parole semplici", stages:10, async load(){ return {}; }, play(box, n){ return phonicsPlay(box, n); }}
+});
+GAME_ORDER.bambini = ["ksimon","kfonica","kpalloncini","ktombola","kcolora","korsetto","kfoto","kascolta","kmemory","kconta","kdillo","kposto","kdove","kiniziale","kcruci","klettere","kpalloncino","kstoria"];
 Object.assign(GAMES.kfoto, {age:"3-8"}); Object.assign(GAMES.kascolta, {age:"3-8"}); Object.assign(GAMES.kmemory, {age:"3-8"}); Object.assign(GAMES.kconta, {age:"3-8"});
 Object.assign(GAMES.kdillo, {age:"3-8"}); Object.assign(GAMES.kstoria, {age:"3-8"}); Object.assign(GAMES.klettere, {age:"6-8"}); Object.assign(GAMES.kpalloncino, {age:"6-8"});
 
@@ -4409,6 +4422,18 @@ async function runStage(main, id, n){
   try{ data = await g.load(n); }
   catch(e){ const box = $("#game"); if(!box) return; box.innerHTML = errorHTML(e, "retry"); $("#retry").onclick = () => runStage(main, id, n); return; }
   const box = $("#game"); if(!box || location.hash !== `#giochi-${id}-${n}`) return;
+  if(g.kids && HOWTO[id]){
+    await new Promise(go => {
+      box.innerHTML = `<div class="panel kids stack howto" style="text-align:center;align-items:center"><div style="font-size:3.4rem;line-height:1">${g.icon}</div><h2 style="margin:0">${esc(g.name)} · Livello ${n}</h2>
+        <p style="margin:0;font-size:1.15rem;max-width:520px">${esc(HOWTO[id])}</p>
+        <div class="row" style="justify-content:center"><button class="btn ghost" id="hrep">🔊 Riascolta</button><button class="btn sun" id="hgo" style="font-size:1.3rem;padding:14px 30px">▶ Gioca!</button></div></div>`;
+      const seen = JSON.parse(sessionStorage.getItem("parlami.howto") || "{}");
+      if(!seen[id]){ seen[id] = 1; sessionStorage.setItem("parlami.howto", JSON.stringify(seen)); setTimeout(() => sayIT(HOWTO[id]), 300); }
+      $("#hrep").onclick = () => sayIT(HOWTO[id]);
+      $("#hgo").onclick = () => { speechSynthesis.cancel(); go(); };
+    });
+    if(!$("#game") || location.hash !== `#giochi-${id}-${n}`) return;
+  }
   const res = await g.play(box, n, data);
   if(!res || !$("#game") || location.hash !== `#giochi-${id}-${n}`) return;
   stageResult($("#game"), id, n, res);
@@ -4588,7 +4613,7 @@ function songLibrary(){ const own = (state.kidsSongs||{})[S().lang] || []; retur
 function storyLibrary(){ return (state.kidsStories||{})[S().lang] || []; }
 
 /* ---- Pagine ---- */
-const KID_TILES = [
+const KID_TILES = [["simon","🤸","Simon dice","#giochi-ksimon"],["fonica","🔤","I suoni (Phonics)","#giochi-kfonica"],
   ["giochi","🎮","Giochi","#giochi-bambini"],["voc","🖼️","Le prime parole","#bambini-voc"],["abc","🔤","L'alfabeto","#bambini-abc"],
   ["canzoni","🎵","Canzoncine","#bambini-canzoni"],["storie","📖","Storie","#bambini-storie"],["amico","🐧","Parla con Pip","#bambini-amico"],["album","📒","Album","#giochi-album"]
 ];
@@ -4596,6 +4621,7 @@ RENDER.bambini = main => {
   const parts = location.hash.slice(1).split("-"), sub = parts[1];
   if(sub === "genitori") return kidsParents(main);
   if(sub === "resoconto") return kidsReport(main);
+  if(sub === "casa") return kidsHome4Parents(main);
   if(sub === "chi") return kidsWho(main);
   const k = kidsState();
   if(!sub && (!currentKid() && k.profiles.length)) return kidsWho(main);
@@ -4638,6 +4664,10 @@ async function kidsParents(main){
       <div><button class="btn" id="kadd">Aggiungi</button></div>
       <p class="small muted" style="margin:0">I profili restano solo su questo dispositivo. Basta il nome di battesimo: non servono altri dati.</p>
     </section>
+    <section class="panel stack" style="margin-top:16px"><h2 style="margin:0">🏠 L'inglese a casa</h2>
+      <p style="margin:0">Un'“ora dell'inglese” di 10 minuti diversa ogni giorno e frasi con audio per colazione, vestirsi, gioco, bagnetto e nanna.</p>
+      <div><a class="btn" href="#bambini-casa">Apri</a></div>
+    </section>
     <section class="panel stack" style="margin-top:16px"><h2 style="margin:0">📊 Resoconto della settimana</h2>
       <p style="margin:0">Cosa ha fatto ogni bambino: giorni attivi, minuti, giochi, canzoni, storie, con qualche consiglio.</p>
       <div><a class="btn" href="#bambini-resoconto">Apri il resoconto</a></div>
@@ -4669,7 +4699,7 @@ async function kidsVoc(main, theme){
   let all; try{ all = await kidsWords(); }catch(e){ main.innerHTML = errorHTML(e); return; }
   const themes = [...new Set(all.map(w=>w.theme))], tE = th => all.find(w=>w.theme===th).emoji;
   if(!theme || !themes.includes(theme)){
-    main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><h1 style="margin-top:16px">Le prime parole</h1><p class="muted">Scegli un argomento, poi tocca le immagini per sentire le parole.</p>
+    main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><h1 style="margin-top:16px">Le prime parole${kidsIntro("voc", "Scegli un argomento. Poi tocca le immagini per sentire come si dicono in inglese, e ripeti ad alta voce!")}</h1><p class="muted">Scegli un argomento, poi tocca le immagini per sentire le parole.</p>
       <div class="ktiles">${themes.map(th=>`<a class="ktile" href="#bambini-voc-${th}"><span class="ke">${tE(th)}</span><b>${th}</b></a>`).join("")}</div>`;
     return;
   }
@@ -4683,6 +4713,192 @@ async function kidsVoc(main, theme){
   $("#all").onclick = async () => { stop = false; for(const w of list){ if(stop || !$("#all")) break; await play(w); await wait(500); } };
 }
 /* Alfabeto: la voce legge il NOME della lettera (non "capital A") */
+/* ============ VOCE ITALIANA PER LE ISTRUZIONI DEI BAMBINI ============ */
+function itVoice(){ const vs = ("speechSynthesis" in window) ? speechSynthesis.getVoices() : []; return vs.find(v => v.lang.replace("_","-").toLowerCase() === "it-it") || vs.find(v => v.lang.toLowerCase().startsWith("it")); }
+function sayIT(text){
+  return new Promise(res => {
+    if(!("speechSynthesis" in window) || !text){ res(); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text); u.lang = "it-IT"; const v = itVoice(); if(v) u.voice = v; u.rate = 1;
+    u.onstart = () => setAvatar("talk"); u.onend = u.onerror = () => { setAvatar(null); res(); };
+    speechSynthesis.speak(u);
+  });
+}
+/* Spiega a voce una pagina dell'area bambini: la prima volta da solo, poi con il pulsante 🔊 */
+function kidsIntro(key, text){
+  const seen = JSON.parse(sessionStorage.getItem("parlami.intro") || "{}");
+  if(!seen[key]){ seen[key] = 1; sessionStorage.setItem("parlami.intro", JSON.stringify(seen)); setTimeout(() => sayIT(text), 350); }
+  return `<button class="iconbtn" data-intro="${esc(text)}" aria-label="Ascolta cosa si fa qui" title="Cosa si fa qui?" style="vertical-align:middle;margin-left:8px">🔊</button>`;
+}
+document.addEventListener("click", e => { const b = e.target.closest?.("[data-intro]"); if(b && b.dataset.intro) sayIT(b.dataset.intro); });
+function bindIntro(main, text){ $$("[data-intro]", main).forEach(b => b.onclick = () => sayIT(text)); }
+const HOWTO = {
+  kpalloncini:"Ascolta la parola in inglese e scoppia il palloncino con l'immagine giusta, prima che voli via!",
+  ktombola:"Ascolta la parola in inglese. Se hai quell'immagine nella tua cartella, toccala. Se non ce l'hai, tocca: non ce l'ho!",
+  kcolora:"Ascolta bene: ti dico un disegno e un colore in inglese. Tocca prima il colore, poi il disegno da colorare.",
+  korsetto:"Aiuta l'orsetto a vestirsi! Ascolta in inglese cosa devi mettergli e tocca il vestito giusto.",
+  kfoto:"Guarda l'immagine e tocca la parola inglese giusta. Se vuoi sentirla, ascoltala!",
+  kascolta:"Ascolta la parola in inglese e tocca l'immagine giusta. Puoi riascoltarla con il pulsante blu.",
+  kmemory:"Gira le carte due alla volta e trova le coppie: un'immagine e la sua parola in inglese.",
+  kconta:"Conta quanti oggetti ci sono e tocca il numero giusto in inglese.",
+  kdillo:"Guarda l'immagine, tocca il microfono e di' la parola in inglese ad alta voce!",
+  kposto:"Tocca una parola e poi il gruppo giusto: metti ogni cosa al suo posto!",
+  kdove:"Ascolta la frase in inglese e tocca la scena giusta: il gatto è sopra, sotto, dentro o accanto?",
+  kiniziale:"Ascolta la parola in inglese e tocca la lettera giusta.",
+  kcruci:"Guarda le immagini e scrivi le parole in inglese nel cruciverba. Tocca un'immagine per sentire la parola.",
+  klettere:"Tocca le lettere nell'ordine giusto per scrivere la parola in inglese.",
+  kpalloncino:"Indovina la parola in inglese lettera per lettera, prima che il palloncino si sgonfi!",
+  ksimon:"Ascolta Simon e fai quello che dice, ma solo se dice prima Simon says! Se non lo dice, resta fermo. Poi tocca il pulsante giusto.",
+  kfonica:"Impariamo come suonano le lettere in inglese. Prima ascolti i suoni, poi leggi le parole e componi le parole con le lettere."
+};
+
+/* ============ SIMON DICE ============ */
+const SIMON_ACTS = [["jump","🦘","salta"],["clap your hands","👏","batti le mani"],["touch your nose","👃","toccati il naso"],["touch your head","🙆","toccati la testa"],["touch your toes","🦶","toccati i piedi"],["turn around","🔄","girati"],["sit down","🪑","siediti"],["stand up","🧍","alzati"],["wave hello","👋","saluta con la mano"],["stomp your feet","🥾","batti i piedi"],["raise your arms","🙌","alza le braccia"],["shake your body","💃","scuoti il corpo"],["hop on one foot","🦩","salta su un piede"],["close your eyes","😌","chiudi gli occhi"],["smile","😄","sorridi"],["touch your ears","👂","toccati le orecchie"],["march","🥁","marcia"],["freeze","🧊","resta immobile"],["run on the spot","🏃","corri sul posto"],["touch your knees","🦵","toccati le ginocchia"],["nod your head","🙂","fai sì con la testa"],["make a funny face","🤪","fai una faccia buffa"]];
+function simonPlay(box, n){
+  return new Promise(resolve => {
+    const h = makeHud(box, {title:"Simon dice", n, kids:true}), R = 8;
+    const trick = n <= 3 ? 0 : n <= 6 ? 0.25 : 0.35, showPic = n <= 6, combo = n >= 8;
+    let i = 0;
+    const show = () => {
+      if(!h.area.isConnected) return;
+      if(i >= R){ h.stop(); return resolve({pct: Math.round(h.hits/R*100), score:h.score, line:`${h.hits} su ${R}: ${h.hits >= 7 ? "bravissima/o a ascoltare!" : "ascolta bene se Simon lo dice!"}`}); }
+      const a = SIMON_ACTS[Math.floor(Math.random()*SIMON_ACTS.length)], b = combo ? SIMON_ACTS.filter(x => x !== a)[Math.floor(Math.random()*(SIMON_ACTS.length-1))] : null;
+      const simon = Math.random() >= trick, cmd = (simon ? "Simon says: " : "") + a[0] + (b ? " and " + b[0] : "") + "!";
+      h.area.innerHTML = `<div class="panel kids stage-panel" style="text-align:center"><div class="small muted" style="text-align:right">${i+1}/${R}</div>
+        <div class="simon">🤖</div><p class="bigsent" id="scmd" style="margin:6px 0">🔊</p><div class="kemoji sm" id="spic" style="min-height:1.2em"></div>
+        <div class="row" style="justify-content:center;margin-top:12px"><button class="btn ghost sm" id="srep">${icon("play")} Ripeti</button></div>
+        <div class="kopts cols2" style="margin-top:14px"><button class="kopt" data-a="did"><span class="kword">✅ L'ho fatto!</span></button><button class="kopt" data-a="not"><span class="kword">🙅 Non l'ho fatto</span></button></div></div>`;
+      const say = () => Voice.speak(cmd, {rate: n <= 4 ? 0.8 : 0.95});
+      setTimeout(() => { say(); setTimeout(() => { const s = $("#scmd", h.area); if(s) s.textContent = n <= 3 ? cmd : "🔊 …"; const p = $("#spic", h.area); if(p && showPic) p.textContent = a[1] + (b ? " " + b[1] : ""); }, 1400); }, 300);
+      $("#srep", h.area).onclick = say;
+      let done = false;
+      $$(".kopt", h.area).forEach(btn => btn.onclick = () => {
+        if(done) return; done = true;
+        const good = (btn.dataset.a === "did") === simon;
+        if(good){ h.add(); btn.classList.add("right"); cheer($(".stage-panel", h.area)); }
+        else { h.miss(); btn.classList.add("wrong"); }
+        const s = $("#scmd", h.area); if(s) s.innerHTML = `${esc(cmd)}<br><span class="small muted">${simon ? `Simon l'ha detto: ${esc(a[2])}${b ? " e " + esc(b[2]) : ""}!` : "Simon non l'ha detto: bisognava restare fermi!"}</span>`;
+        if(!good) sayIT(simon ? "Simon l'aveva detto!" : "Attenzione: Simon non l'aveva detto!");
+        setTimeout(() => { i++; show(); }, good ? 1300 : 2600);
+      });
+    };
+    show();
+  });
+}
+
+/* ============ PHONICS: i suoni delle lettere ============ */
+const PHONICS = [
+  {g:"a · t · s · p", tip:"In inglese la A di cat è aperta, quasi a metà tra A ed E. La T e la P si dicono con un piccolo soffio. La S fa sss, come un serpente.", sounds:[["a","🍎","apple"],["t","🐯","tiger"],["s","🐍","snake"],["p","🐷","pig"]], words:[["cat","🐱"],["hat","🎩"],["map","🗺️"],["sad","😢"],["pan","🍳"],["tap","🚰"]]},
+  {g:"i · n · m · d", tip:"La I breve di pig è corta e rilassata, quasi una E. La N, la M e la D sono come in italiano.", sounds:[["i","🦔","in"],["n","🪺","nest"],["m","🐒","monkey"],["d","🐶","dog"]], words:[["pig","🐷"],["pin","📌"],["six","6️⃣"],["dig","⛏️"],["kid","🧒"],["win","🏆"]]},
+  {g:"o · g · c · k", tip:"La O di dog è corta e aperta. La G è sempre dura, come in gatto. La C e la K fanno lo stesso suono: K!", sounds:[["o","🐙","octopus"],["g","🐐","goat"],["c","🐱","cat"],["k","🪁","kite"]], words:[["dog","🐶"],["log","🪵"],["box","📦"],["fox","🦊"],["pot","🍲"],["cot","🛏️"]]},
+  {g:"e · u · r", tip:"La E di bed è come la E italiana. La U di sun è breve e suona quasi come una A chiusa: sun si dice circa san. La R è morbida: la lingua non vibra.", sounds:[["e","🥚","egg"],["u","☂️","umbrella"],["r","🐰","rabbit"]], words:[["bed","🛏️"],["red","🔴"],["ten","🔟"],["sun","☀️"],["bus","🚌"],["cup","☕"]]},
+  {g:"h · b · f · l", tip:"La H si sente: è un soffio, come quando appanni un vetro. La B, la F e la L sono come in italiano.", sounds:[["h","🏠","house"],["b","🐻","bear"],["f","🐟","fish"],["l","🦁","lion"]], words:[["hen","🐔"],["bat","🦇"],["fan","🪭"],["leg","🦵"],["bag","👜"],["hut","🛖"]]},
+  {g:"j · v · w · x · y · z", tip:"La J si dice come la G di gelato. La W è come una U veloce: water. La Y all'inizio è come la I di ieri. La Z fa un ronzio, zzz, come un'ape.", sounds:[["j","🍯","jam"],["v","🚐","van"],["w","🐋","whale"],["x","🦊","fox"],["y","🪀","yo-yo"],["z","🦓","zebra"]], words:[["jam","🍓"],["van","🚐"],["web","🕸️"],["yak","🐃"],["zip","🤐"],["box","📦"]]},
+  {g:"sh · ch", tip:"Due lettere, un solo suono! SH è come SC di scivolo: sh, silenzio. CH è come la C di ciao.", sounds:[["sh","🚢","ship"],["ch","🧀","cheese"]], words:[["ship","🚢"],["fish","🐟"],["shop","🏪"],["shell","🐚"],["chick","🐥"],["chips","🍟"]]},
+  {g:"th · ng · ck", tip:"TH: metti la punta della lingua tra i denti e soffia. NG si sente nel naso, come in fango. CK fa semplicemente K.", sounds:[["th","3️⃣","three"],["ng","💍","ring"],["ck","🦆","duck"]], words:[["bath","🛁"],["ring","💍"],["king","🤴"],["duck","🦆"],["sock","🧦"],["moth","🦋"]]},
+  {g:"ee · oo", tip:"EE fa una I lunga: bee si dice bii. OO può essere una U lunga, come in moon, o una U breve, come in book.", sounds:[["ee","🐝","bee"],["oo","🌙","moon"]], words:[["bee","🐝"],["tree","🌳"],["sheep","🐑"],["moon","🌙"],["book","📖"],["foot","🦶"]]},
+  {g:"ai · oa · ar · or", tip:"AI fa EI, come in rain. OA fa OU, come in boat. AR fa una A lunga: car. OR fa una O lunga: fork.", sounds:[["ai","🌧️","rain"],["oa","⛵","boat"],["ar","⭐","star"],["or","🍴","fork"]], words:[["rain","🌧️"],["snail","🐌"],["boat","⛵"],["goat","🐐"],["car","🚗"],["star","⭐"]]}
+];
+function phonicsUnits(word, grp){ const di = ["sh","ch","th","ng","ck","ee","oo","ai","oa","ar","or"]; const out = []; let i = 0; while(i < word.length){ const two = word.slice(i, i+2); if(di.includes(two)){ out.push(two); i += 2; } else { out.push(word[i]); i++; } } return out; }
+function phonicsPlay(box, n){
+  return new Promise(resolve => {
+    const G = PHONICS[n-1], h = makeHud(box, {title:"Phonics", n, kids:true});
+    const learn = () => {
+      if(!h.area.isConnected) return;
+      h.area.innerHTML = `<div class="panel kids stack" style="text-align:center"><h2 style="margin:0">I suoni: ${esc(G.g)}</h2><p style="margin:0">${esc(G.tip)} <button class="iconbtn" id="ptip" style="vertical-align:middle">🔊</button></p>
+        <div class="phs">${G.sounds.map(([l,e,w],k) => `<button class="phc" data-k="${k}"><b>${esc(l)}</b><span class="kemoji sm">${e}</span><span class="kword">${esc(w)}</span></button>`).join("")}</div>
+        <p class="small muted" style="margin:0">Tocca ogni carta: senti la parola e guarda come si scrive il suono.</p>
+        <div><button class="btn sun" id="pgo" style="font-size:1.15rem">▶ Ora gioca!</button></div></div>`;
+      $("#ptip", h.area).onclick = () => sayIT(G.tip);
+      $$(".phc", h.area).forEach(b => b.onclick = () => { const [l,,w] = G.sounds[+b.dataset.k]; b.classList.add("pop"); setTimeout(() => b.classList.remove("pop"), 500); Voice.speak(w, {rate:0.7}); });
+      $("#pgo", h.area).onclick = () => rounds();
+      setTimeout(() => sayIT(G.tip), 400);
+    };
+    const rounds = () => {
+      const pool = shuffle(G.words), prev = PHONICS.slice(0, n-1).flatMap(x => x.words);
+      const items = [...pool.slice(0,4).map(w => ({w, mode:"read"})), ...shuffle([...pool.slice(4), ...shuffle(prev).slice(0,1)]).slice(0,3).map(w => ({w, mode:"spell"}))];
+      let i = 0;
+      const next = () => {
+        if(!h.area.isConnected) return;
+        if(i >= items.length){ h.stop(); return resolve({pct: Math.round(h.hits/items.length*100), score:h.score, line:`${h.hits} parole su ${items.length}!`}); }
+        const it = items[i], [word, emoji] = it.w; let done = false, missed = false;
+        if(it.mode === "read"){
+          const others = shuffle([...G.words, ...prev].filter(x => x[0] !== word)).slice(0, ageOpts(3)-1 || 2);
+          const opts = shuffle([it.w, ...others]);
+          h.area.innerHTML = `<div class="panel kids stage-panel" style="text-align:center"><div class="small muted" style="text-align:right">${i+1}/${items.length}</div>
+            <p class="muted" style="margin:0">Leggi la parola e tocca l'immagine giusta</p>
+            <div class="readword">${phonicsUnits(word).map(u => `<span>${esc(u)}</span>`).join("")}</div>
+            <button class="btn ghost sm" id="phelp">🔊 Aiutami</button>
+            <div class="kopts cols${opts.length}" style="margin-top:12px">${opts.map(o => `<button class="kopt" data-w="${esc(o[0])}"><span class="kemoji sm">${o[1]}</span></button>`).join("")}</div></div>`;
+          $("#phelp", h.area).onclick = () => { missed = true; Voice.speak(word, {rate:0.65}); };
+          $$(".kopt", h.area).forEach(b => b.onclick = () => { if(done) return;
+            if(b.dataset.w === word){ done = true; b.classList.add("right"); if(!missed) h.add(); else SFX.ok(1); cheer($(".stage-panel", h.area)); Voice.speak(word); setTimeout(() => { i++; next(); }, 1300); }
+            else { b.classList.add("wrong","shake"); setTimeout(() => b.classList.remove("shake"), 400); if(!missed){ missed = true; h.miss(); } } });
+        } else {
+          const units = phonicsUnits(word), extra = shuffle(G.sounds.map(s => s[0]).filter(s => !units.includes(s))).slice(0, 2);
+          const tiles = shuffle([...units.map((u,k) => ({u, k})), ...extra.map(u => ({u, k:-1}))]); let picked = [];
+          const draw = () => {
+            h.area.innerHTML = `<div class="panel kids stage-panel" style="text-align:center"><div class="small muted" style="text-align:right">${i+1}/${items.length}</div>
+              <p class="muted" style="margin:0">Ascolta e componi la parola</p><div class="kemoji">${emoji}</div>
+              <button class="btn ghost sm" id="psay">🔊 Ascolta</button>
+              <div class="tokens" style="justify-content:center;min-height:60px;margin-top:10px">${picked.map((t,k) => `<button class="tok big" data-p="${k}">${esc(t.u)}</button>`).join("")}</div>
+              <div class="tokens bank" style="justify-content:center">${tiles.map((t,k) => `<button class="tok big ${picked.includes(t)?"used":""}" data-t="${k}">${esc(t.u)}</button>`).join("")}</div></div>`;
+            $("#psay", h.area).onclick = () => Voice.speak(word, {rate:0.65});
+            $$("[data-p]", h.area).forEach(b => b.onclick = () => { if(done) return; picked.splice(+b.dataset.p, 1); draw(); });
+            $$("[data-t]", h.area).forEach(b => b.onclick = () => { if(done) return; const t = tiles[+b.dataset.t]; if(picked.includes(t)) return; picked.push(t);
+              if(picked.length === units.length){
+                if(picked.map(x => x.u).join("") === word){ done = true; if(!missed) h.add(); else SFX.ok(1); draw(); cheer($(".stage-panel", h.area)); Voice.speak(word); setTimeout(() => { i++; next(); }, 1300); return; }
+                if(!missed){ missed = true; h.miss(); } draw(); $(".tokens", h.area).classList.add("shake"); setTimeout(() => { picked = []; draw(); }, 600); return;
+              }
+              draw(); });
+          };
+          draw(); setTimeout(() => Voice.speak(word, {rate:0.7}), 300);
+        }
+      };
+      next();
+    };
+    learn();
+  });
+}
+
+/* ============ L'INGLESE A CASA (per i genitori) ============ */
+const HOME_PHRASES = [
+  {e:"🌅", t:"Al mattino", p:[["Good morning, sweetheart!","Buongiorno, tesoro!"],["Time to get up!","È ora di alzarsi!"],["Did you sleep well?","Hai dormito bene?"],["Let's brush your teeth.","Laviamoci i denti."],["Hurry up, please!","Sbrigati, per favore!"]]},
+  {e:"👕", t:"Vestirsi", p:[["Put on your shoes.","Mettiti le scarpe."],["Which T-shirt do you want?","Quale maglietta vuoi?"],["The red one or the blue one?","Quella rossa o quella blu?"],["Zip up your jacket.","Chiudi la giacca."],["You look great!","Stai benissimo!"]]},
+  {e:"🍽️", t:"A tavola", p:[["Breakfast is ready!","La colazione è pronta!"],["Are you hungry?","Hai fame?"],["Would you like some milk?","Vuoi un po' di latte?"],["Can I have some water, please?","Posso avere un po' d'acqua, per favore?"],["Yummy!","Che buono!"],["Wash your hands, please.","Lavati le mani, per favore."]]},
+  {e:"🧸", t:"Giocare", p:[["Let's play together!","Giochiamo insieme!"],["It's your turn.","Tocca a te."],["Well done!","Brava! / Bravo!"],["Let's tidy up.","Mettiamo in ordine."],["What are you drawing?","Cosa stai disegnando?"],["One, two, three, go!","Uno, due, tre, via!"]]},
+  {e:"🛁", t:"Il bagnetto", p:[["Bath time!","È l'ora del bagnetto!"],["Is the water too hot?","L'acqua è troppo calda?"],["Wash your hair.","Lavati i capelli."],["Here's your towel.","Ecco il tuo asciugamano."]]},
+  {e:"🌙", t:"La nanna", p:[["It's bedtime.","È ora di andare a letto."],["Put on your pyjamas.","Mettiti il pigiama."],["Which story do you want?","Quale storia vuoi?"],["Sweet dreams!","Sogni d'oro!"],["I love you.","Ti voglio bene."],["Good night!","Buona notte!"]]},
+  {e:"🚗", t:"Fuori casa", p:[["Let's go!","Andiamo!"],["Hold my hand.","Dammi la mano."],["Look! A dog!","Guarda! Un cane!"],["Are you tired?","Sei stanca? / Sei stanco?"],["We're almost there.","Siamo quasi arrivati."]]},
+  {e:"💛", t:"Emozioni e incoraggiamenti", p:[["How do you feel?","Come ti senti?"],["Are you happy or sad?","Sei felice o triste?"],["Don't worry.","Non preoccuparti."],["You can do it!","Ce la puoi fare!"],["I'm proud of you!","Sono fiero di te!"],["Great job!","Ottimo lavoro!"]]}
+];
+function englishTimeToday(){
+  const seed = [...today()].reduce((a,c) => a + c.charCodeAt(0), 0), songs = songLibrary(), voc = ["animali","cibo","colori","numeri","casa","corpo","vestiti","trasporti","natura"];
+  const song = songs[seed % Math.max(1, songs.length)], theme = voc[seed % voc.length];
+  const k = currentKid(), older = !k || k.age === "6-8", ph = Math.min(10, 1 + Math.floor((seed/7) % 10));
+  return [
+    {m:2, e:"🎵", t: song ? `Canzoncina: ${song.title}` : "Una canzoncina", d:"Ascoltatela insieme e fate i gesti. La seconda volta usate “Ripeti con me”.", go: song ? "#bambini-canzoni-" + song.id : "#bambini-canzoni"},
+    {m:3, e:"🤸", t:"Simon dice", d:"Fatelo in piedi, facendo davvero i movimenti. Ridete tanto!", go:"#giochi-ksimon"},
+    {m:2, e:"🖼️", t:`Parole: ${theme}`, d:"Toccate le immagini e ripetete ogni parola ad alta voce. Poi cercate quegli oggetti in casa!", go:"#bambini-voc-" + theme},
+    older ? {m:3, e:"🔤", t:"Phonics", d:"Un gruppo di suoni: ascoltate le carte, poi leggete e componete le parole.", go:"#giochi-kfonica"} : {m:3, e:"📖", t:"Una storia", d:"Ascoltatela insieme indicando le immagini, poi rispondete alle domande.", go:"#bambini-storie"}
+  ];
+}
+async function kidsHome4Parents(main){
+  if(kidsModeOn() && !(await askPin("L'inglese a casa"))){ location.hash = "bambini"; return; }
+  const plan = englishTimeToday(), done = (state.etDone ||= {})[today()] || [];
+  main.innerHTML = `<a class="btn ghost sm" href="#bambini-genitori">${icon("back")} Area genitori</a><h1 style="margin-top:16px">🏠 L'inglese a casa</h1>
+    <p class="muted">I bambini imparano l'inglese ascoltandolo tanto, muovendosi e usandolo nella vita di tutti i giorni, non studiando. Qui trovi un'“ora dell'inglese” di 10 minuti diversa ogni giorno, e frasi pronte da usare a casa: non serve un inglese perfetto, bastano poche frasi ripetute ogni giorno.</p>
+    <section class="panel stack"><h2 style="margin:0">⏰ L'ora dell'inglese di oggi (10 minuti)</h2>
+      ${plan.map((s,i) => `<div class="mtask ${done.includes(i)?"ok":""}"><input type="checkbox" data-et="${i}" ${done.includes(i)?"checked":""} aria-label="Fatto"><span class="me">${s.e}</span><span style="flex:1"><b>${esc(s.t)}</b> <span class="small muted">· ${s.m} min</span><br><span class="small">${esc(s.d)}</span></span><a class="btn sm" href="${s.go}">Vai</a></div>`).join("")}
+      <p class="small muted" style="margin:0">Consiglio: fatela sempre alla stessa ora, per esempio prima di cena. Se il bambino è stanco, meglio 5 minuti allegri che 10 minuti noiosi.</p></section>
+    <h2 style="margin-top:22px">Frasi per tutti i giorni</h2><p class="muted" style="margin-top:0">Tocca 🔊 per sentire la pronuncia (anche lenta) e usale nei momenti giusti. Ripeterle ogni giorno è il segreto.</p>
+    <div class="stack">${HOME_PHRASES.map((c,ci) => `<details class="panel fcat" ${ci===0?"open":""}><summary><span style="font-size:1.4rem">${c.e}</span> <b>${esc(c.t)}</b></summary><div class="stack" style="gap:6px;margin-top:10px">${c.p.map(([en,it]) => `<div class="phr"><div style="flex:1"><b class="ptxt">${esc(en)}</b><br><span class="small muted">${esc(it)}</span></div><button class="iconbtn" data-hs="${esc(en)}" aria-label="Ascolta">${icon("play")}</button><button class="iconbtn" data-hsl="${esc(en)}" aria-label="Ascolta lento">${icon("slow")}</button></div>`).join("")}</div></details>`).join("")}</div>
+    ${S().lang !== "en" ? `<p class="small muted">Le frasi sono in inglese: per le altre lingue usa il Frasario negli Strumenti.</p>` : ""}`;
+  $$("[data-hs]", main).forEach(b => b.onclick = () => Voice.speak(b.dataset.hs));
+  $$("[data-hsl]", main).forEach(b => b.onclick = () => Voice.speak(b.dataset.hsl, {rate:0.6}));
+  $$("[data-et]", main).forEach(c => c.onchange = () => { const d = state.etDone[today()] ||= []; const i = +c.dataset.et; if(c.checked && !d.includes(i)) d.push(i); if(!c.checked) d.splice(d.indexOf(i), 1); c.closest(".mtask").classList.toggle("ok", c.checked); saveRaw(); });
+}
+
 const LETTER_NAMES = {
   en:"ay bee see dee ee eff gee aitch eye jay kay el em en oh pee cue are ess tee you vee double-you ex why zee",
   es:"a be ce de e efe ge hache i jota ka ele eme ene eñe o pe cu erre ese te u uve uve-doble equis ye zeta",
@@ -4702,7 +4918,7 @@ async function kidsABC(main){
   let all; try{ all = await kidsWords(); }catch(e){ main.innerHTML = errorHTML(e); return; }
   const letters = [...ABC[S().lang]];
   const ex = ch => all.find(w=>w.theme!=="numeri" && w.theme!=="colori" && bare(w.word).startsWith(bare(ch))) || all.find(w=>bare(w.word).startsWith(bare(ch)));
-  main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><h1 style="margin-top:16px">L'alfabeto</h1><p class="muted">Tocca una lettera per sentire come si chiama e una parola che comincia così.</p>
+  main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><h1 style="margin-top:16px">L'alfabeto${kidsIntro("abc", "Tocca una lettera: senti come si chiama in inglese e una parola che comincia così.")}</h1><p class="muted">Tocca una lettera per sentire come si chiama e una parola che comincia così.</p>
     <div class="abcgrid">${letters.map(ch=>{ const w = ex(ch); return `<button class="abc" data-ch="${ch}"><b>${ch}<small>${ch.toLowerCase()}</small></b><span>${w?w.emoji:""}</span></button>`; }).join("")}</div>`;
   let tap = 0;
   $$(".abc", main).forEach(b=>b.onclick=async ()=>{ const ch = b.dataset.ch, w = ex(ch), my = ++tap;
@@ -4734,7 +4950,7 @@ async function kidsSongs(main, id){
     return;
   }
   const age = kidAge();
-  main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><h1 style="margin-top:16px">Canzoncine e filastrocche</h1>
+  main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><h1 style="margin-top:16px">Canzoncine e filastrocche${kidsIntro("canz", "Scegli una canzoncina e ascoltala. Con ripeti con me, la voce si ferma e tocca a te ripetere!")}</h1>
     <p class="muted">${S().lang==="en" ? "Le filastrocche tradizionali inglesi più famose, più quelle nuove che inventiamo insieme." : `Filastrocche originali in ${L().name.toLowerCase()}, inventate apposta.`} La voce le legge e le parole si illuminano: “Ripeti con me” lascia il tempo per ripetere ogni verso.</p>
     <div class="row" style="margin:12px 0"><button class="btn sun" id="newsong">✨ Inventa una filastrocca nuova</button><span id="nsm" class="small"></span></div>
     <div class="ktiles">${lib.map(s=>`<a class="ktile ${s.age && s.age!==age ? "dim" : ""}" href="#bambini-canzoni-${s.id}"><span class="ke">${s.e}</span><b>${esc(s.title)}</b>${s.age && s.age!==age ? `<span class="small muted">${s.age} anni</span>` : ""}</a>`).join("") || `<p class="muted">Ancora nessuna filastrocca: inventane una!</p>`}</div>`;
@@ -4802,7 +5018,7 @@ JSON: {"title":"titolo in ${L().name}","cover":"emoji","pages":[{"scene":"🐰�
     };
     page(); return;
   }
-  main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><h1 style="margin-top:16px">Storie da ascoltare</h1>
+  main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a><h1 style="margin-top:16px">Storie da ascoltare${kidsIntro("storie", "Scegli una storia e ascoltala: le parole si illuminano mentre la voce legge. Alla fine ci sono delle domande facili.")}</h1>
     <p class="muted">Storie brevi con le immagini, lette ad alta voce con le parole che si illuminano. Alla fine qualche domanda facile. Restano salvate per riascoltarle.</p>
     <div style="margin:12px 0"><a class="btn sun" href="#bambini-storie-nuova">✨ Una storia nuova</a></div>
     <div class="ktiles">${lib.map(s=>`<a class="ktile" href="#bambini-storie-${s.id}"><span class="ke">${esc(s.cover)}</span><b>${esc(s.title)}</b></a>`).join("") || `<p class="muted">Ancora nessuna storia: premi “Una storia nuova”!</p>`}</div>`;
@@ -4820,7 +5036,7 @@ Regole di sicurezza, sempre valide:
 ${JSON_ONLY}
 Formato: {"reply":"risposta in ${L().name}","it":"traduzione italiana","emoji":"una emoji legata alla risposta"}`;
   main.innerHTML = `<a class="btn ghost sm" href="#bambini">${icon("back")} Casa</a>
-    <div class="friend"><div class="pip" id="pip">🐧</div><div class="fbub" id="fb">…</div><p class="small muted" id="fit"></p>
+    <div class="friend"><div class="pip" id="pip">🐧</div>${kidsIntro("pip", "Questo è Pip, un pinguino che parla inglese. Tocca il microfono e rispondi alle sue domande!")}<div class="fbub" id="fb">…</div><p class="small muted" id="fit"></p>
       <button class="mic big" id="mic" aria-label="Parla con Pip">${icon("mic")}</button><p class="muted" id="heard">Tocca il microfono e parla con Pip!</p>
       ${age==="6-8" ? `<div class="row" style="justify-content:center"><input class="input" id="ft" placeholder="Oppure scrivi qui" style="max-width:260px" autocomplete="off"><button class="btn ghost" id="fsend">Invia</button></div>` : ""}
       <button class="btn ghost sm" id="rep" style="margin-top:8px">${icon("play")} Riascolta Pip</button></div>`;
