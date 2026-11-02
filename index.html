@@ -268,6 +268,8 @@ a.btn,a.chip,a.action,a.lvl{text-decoration:none}
 .mtask{display:flex;gap:12px;align-items:center;padding:10px 14px;border-radius:var(--r);background:var(--surface-2);color:var(--ink);text-decoration:none}
 .mtask .me{font-size:1.6rem}
 .mtask.ok{background:var(--ok-bg)}
+.mtask .go{font-size:1.6rem;font-weight:800;color:var(--primary);margin-left:auto;line-height:1}
+@media (hover:hover){a.mtask:hover{outline:2px solid var(--primary)}}
 .ktiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-top:16px}
 .ktile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 10px;border-radius:24px;border:3px solid var(--line);border-bottom-width:6px;background:var(--surface);color:var(--ink);text-decoration:none;text-align:center;font-family:var(--display);font-size:1.05rem}
 @media (hover:hover){.ktile:hover{border-color:var(--primary);transform:translateY(-2px)}}
@@ -541,7 +543,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.15.1";
+const APP_VERSION = "0.15.2";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -1453,6 +1455,12 @@ const CHALLENGES = {
   wotd:{t:"Indovina la parola del giorno", need:1, e:"💡"},
   mission:{t:"Completa una missione nel Tutor", need:1, e:"🎯"}
 };
+/* Dove ti porta ogni sfida quando la tocchi */
+function challengeLink(k){
+  const p = planTarget ? planTarget() : null, rem = p ? planRemaining(p) : [], nu = rem[0] || nextUnit();
+  return {xp:"#" + unitHash(nu), lesson:"#" + unitHash(nu), tutor:"#tutor", cards:"#ripasso", game:"#giochi-adulti", perfect:"#giochi-adulti",
+    pron:"#pronuncia", radio:"#strumenti-ascolto", wotd:"#wotd", mission:"#tutor"}[k] || "#home";
+}
 function todayChallenges(){
   const c = state.challenges;
   if(c?.date === today()) return c;
@@ -1630,7 +1638,7 @@ RENDER.home = main => {
     ${planCardHTML()}
     <div class="grid2 two">
       <section class="panel stack"><div class="row" style="justify-content:space-between"><h2 style="margin:0">🎯 Sfide di oggi</h2><span class="chip" title="Gli scudi salvano i giorni di fila se salti un giorno">🛡️ ${state.shields||0}/2</span></div>
-        <div class="mtasks">${(() => { const c = todayChallenges(); return c.list.map(k => { const d = CHALLENGES[k], pr = Math.min(d.need, c.prog[k]||0), ok = c.claimed.includes(k); return `<div class="mtask ${ok?"ok":""}"><span class="me">${ok?"✅":d.e}</span><span style="flex:1"><b>${esc(d.t)}</b>${d.need>1?`<span class="small muted"> ${pr}/${d.need}</span>`:""}</span></div>`; }).join(""); })()}</div>
+        <div class="mtasks">${(() => { const c = todayChallenges(); return c.list.map(k => { const d = CHALLENGES[k], pr = Math.min(d.need, c.prog[k]||0), ok = c.claimed.includes(k); return `<a class="mtask ${ok?"ok":""}" href="${challengeLink(k)}" data-chl="${k}"><span class="me">${ok?"✅":d.e}</span><span style="flex:1"><b>${esc(d.t)}</b>${d.need>1?`<span class="small muted"> ${pr}/${d.need}</span>`:""}</span>${ok?"":`<span class="go" aria-hidden="true">›</span>`}</a>`; }).join(""); })()}</div>
         <p class="small muted" style="margin:0">Ogni sfida vale 10 XP. Completale tutte e tre per guadagnare uno scudo 🛡️: se un giorno salti, salva i tuoi giorni di fila.</p></section>
       <div id="wotd"></div>
     </div>
@@ -1647,6 +1655,12 @@ RENDER.home = main => {
   </div>`;
   $$("[data-go]", main).forEach(b=>b.onclick=()=>location.hash=b.dataset.go);
   familyBanner(); renderWotd();
+  $$("[data-chl]", main).forEach(a => a.addEventListener("click", e => {
+    const k = a.dataset.chl;
+    if(k === "wotd"){ e.preventDefault(); const w = $("#wotd"); if(w){ w.scrollIntoView({behavior:"smooth", block:"center"}); w.classList.add("pop"); setTimeout(()=>w.classList.remove("pop"), 700); } }
+    if(k === "mission"){ Chat.mode = "missione"; Chat.turns = []; Chat.goals = []; }
+    if(k === "tutor" && Chat.mode === "missione"){ Chat.mode = "libera"; Chat.turns = []; }
+  }));
   $$("[data-mis]", main).forEach(a => a.addEventListener("click", () => { Chat.mode = "missione"; Chat.mission = a.dataset.mis; Chat.turns = []; Chat.goals = []; }));
   $("#whoami").onclick = pickAdult;
 };
