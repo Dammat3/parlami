@@ -278,6 +278,7 @@ a.btn,a.chip,a.action,a.lvl{text-decoration:none}
 .kidpick{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:20px}
 .kidcard{display:flex;flex-direction:column;align-items:center;gap:6px;width:140px;padding:18px;border-radius:24px;border:3px solid var(--line);border-bottom-width:6px;background:var(--surface);font-family:var(--display);font-size:1.2rem}
 .kidcard span{font-size:3.6rem}
+.kidcard.kidpk{border-color:var(--sun)}
 @media (hover:hover){.kidcard:hover{border-color:var(--primary)}}
 .vocgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:16px}
 .voccard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 8px;border-radius:20px;border:3px solid var(--line);border-bottom-width:6px;background:var(--surface)}
@@ -552,7 +553,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.17";
+const APP_VERSION = "0.17.1";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -1439,11 +1440,15 @@ document.addEventListener("visibilitychange", () => { if(document.visibilityStat
 function pickAdult(){
   const a = adultsState();
   const ov = document.createElement("div"); ov.className = "overlay"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true");
-  ov.innerHTML = `<div class="panel stack pinbox" style="width:min(460px,100%)"><h2 style="margin:0">Chi sta usando Parlami?</h2>
-    <div class="kidpick" style="margin:0">${a.profiles.map(p => `<button class="kidcard" data-id="${p.id}" style="width:120px"><span style="font-size:2.6rem">${p.emoji}</span><b>${esc(p.name)}</b>${p.id===a.current?`<span class="small muted">ora</span>`:""}</button>`).join("")}</div>
+  const kids = kidsState().profiles;
+  ov.innerHTML = `<div class="panel stack pinbox" style="width:min(520px,100%)"><h2 style="margin:0">Chi sta usando Parlami?</h2>
+    ${kids.length ? `<p class="small muted" style="margin:0">Adulti</p>` : ""}
+    <div class="kidpick" style="margin:0">${a.profiles.map(p => `<button class="kidcard" data-id="${p.id}" style="width:120px"><span style="font-size:2.6rem">${p.emoji}</span><b>${esc(p.name)}</b>${p.id===a.current && !kidsContext()?`<span class="small muted">ora</span>`:""}</button>`).join("")}</div>
+    ${kids.length ? `<p class="small muted" style="margin:0">Bambini</p><div class="kidpick" style="margin:0">${kids.map(p => `<button class="kidcard kidpk" data-kid="${p.id}" style="width:120px"><span style="font-size:2.6rem">${p.emoji}</span><b>${esc(p.name)}</b></button>`).join("")}</div>` : ""}
     <div class="row" style="justify-content:space-between"><a class="btn ghost sm" href="#impostazioni" id="pm">Gestisci profili</a><button class="btn ghost sm" id="pc">Chiudi</button></div></div>`;
   document.body.appendChild(ov);
-  $$(".kidcard", ov).forEach(b => b.onclick = () => { switchAdult(b.dataset.id); ov.remove(); toast(`Ciao ${currentAdult().name}!`); route(); });
+  $$(".kidcard[data-id]", ov).forEach(b => b.onclick = () => { switchAdult(b.dataset.id); ov.remove(); toast(`Ciao ${currentAdult().name}!`); if(kidsContext()) location.hash = "home"; else route(); });
+  $$(".kidcard[data-kid]", ov).forEach(b => b.onclick = () => { const k = kidsState(); k.current = b.dataset.kid; save(); ov.remove(); const p = k.profiles.find(x => x.id === b.dataset.kid); toast(`Ciao ${p.name}!`); if(location.hash === "#bambini") route(); else location.hash = "bambini"; });
   $("#pc", ov).onclick = () => ov.remove(); $("#pm", ov).onclick = () => ov.remove();
 }
 
@@ -5455,7 +5460,7 @@ applyLook();
 adultsState();
 setTimeout(() => {
   if(syncCfg()?.on) syncNow();
-  if(!kidsModeOn() && adultsState().profiles.length > 1 && !sessionStorage.getItem("parlami.who")){ sessionStorage.setItem("parlami.who", "1"); pickAdult(); }
+  if(!kidsModeOn() && (adultsState().profiles.length > 1 || kidsState().profiles.length > 0) && !sessionStorage.getItem("parlami.who")){ sessionStorage.setItem("parlami.who", "1"); pickAdult(); }
 }, 800);
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredInstall = e; if(location.hash==="#impostazioni") route(); });
 window.addEventListener("appinstalled", () => { deferredInstall = null; toast("App installata"); });
