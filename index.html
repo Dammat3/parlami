@@ -398,6 +398,11 @@ body.kidsmode .brand-dot{background:var(--sun)}
 .misrep{align-self:stretch;background:var(--surface-2);border:2px solid var(--sun);border-radius:18px;padding:12px 16px}
 .memo summary{list-style:none}
 .studytext p.cur,.rline.cur{background:var(--primary-soft);border-radius:8px}
+.tw{cursor:pointer;border-radius:4px}
+@media (hover:hover){.tw:hover{background:var(--primary-soft)}}
+.tw.sel{background:var(--sun);color:var(--sun-ink)}
+.tapbox{background:var(--surface);border:2px solid var(--sun);border-radius:14px;padding:10px 14px;position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:3}
+@media (max-width:820px){.tapbox{bottom:calc(80px + env(safe-area-inset-bottom,0px))}}
 .vw{border:0;background:var(--sun);color:var(--sun-ink);border-radius:6px;padding:0 4px;font:inherit;font-weight:700;cursor:pointer}
 .rline{margin:0;padding:6px 10px;border-radius:8px;cursor:pointer}
 .fcat summary{cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none}
@@ -553,7 +558,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.17.1";
+const APP_VERSION = "0.17.2";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -2580,6 +2585,48 @@ const DIARY_PROMPTS = {
 const libList = () => (state.library ||= {})[S().lang] ||= [];
 const backTools = `<a class="btn ghost sm" href="#strumenti">${icon("back")} Strumenti</a>`;
 
+/* ---- Parole toccabili: traduzione nel contesto della frase ---- */
+function makeTappable(article, detail){
+  if(NOSPACE.includes(S().lang)) return;
+  const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT, {acceptNode: n => n.parentElement.closest(".vw, button") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT});
+  const nodes = []; while(walker.nextNode()) nodes.push(walker.currentNode);
+  for(const n of nodes){
+    const parts = n.textContent.split(/(\p{L}[\p{L}'’-]*)/u); if(parts.length < 2) continue;
+    const frag = document.createDocumentFragment();
+    parts.forEach((p, i) => { if(i % 2){ const sp = document.createElement("span"); sp.className = "tw"; sp.textContent = p; frag.appendChild(sp); } else if(p) frag.appendChild(document.createTextNode(p)); });
+    n.replaceWith(frag);
+  }
+  article.addEventListener("click", e => {
+    const w = e.target.closest(".tw"); if(!w) return;
+    $$(".tw.sel", article).forEach(x => x.classList.remove("sel")); w.classList.add("sel");
+    const ptxt = w.closest("p")?.textContent || "", word = w.textContent.replace(/[’']s$/,"");
+    const sentence = (ptxt.match(/[^.!?]+[.!?]*/g) || [ptxt]).find(x => x.includes(w.textContent)) || ptxt;
+    tapTranslate(word, sentence.trim(), detail);
+  });
+}
+async function tapTranslate(word, sentence, detail){
+  Voice.speak(word);
+  const cache = state.tapTr ||= {}, key = S().lang + "|" + bare(word) + "|" + quickHash(sentence);
+  const show = r => {
+    detail.innerHTML = `<div class="tapbox"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span><b style="font-size:1.15rem">${esc(word)}</b> = <b>${esc(r.it||"")}</b></span><span class="row" style="gap:6px;flex-wrap:nowrap"><button class="iconbtn" id="tsay" aria-label="Ascolta">${icon("play")}</button><button class="btn ghost sm" id="tadd">➕ Ripasso</button></span></div>
+      ${r.base && bare(r.base) !== bare(word) ? `<p class="small" style="margin:4px 0 0">Forma base: <b>${esc(r.base)}</b>${r.base_it ? ` = ${esc(r.base_it)}` : ""}</p>` : ""}${r.note ? `<p class="small muted" style="margin:4px 0 0">${esc(r.note)}</p>` : ""}</div>`;
+    $("#tsay", detail).onclick = () => Voice.speak(word);
+    $("#tadd", detail).onclick = () => { const w = r.base || word, t = r.base_it || r.it; if(!state.words.some(x => x.lang === S().lang && bare(x.word) === bare(w))){ state.words.push({id:uid(), lang:S().lang, word:w, translation:t, example:sentence, box:1, due:today()}); save(); toast("Aggiunta al ripasso"); } else toast("È già nel ripasso"); };
+  };
+  if(cache[key]) return show(cache[key]);
+  if(!S().connected){ detail.innerHTML = `<span class="muted">Per tradurre le parole serve l'IA: collegala nelle Impostazioni.</span>`; return; }
+  detail.innerHTML = `<span class="spinner"></span> Traduco “${esc(word)}”…`;
+  try{
+    const r = await ask(`Sei un dizionario ${L().name.toLowerCase()}-italiano preciso, per studenti italiani. ${JSON_ONLY}`,
+`Nella frase: "${sentence}"
+cosa significa la parola "${word}"? Traducila in italiano nel senso che ha in QUESTA frase.
+JSON: {"it":"traduzione italiana nel contesto","base":"forma base in ${L().name} (infinito per i verbi, singolare per i nomi), o la parola stessa","base_it":"traduzione della forma base","note":"nota brevissima in italiano se utile (es. «passato irregolare di go»), altrimenti stringa vuota"}`,
+      {temperature:0.1, maxTokens:250}, r => r.it && looksItalian(r.it));
+    cache[key] = r; const keys = Object.keys(cache); if(keys.length > 400) keys.slice(0, 100).forEach(k => delete cache[k]);
+    saveRaw(); if(detail.isConnected) show(r);
+  }catch(e){ detail.innerHTML = `<span class="status-bad">${esc(e.message)}</span>`; }
+}
+
 /* ---- Diario ---- */
 function toolDiary(main){
   const list = (state.diary ||= {})[S().lang] ||= [];
@@ -2634,7 +2681,7 @@ function toolLibrary(main){
   const lv = sessionStorage.getItem("parlami.libLv") || S().level;
   const items = lib.filter(x => x.level === lv);
   main.innerHTML = `${backTools}<h1 style="margin-top:16px">Biblioteca</h1>
-    <p class="muted">Letture brevi scritte per il tuo livello: racconti, misteri, articoli, lettere. Tocca le parole evidenziate per la traduzione, ascolta la lettura e rispondi alle domande. Le letture create restano per tutta la famiglia.</p>${needsSetup()}
+    <p class="muted">Letture brevi scritte per il tuo livello: racconti, misteri, articoli, lettere. Tocca le parole evidenziate, o qualsiasi altra parola che non conosci, per vedere la traduzione; ascolta la lettura e rispondi alle domande. Le letture create restano per tutta la famiglia.</p>${needsSetup()}
     <div class="row" style="margin-bottom:12px">${LEVELS.map(l => `<button class="chip ${l===lv?"on":""}" data-lv="${l}">${l}</button>`).join("")}</div>
     <section class="panel stack"><b>✨ Una lettura nuova (${lv})</b><div class="row">${LIB_GENRES.map(([k,t]) => `<button class="chip" data-gen="${k}">${t}</button>`).join("")}</div><p id="lmsg" class="small" style="margin:0"></p></section>
     <div class="grid2" style="margin-top:14px">${items.map(x => `<a class="action" href="#strumenti-biblioteca-${x.id}" style="text-decoration:none"><span class="ic"><span style="font-size:1.6rem">${(LIB_GENRES.find(g=>g[0]===x.genre)||["","📖"])[1].split(" ")[0]}</span></span><span style="flex:1"><h3>${esc(x.title)}</h3><span class="muted small">${esc(x.summary_it||"")}</span>${done.includes(x.id) ? `<span class="small" style="display:block">✅ Letta</span>` : ""}</span></a>`).join("") || `<p class="muted">Ancora nessuna lettura per il livello ${lv}: scegline una qui sopra.</p>`}</div>`;
@@ -2666,9 +2713,10 @@ function showReading(main, it){
     <h1 style="margin-top:16px">${esc(it.title)}</h1><p class="muted">${it.level} · ${esc((LIB_GENRES.find(g=>g[0]===it.genre)||["",""])[1])} · ${esc(it.summary_it)}</p>
     <div class="row"><button class="btn sun" id="rread">${icon("play")} Leggimela</button><button class="btn ghost" id="rstop">${icon("stop")} Stop</button><button class="btn ghost" id="radd">➕ Glossario al ripasso</button></div>
     <article class="reading studytext" style="margin-top:12px">${html.split(/\n\s*\n/).map(p => `<p>${p.replace(/\n/g,"<br>")}</p>`).join("")}</article>
-    <div id="gdet" class="small" style="min-height:1.5em;margin:8px 0"></div>
+    <div id="gdet" style="min-height:1.5em;margin:8px 0"><p class="small muted" style="margin:0">👆 Tocca una parola del testo per vedere cosa significa.</p></div>
     ${it.questions.length ? `<section class="panel stack"><h2 style="margin:0">Hai capito?</h2>${it.questions.map((q,n) => `<fieldset class="mcq"><legend><b>${n+1}.</b> ${esc(q.q)}</legend>${q.options.map((o,j) => `<label class="mopt"><input type="radio" name="lq${n}" value="${j}"> <span>${esc(o)}</span></label>`).join("")}</fieldset>`).join("")}<div><button class="btn" id="lcheck">${done ? "Controlla di nuovo" : "Controlla e segna come letta"}</button> <span id="lres"></span></div></section>` : ""}`;
-  $$(".vw", main).forEach(b => b.onclick = () => { const g = it.glossary[+b.dataset.g]; Voice.speak(g.word); $("#gdet").innerHTML = `<b>${esc(g.word)}</b> = ${esc(g.it)}`; });
+  $$(".vw", main).forEach(b => b.onclick = () => { const g = it.glossary[+b.dataset.g]; Voice.speak(g.word); $$(".tw.sel", main).forEach(x => x.classList.remove("sel")); $("#gdet").innerHTML = `<div class="tapbox"><b style="font-size:1.15rem">${esc(g.word)}</b> = <b>${esc(g.it)}</b></div>`; });
+  makeTappable($(".studytext", main), $("#gdet"));
   let stop = false; cleanup = () => { stop = true; speechSynthesis.cancel(); };
   $("#rread").onclick = async () => { stop = false; for(const p of $$(".studytext p", main)){ if(stop) break; p.classList.add("cur"); await Voice.speak(p.textContent); p.classList.remove("cur"); } };
   $("#rstop").onclick = () => { stop = true; speechSynthesis.cancel(); };
@@ -2859,11 +2907,12 @@ async function toolText(main){
       <p class="muted">${esc(r.summary||"")}${r.level ? ` · Livello stimato: <b>${esc(r.level)}</b>` : ""}</p>
       <div class="row"><button class="btn sun" id="readall">${icon("play")} Leggi ad alta voce</button><button class="btn ghost" id="stopread">${icon("stop")} Stop</button><button class="btn ghost" id="addw">➕ Parole al ripasso</button></div>
       <article class="reading studytext" style="margin-top:12px">${html.split(/\n\s*\n/).map(p=>`<p>${p.replace(/\n/g,"<br>")}</p>`).join("")}</article>
-      <div id="vdet" class="small" style="min-height:1.5em;margin:8px 0"></div>
+      <div id="vdet" style="min-height:1.5em;margin:8px 0"><p class="small muted" style="margin:0">👆 Tocca una parola del testo per vedere cosa significa.</p></div>
       <section class="panel stack" style="margin-top:12px"><h2 style="margin:0">Parole da imparare</h2><div class="vocab">${words.map((v,i)=>`<div class="vcard"><button class="iconbtn" data-say="${i}" aria-label="Ascolta">${icon("play")}</button><div><b>${esc(v.word)}</b><span class="muted small">${esc(v.translation)}</span>${v.note?`<div class="small">${esc(v.note)}</div>`:""}</div></div>`).join("")}</div></section>
       ${(r.grammar||[]).length ? `<section class="panel stack" style="margin-top:12px"><h2 style="margin:0">Da notare</h2>${r.grammar.map(g=>`<div><b>${esc(g.title)}</b><p style="margin:2px 0 0">${esc(g.explanation)}</p></div>`).join("")}</section>` : ""}
       ${(r.questions||[]).length ? `<section class="panel stack" style="margin-top:12px"><h2 style="margin:0">Hai capito?</h2>${r.questions.map((q,n)=>`<fieldset class="mcq"><legend><b>${n+1}.</b> ${esc(q.q)}</legend>${q.options.map((o,j)=>`<label class="mopt"><input type="radio" name="q${n}" value="${j}"> <span>${esc(o)}</span></label>`).join("")}</fieldset>`).join("")}<div><button class="btn" id="checkq">Controlla</button> <span id="qres"></span></div></section>` : ""}`;
-    $$(".vw", main).forEach(b=>b.onclick=()=>{ const v = words[+b.dataset.v]; Voice.speak(v.word); $("#vdet").innerHTML = `<b>${esc(v.word)}</b> = ${esc(v.translation)}${v.note?` · ${esc(v.note)}`:""}`; });
+    $$(".vw", main).forEach(b=>b.onclick=()=>{ const v = words[+b.dataset.v]; Voice.speak(v.word); $$(".tw.sel", main).forEach(x => x.classList.remove("sel")); $("#vdet").innerHTML = `<div class="tapbox"><b style="font-size:1.15rem">${esc(v.word)}</b> = <b>${esc(v.translation)}</b>${v.note?`<p class="small muted" style="margin:4px 0 0">${esc(v.note)}</p>`:""}</div>`; });
+    makeTappable($(".studytext", main), $("#vdet"));
     $$("[data-say]", main).forEach(b=>b.onclick=()=>Voice.speak(words[+b.dataset.say].word));
     let stop = false; cleanup = () => { stop = true; speechSynthesis.cancel(); };
     $("#readall").onclick = async () => { stop = false; for(const p of $$(".studytext p", main)){ if(stop) break; p.classList.add("cur"); await Voice.speak(p.textContent); p.classList.remove("cur"); } };
@@ -4653,7 +4702,7 @@ function kidsWho(main){
   main.innerHTML = `<h1 style="text-align:center">Chi gioca oggi?</h1>
     <div class="kidpick">${k.profiles.map(p=>`<button class="kidcard" data-id="${p.id}"><span>${p.emoji}</span><b>${esc(p.name)}</b></button>`).join("")}</div>
     <div class="row" style="justify-content:center;margin-top:20px"><a class="btn ghost sm" href="#bambini-genitori">👪 Area genitori</a></div>`;
-  $$(".kidcard", main).forEach(b=>b.onclick=()=>{ k.current = b.dataset.id; save(); location.hash = "bambini"; });
+  $$(".kidcard", main).forEach(b=>b.onclick=()=>{ k.current = b.dataset.id; save(); if(location.hash === "#bambini" || !location.hash) route(); else location.hash = "bambini"; });
 }
 async function kidsParents(main){
   if(kidsModeOn() && !(await askPin("Area genitori"))){ location.hash = "bambini"; return; }
