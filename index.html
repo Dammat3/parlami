@@ -399,6 +399,8 @@ body.kidsmode .brand-dot{background:var(--sun)}
 .memo summary{list-style:none}
 .studytext p.cur,.rline.cur{background:var(--primary-soft);border-radius:8px}
 .tw{cursor:pointer;border-radius:4px}
+.bookpage{max-height:none;font-size:1.12rem;line-height:1.75}
+.bookrow{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;flex-wrap:nowrap}
 @media (hover:hover){.tw:hover{background:var(--primary-soft)}}
 .tw.sel{background:var(--sun);color:var(--sun-ink)}
 .tapbox{background:var(--surface);border:2px solid var(--sun);border-radius:14px;padding:10px 14px;position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:3}
@@ -558,7 +560,7 @@ table.list td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-alig
 <div class="updbar" id="updbar" role="status" hidden><span>È arrivata una nuova versione di Parlami</span><button class="btn sm" id="updbtn">Aggiorna ora</button></div>
 <script>
 "use strict";
-const APP_VERSION = "0.17.2";
+const APP_VERSION = "0.18";
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 let deferredInstall = null;
 function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
@@ -1217,7 +1219,7 @@ async function familyBanner(){
 
 /* ============ PROFILI DEGLI ADULTI ============ */
 /* I dati di chi sta usando l'app stanno "in primo piano" in state; quelli degli altri in adults.data */
-const PERSON_KEYS = ["diary","readDone","minpairs","challenges","shields","badges","counts","plan","wotd","wotdHist","xp","streak","lastDay","todayXp","todayDate","dailyGoal","progress","words","mistakes","exams","placement","gameProg","missionBest","tutorMem","studies","dict","radio","favPhr","stats","seenW"];
+const PERSON_KEYS = ["bookPos","diary","readDone","minpairs","challenges","shields","badges","counts","plan","wotd","wotdHist","xp","streak","lastDay","todayXp","todayDate","dailyGoal","progress","words","mistakes","exams","placement","gameProg","missionBest","tutorMem","studies","dict","radio","favPhr","stats","seenW"];
 const PERSON_SET = ["lang","level","persona","voiceURI","rate","autoSpeak","showTr","tutorMemory"];
 const ADULT_EMOJIS = ["🙂","😎","🧔","👩","👨","👵","👴","🦸","🧑‍🍳","🧑‍💻","🌻","⚽"];
 function adultsState(){
@@ -2568,6 +2570,7 @@ RENDER.strumenti = main => {
   if(sub === "controllo") return toolCheck(main);
   if(sub === "diario") return toolDiary(main);
   if(sub === "biblioteca") return toolLibrary(main);
+  if(sub === "libro") return bookReader(main, location.hash.slice(1).split("-")[2]);
   if(sub === "cultura") return toolCulture(main);
   main.innerHTML = `<h1>Strumenti</h1>${needsSetup()}
     <div class="grid2" style="margin-top:16px">${TOOLS.map(([id,e,t,d])=>`<a class="action" href="#strumenti-${id}" style="text-decoration:none"><span class="ic"><span style="font-size:1.7rem">${e}</span></span><span><h3>${t}</h3><span class="muted small">${d}</span></span></a>`).join("")}</div>`;
@@ -2674,6 +2677,177 @@ function showDiary(main, e){
 }
 
 /* ---- Biblioteca di letture ---- */
+/* ============ LIBRI INTERI IN BIBLIOTECA ============ */
+const JSZIP_URL = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+const PDFJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const scriptsLoaded = {};
+function loadScript(src){
+  if(scriptsLoaded[src]) return scriptsLoaded[src];
+  return scriptsLoaded[src] = new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => { delete scriptsLoaded[src]; rej(new Error("Non riesco a scaricare il lettore di file: serve internet per caricare ePub e PDF.")); }; document.head.appendChild(s); });
+}
+/* I libri stanno nel database del dispositivo (IndexedDB), che ha molto più spazio */
+const BookDB = {
+  db:null,
+  open(){ if(this.db) return Promise.resolve(this.db); return new Promise((res, rej) => { const r = indexedDB.open("parlami-books", 1); r.onupgradeneeded = () => r.result.createObjectStore("books", {keyPath:"id"}); r.onsuccess = () => { this.db = r.result; res(this.db); }; r.onerror = () => rej(new Error("Il dispositivo non permette di salvare libri.")); }); },
+  async run(mode, fn){ const db = await this.open(); return new Promise((res, rej) => { const t = db.transaction("books", mode), req = fn(t.objectStore("books")); t.oncomplete = () => res(req?.result); t.onerror = () => rej(new Error("Spazio sul dispositivo insufficiente per questo libro.")); }); },
+  put(b){ return this.run("readwrite", st => st.put(b)); },
+  get(id){ return this.run("readonly", st => st.get(id)); },
+  del(id){ return this.run("readwrite", st => st.delete(id)); },
+  all(){ return this.run("readonly", st => st.getAll()); }
+};
+const CH_RE = /^\s*(chapter|chap\.|capitolo|capítulo|chapitre|kapitel|book|part|libro|parte)\s+([0-9]+|[ivxlcdm]+\b|[a-z]+)/i;
+function cleanGutenberg(t){
+  const a = t.search(/\*\*\*\s*START OF (THE|THIS) PROJECT GUTENBERG[^\n]*\n/i); if(a >= 0) t = t.slice(t.indexOf("\n", a) + 1);
+  const b = t.search(/\*\*\*\s*END OF (THE|THIS) PROJECT GUTENBERG/i); if(b >= 0) t = t.slice(0, b);
+  return t;
+}
+function textToChapters(text){
+  const paras = cleanGutenberg(text.replace(/\r\n?/g, "\n")).split(/\n\s*\n/).map(p => p.replace(/\s*\n\s*/g, " ").replace(/\s+/g, " ").trim()).filter(Boolean);
+  const chs = []; let cur = null;
+  for(const p of paras){
+    if(p.length < 90 && CH_RE.test(p)){ cur = {t:p, p:[]}; chs.push(cur); continue; }
+    if(!cur){ cur = {t:"Inizio", p:[]}; chs.push(cur); }
+    cur.p.push(p);
+  }
+  let out = chs.filter(c => c.p.join(" ").length > 80);
+  if(out.length < 2){ const all = out.flatMap(c => c.p); out = []; for(let i = 0; i < all.length; i += 40) out.push({t:`Parte ${out.length+1}`, p:all.slice(i, i+40)}); }
+  return out;
+}
+async function parseEpub(buf){
+  await loadScript(JSZIP_URL);
+  const zip = await JSZip.loadAsync(buf);
+  const enc = zip.file("META-INF/encryption.xml"); if(enc && /\.x?html?"/i.test(await enc.async("string"))) throw new Error("Questo ePub è protetto contro la copia (DRM): non si può aprire fuori dalla sua app.");
+  const cont = await zip.file("META-INF/container.xml")?.async("string"); if(!cont) throw new Error("Questo file non sembra un ePub valido.");
+  const opfPath = cont.match(/full-path="([^"]+)"/)[1], base = opfPath.includes("/") ? opfPath.slice(0, opfPath.lastIndexOf("/") + 1) : "";
+  const opf = new DOMParser().parseFromString(await zip.file(opfPath).async("string"), "application/xml");
+  const meta = tag => opf.getElementsByTagNameNS("*", tag)[0]?.textContent?.trim() || "";
+  const items = {}; [...opf.getElementsByTagNameNS("*", "item")].forEach(i => { items[i.getAttribute("id")] = i.getAttribute("href"); });
+  const chapters = [];
+  for(const ref of opf.getElementsByTagNameNS("*", "itemref")){
+    const href = items[ref.getAttribute("idref")]; if(!href) continue;
+    const f = zip.file(base + decodeURIComponent(href.split("#")[0])); if(!f) continue;
+    const doc = new DOMParser().parseFromString(await f.async("string"), "text/html");
+    doc.querySelectorAll("script,style,nav").forEach(x => x.remove());
+    const head = doc.querySelector("h1,h2,h3")?.textContent.replace(/\s+/g, " ").trim();
+    let paras = [...doc.querySelectorAll("p,h1,h2,h3,h4,li,blockquote")].filter(el => !el.querySelector("p,li")).map(el => el.textContent.replace(/\s+/g, " ").trim()).filter(Boolean);
+    if(!paras.length) paras = (doc.body?.textContent || "").split(/\n\s*\n/).map(x => x.replace(/\s+/g, " ").trim()).filter(Boolean);
+    if(paras.join(" ").length < 80) continue;
+    chapters.push({t: head && head.length < 90 ? head : `Capitolo ${chapters.length + 1}`, p: paras});
+  }
+  if(!chapters.length) throw new Error("Non ho trovato testo in questo ePub.");
+  return {title: meta("title"), author: meta("creator"), chapters};
+}
+async function parsePdf(buf, onProgress){
+  await loadScript(PDFJS_URL); pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+  const pdf = await pdfjsLib.getDocument({data:buf}).promise; let text = "";
+  for(let n = 1; n <= pdf.numPages; n++){
+    const tc = await (await pdf.getPage(n)).getTextContent(); let line = "", lines = [];
+    for(const it of tc.items){ line += it.str; if(it.hasEOL){ lines.push(line.trim()); line = ""; } }
+    if(line.trim()) lines.push(line.trim());
+    // ricostruisce i paragrafi: si va a capo solo dopo un punto
+    text += lines.reduce((acc, l) => {
+      if(l.length < 60 && CH_RE.test(l)) return acc + "\n\n" + l + "\n\n";
+      const sep = !acc || acc.endsWith("\n\n") ? "" : (/[.!?"”:]$/.test(acc.trim()) && /^[A-Z“"(]/.test(l) ? "\n\n" : " ");
+      return acc + sep + l;
+    }, "") + "\n\n";
+    if(onProgress && n % 5 === 0) onProgress(n, pdf.numPages);
+  }
+  if(text.replace(/\s/g, "").length < 300) throw new Error("Questo PDF sembra fatto di immagini (pagine scansionate): non contiene testo da leggere.");
+  const meta = (await pdf.getMetadata().catch(() => null))?.info || {};
+  return {title: meta.Title || "", author: meta.Author || "", chapters: textToChapters(text)};
+}
+async function importBook(file, onProgress){
+  const name = file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "), ext = (file.name.split(".").pop() || "").toLowerCase();
+  let r;
+  if(ext === "txt"){ const buf = await file.arrayBuffer(); let t = new TextDecoder("utf-8").decode(buf); if((t.match(/\uFFFD/g) || []).length > 20) t = new TextDecoder("windows-1252").decode(buf);
+    const tm = t.match(/^Title:\s*(.+)$/m), am = t.match(/^Author:\s*(.+)$/m); r = {title: tm?.[1]?.trim() || "", author: am?.[1]?.trim() || "", chapters: textToChapters(t)}; }
+  else if(ext === "epub") r = await parseEpub(await file.arrayBuffer());
+  else if(ext === "pdf") r = await parsePdf(await file.arrayBuffer(), onProgress);
+  else throw new Error("Formato non supportato: usa un file .txt, .epub o .pdf.");
+  const chars = r.chapters.reduce((a,c) => a + c.p.reduce((x,p) => x + p.length, 0), 0);
+  if(chars < 300) throw new Error("Il file contiene troppo poco testo.");
+  const title = r.title || name;
+  const id = "b" + quickHash(title + chars).replace(/[^0-9a-z]/gi, "");
+  const book = {id, title, author:r.author, lang:S().lang, chapters:r.chapters, chars, fmt:ext, added:today(), notes:{}};
+  await BookDB.put(book);
+  return book;
+}
+function pagesOf(ch){
+  const pages = [], max = 1400; let cur = [], len = 0;
+  for(let p of ch.p){
+    const parts = p.length > 2200 ? (p.match(/[^.!?]+[.!?]+["”]?\s*|[^.!?]+$/g) || [p]).reduce((acc, s) => { if(!acc.length || acc[acc.length-1].length + s.length > 1100) acc.push(s); else acc[acc.length-1] += s; return acc; }, []) : [p];
+    for(const x of parts){ if(len && len + x.length > max){ pages.push(cur); cur = []; len = 0; } cur.push(x.trim()); len += x.length; }
+  }
+  if(cur.length) pages.push(cur);
+  return pages.length ? pages : [[""]];
+}
+async function booksSection(main){
+  const box = $("#mybooks"); if(!box) return;
+  let books = [];
+  try{ books = (await BookDB.all()).filter(b => b.lang === S().lang); }catch(e){}
+  const pos = state.bookPos || {};
+  box.innerHTML = `<section class="panel stack"><div class="row" style="justify-content:space-between"><b>📖 I miei libri</b><label class="btn sm">📥 Carica un libro<input type="file" id="bfile" accept=".txt,.epub,.pdf,text/plain,application/epub+zip,application/pdf" hidden></label></div>
+    <p class="small muted" style="margin:0">Formati: .txt, .epub (senza protezione) o .pdf con testo. Libri gratuiti e legali: <a href="https://www.gutenberg.org" target="_blank" rel="noopener">Project Gutenberg</a> (scegli “EPUB (no images)” o “Plain Text UTF-8”). Il libro resta su questo dispositivo; il punto dove sei arrivato si sincronizza.</p>
+    <p id="bmsg" class="small" style="margin:0"></p>
+    ${books.length ? `<div class="stack" style="gap:8px">${books.map(b => { const p = pos[b.id], pct = p ? Math.round((p.ch + 1) / b.chapters.length * 100) : 0;
+      return `<div class="row bookrow"><a href="#strumenti-libro-${b.id}" style="flex:1;text-decoration:none;color:inherit"><b>${esc(b.title)}</b>${b.author ? ` <span class="small muted">· ${esc(b.author)}</span>` : ""}<br><span class="small muted">${b.chapters.length} capitoli · ${p ? `capitolo ${p.ch+1}, ${pct}%` : "da iniziare"}</span><div class="progress" style="margin-top:4px"><i style="width:${pct}%"></i></div></a><button class="btn ghost sm" data-delb="${b.id}">Elimina</button></div>`; }).join("")}</div>` : ""}</section>`;
+  $("#bfile").onchange = async e => {
+    const f = e.target.files[0]; if(!f) return;
+    $("#bmsg").innerHTML = `<span class="spinner"></span> Apro “${esc(f.name)}”…`;
+    try{ const b = await importBook(f, (n, t) => { const m = $("#bmsg"); if(m) m.innerHTML = `<span class="spinner"></span> Leggo le pagine del PDF: ${n} di ${t}…`; }); toast(`📖 “${b.title}” aggiunto`); location.hash = "strumenti-libro-" + b.id; }
+    catch(err){ const m = $("#bmsg"); if(m) m.innerHTML = `<span class="status-bad">${esc(err.message)}</span>`; }
+  };
+  $$("[data-delb]", box).forEach(b => b.onclick = async () => { if(!confirm("Eliminare questo libro da questo dispositivo?")) return; await BookDB.del(b.dataset.delb); booksSection(main); });
+}
+async function bookReader(main, id){
+  main.innerHTML = loadingHTML("Apro il libro…");
+  let b; try{ b = await BookDB.get(id); }catch(e){}
+  if(!b){ main.innerHTML = `<a class="btn ghost sm" href="#strumenti-biblioteca">${icon("back")} Biblioteca</a><p style="margin-top:16px">Questo libro non è su questo dispositivo. Caricalo qui da “📥 Carica un libro”: riprenderai dal punto in cui eri arrivato.</p>`; return; }
+  state.bookPos ||= {}; let pos = state.bookPos[id] || {ch:0, pg:0}, stop = true;
+  cleanup = () => { stop = true; speechSynthesis.cancel(); };
+  const draw = () => {
+    const ch = b.chapters[pos.ch], pages = pagesOf(ch); pos.pg = Math.min(pos.pg, pages.length - 1);
+    state.bookPos[id] = {...pos, t:Date.now()}; save();
+    const note = b.notes?.[pos.ch];
+    main.innerHTML = `<a class="btn ghost sm" href="#strumenti-biblioteca">${icon("back")} Biblioteca</a>
+      <h1 style="margin:14px 0 4px;font-size:1.5rem">${esc(b.title)}</h1>
+      <div class="row" style="margin-bottom:10px"><select class="input" id="bch" style="flex:1;min-width:200px">${b.chapters.map((c,i) => `<option value="${i}" ${i===pos.ch?"selected":""}>${esc(c.t)}</option>`).join("")}</select><span class="small muted">Pagina ${pos.pg+1} di ${pages.length}</span></div>
+      <article class="reading studytext bookpage">${pages[pos.pg].map(p => `<p>${esc(p)}</p>`).join("")}</article>
+      <div id="bdet" style="min-height:1.5em;margin:8px 0"><p class="small muted" style="margin:0">👆 Tocca una parola per vedere cosa significa.</p></div>
+      <div class="row" style="justify-content:space-between"><button class="btn ghost" id="bprev" ${pos.ch===0&&pos.pg===0?"disabled":""}>◀ Indietro</button>
+        <span class="row"><button class="btn ghost sm" id="bread">${icon("play")} Leggimi la pagina</button><button class="btn ghost sm" id="bstop">${icon("stop")}</button></span>
+        <button class="btn" id="bnext" ${pos.ch===b.chapters.length-1&&pos.pg===pages.length-1?"disabled":""}>Avanti ▶</button></div>
+      ${pos.pg === pages.length - 1 ? `<section class="panel stack" style="margin-top:14px"><b>📝 Fine del capitolo</b>
+        ${note ? `<p style="margin:0">${esc(note.summary_it)}</p>${(note.questions||[]).map((q,n) => `<fieldset class="mcq"><legend><b>${n+1}.</b> ${esc(q.q)}</legend>${q.options.map((o,j) => `<label class="mopt"><input type="radio" name="bq${n}" value="${j}"> <span>${esc(o)}</span></label>`).join("")}</fieldset>`).join("")}${(note.questions||[]).length ? `<div><button class="btn sm" id="bqcheck">Controlla</button> <span id="bqres"></span></div>` : ""}`
+          : `<p class="small muted" style="margin:0">Vuoi un riassunto in italiano del capitolo e qualche domanda per vedere se hai capito?</p><div><button class="btn ghost" id="bsum">✨ Riassunto e domande</button> <span id="bsmsg" class="small"></span></div>`}</section>` : ""}`;
+    makeTappable($(".bookpage", main), $("#bdet"));
+    const go = d => { stop = true; speechSynthesis.cancel(); const n = pagesOf(b.chapters[pos.ch]).length;
+      if(d > 0){ if(pos.pg < n - 1) pos.pg++; else if(pos.ch < b.chapters.length - 1){ pos.ch++; pos.pg = 0; addXP(5); } }
+      else { if(pos.pg > 0) pos.pg--; else if(pos.ch > 0){ pos.ch--; pos.pg = pagesOf(b.chapters[pos.ch]).length - 1; } }
+      draw(); window.scrollTo(0, 0); };
+    $("#bnext").onclick = () => go(1); $("#bprev").onclick = () => go(-1);
+    $("#bch").onchange = e => { pos = {ch:+e.target.value, pg:0}; draw(); };
+    $("#bread").onclick = async () => { stop = false; for(const p of $$(".bookpage p", main)){ if(stop) break; p.classList.add("cur"); await Voice.speak(p.textContent); p.classList.remove("cur"); } };
+    $("#bstop").onclick = () => { stop = true; speechSynthesis.cancel(); };
+    const bs = $("#bsum"); if(bs) bs.onclick = async () => {
+      if(!S().connected){ toast("Serve l'IA: collegala nelle Impostazioni"); return; }
+      bs.disabled = true; $("#bsmsg").innerHTML = `<span class="spinner"></span> Leggo il capitolo…`;
+      try{
+        const text = b.chapters[pos.ch].p.join("\n").slice(0, 12000);
+        const r = await ask(`Sei un insegnante di ${L().name} che aiuta un italiano a leggere un libro. ${who()} ${JSON_ONLY}`,
+`Capitolo “${b.chapters[pos.ch].t}” del libro “${b.title}”:
+"""${text}"""
+Scrivi un riassunto in italiano semplice (4-6 frasi) e 4 domande di comprensione in italiano con 3 risposte in italiano, una sola giusta.
+JSON: {"summary_it":"...","questions":[{"q":"...","options":["...","...","..."],"answer":0}]}`, {temperature:0.3, maxTokens:1200}, r => r.summary_it);
+        b.notes ||= {}; b.notes[pos.ch] = {summary_it:r.summary_it, questions:(r.questions||[]).filter(q => Array.isArray(q.options) && Number.isInteger(+q.answer))}; await BookDB.put(b); draw();
+      }catch(e){ bs.disabled = false; $("#bsmsg").innerHTML = `<span class="status-bad">${esc(e.message)}</span>`; }
+    };
+    const bq = $("#bqcheck"); if(bq) bq.onclick = () => { let ok = 0; note.questions.forEach((q,n) => { const c = document.querySelector(`input[name="bq${n}"]:checked`); $$(`input[name="bq${n}"]`).forEach(inp => { const lab = inp.closest(".mopt"); lab.classList.toggle("right", +inp.value === +q.answer); lab.classList.toggle("wrong", inp.checked && +inp.value !== +q.answer); }); if(c && +c.value === +q.answer) ok++; }); $("#bqres").innerHTML = `<b>${ok} su ${note.questions.length}</b>`; addXP(2 + ok); };
+  };
+  draw();
+}
+
 function toolLibrary(main){
   const parts = location.hash.slice(1).split("-"), id = parts[2];
   const lib = libList(), done = state.readDone ||= [];
@@ -2682,9 +2856,11 @@ function toolLibrary(main){
   const items = lib.filter(x => x.level === lv);
   main.innerHTML = `${backTools}<h1 style="margin-top:16px">Biblioteca</h1>
     <p class="muted">Letture brevi scritte per il tuo livello: racconti, misteri, articoli, lettere. Tocca le parole evidenziate, o qualsiasi altra parola che non conosci, per vedere la traduzione; ascolta la lettura e rispondi alle domande. Le letture create restano per tutta la famiglia.</p>${needsSetup()}
+    <div id="mybooks" style="margin-bottom:16px"></div>
     <div class="row" style="margin-bottom:12px">${LEVELS.map(l => `<button class="chip ${l===lv?"on":""}" data-lv="${l}">${l}</button>`).join("")}</div>
     <section class="panel stack"><b>✨ Una lettura nuova (${lv})</b><div class="row">${LIB_GENRES.map(([k,t]) => `<button class="chip" data-gen="${k}">${t}</button>`).join("")}</div><p id="lmsg" class="small" style="margin:0"></p></section>
     <div class="grid2" style="margin-top:14px">${items.map(x => `<a class="action" href="#strumenti-biblioteca-${x.id}" style="text-decoration:none"><span class="ic"><span style="font-size:1.6rem">${(LIB_GENRES.find(g=>g[0]===x.genre)||["","📖"])[1].split(" ")[0]}</span></span><span style="flex:1"><h3>${esc(x.title)}</h3><span class="muted small">${esc(x.summary_it||"")}</span>${done.includes(x.id) ? `<span class="small" style="display:block">✅ Letta</span>` : ""}</span></a>`).join("") || `<p class="muted">Ancora nessuna lettura per il livello ${lv}: scegline una qui sopra.</p>`}</div>`;
+  booksSection(main);
   $$("[data-lv]", main).forEach(b => b.onclick = () => { sessionStorage.setItem("parlami.libLv", b.dataset.lv); toolLibrary(main); });
   $$("[data-gen]", main).forEach(b => b.onclick = async () => {
     $$("[data-gen]", main).forEach(x => x.disabled = true); $("#lmsg").innerHTML = `<span class="spinner"></span> Sto scrivendo la lettura…`;
